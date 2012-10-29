@@ -1,0 +1,53 @@
+Miosix v1.60 (stm32f100rb_stm32vldiscovery, Sep 28 2012 17:21:23, gcc 4.5.2)
+Starting Kernel... Ok
+Available heap 0 out of 5492 Bytes
+dynamicwindow_absoluteclock_multihop_clocksync_60s_1d_3#node2.bin#secondhop
+ctr=90 e=-3 u=-4 w=49 k=0 tsr=3258444
+send=3585837
+ctr=91 e=-2 u=-3 w=49 k=1 tsr=4241481
+event=3928617 kpre=0 trpre=3258444 trpost=4241481 upre=-4
+send=4568874
+ctr=91 e=-2 u=-4 w=49 k=2 tsr=5224518
+send=5551911
+ctr=91 e=-2 u=-4 w=49 k=3 tsr=6207554
+event=5436093 kpre=2 trpre=5224518 trpost=6207554 upre=-4
+send=6534947
+ctr=92 e=-1 u=-4 w=49 k=4 tsr=7190591
+event=7156502 kpre=3 trpre=6207554 trpost=7190591 upre=-4
+send=7517984
+ctr=93 e=0 u=-3 w=49 k=5 tsr=8173628
+send=8501021
+ctr=92 e=-1 u=-4 w=49 k=6 tsr=9156664
+event=8287167 kpre=5 trpre=8173628 trpost=9156664 upre=-3
+send=9484057
+ctr=93 e=0 u=-3 w=49 k=7 tsr=10139701
+event=9958425 kpre=6 trpre=9156664 trpost=10139701 upre=-4
+send=10467094
+ctr=92 e=-1 u=-4 w=49 k=8 tsr=11122737
+send=11450130
+ctr=93 e=0 u=-3 w=49 k=9 tsr=12105774
+event=11515069 kpre=8 trpre=11122737 trpost=12105774 upre=-4
+send=12433167
+ctr=92 e=-1 u=-4 w=49 k=10 tsr=13088810
+send=13416203
+ctr=93 e=0 u=-3 w=49 k=11 tsr=14071847
+event=13481200 kpre=10 trpre=13088810 trpost=14071847 upre=-4
+send=14399240
+ctr=93 e=0 u=-3 w=49 k=12 tsr=15054884
+event=14955871 kpre=11 trpre=14071847 trpost=15054884 upre=-3
+send=15382277
+ctr=93 e=0 u=-3 w=49 k=13 tsr=16037921
+send=16365314
+ctr=93 e=0 u=-3 w=49 k=14 tsr=17020958
+event=16790943 kpre=13 trpre=16037921 trpost=17020958 upre=-3
+send=17348351
+ctr=92 e=-1 u=-4 w=49 k=15 tsr=18003994
+send=18331387
+ctr=93 e=0 u=-3 w=49 k=16 tsr=18987031
+event=18314766 kpre=15 trpre=18003994 trpost=18987031 upre=-4
+send=19314424
+ctr=93 e=0 u=-3 w=49 k=17 tsr=19970068
+send=20297461
+ctr=92 e=-1 u=-4 w=49 k=18 tsr=20953104
+event=20084326 kpre=17 trpre=19970068 trpost=20953104 upre=-3
+send=21280497

@@ -1,0 +1,37 @@
+Miosix v1.60 (stm32f100rb_stm32vldiscovery, Sep 28 2012 17:21:12, gcc 4.5.2)
+Starting Kernel... Ok
+Available heap 0 out of 5164 Bytes
+dynamicwindow_absoluteclock_multihop_clocksync_60s_1d_3#node0.bin
+enter disturbance in milliseconds
+send=983040
+send=1966080
+send=2949120
+send=3932160
+send=4915200
+event=3946702
+send=5898240
+event=5454183
+send=6881280
+send=7864320
+event=7174598
+send=8847360
+event=8305267
+send=9830400
+send=10813440
+event=9976531
+send=11796480
+event=11533180
+send=12779520
+send=13762560
+event=13499318
+send=14745600
+send=15728640
+event=14973994
+send=16711680
+send=17694720
+event=16809073
+send=18677760
+event=18332900
+send=19660800
+send=20643840
+event=20102466

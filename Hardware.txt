@@ -1,0 +1,34 @@
+The hardware reference platform for FLOPSYNC is composed of the following:
+-stm32vldiscovery: one per node
+-nrf24l01+ based radio module, found on ebay: one per node
+-ft232 based usb to serial converter, found on rs: one per node
+
+-optionally an arduino for automated firmware upgrade through ssh
+ and event generation for event timestamping experiments
+
+ 
+GPIO mapping stm32vldiscovery to nRF24L01+
+------------------------------------------
+1 GND connect to GND on stm32vldiscovery
+2 VCC connect to +3.3V on stm32vldiscovery
+3 CE    PA1
+4 CS    PA2
+5 SCK   PA5
+6 MOSI  PA7
+7 MISO  PA6
+8 IRQ   PB0
+
+GPIO mapping stm32vldiscovery to ft232
+--------------------------------------
+PA9 and PA10 connected to a serial port 19200 8N1
+
+GPIO mapping stm32vldiscovery to arduino
+----------------------------------------
+connect arduino GPIOs as described in
+deploy/fwupgrade/arduino/firmwareupgrade2/firmwareupgrade2.ino
+6 arduino GPIOs connect to the reset and boot0 pins of the stm32vldiscovery
+so as to be able to put them in serial port bootloader mode, to use
+the automated deploy infrastructure found in the deploy folder.
+
+also, digital I/O 8 of the arduino has to be connected to PB1 GPIOs of all
+the stm32vldiscovery. This is the event input used for timestamp tests.
