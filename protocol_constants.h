@@ -77,4 +77,19 @@ const unsigned int w=static_cast<int>(0.003f*16384+0.5f);
 //Minimum sync window (dynamic window only)
 const unsigned int minw=static_cast<int>(0.00018f*16384+0.5f);
 
+//Packet containing synchronization quality statistics, to send to base station
+struct Packet
+{ 
+    short e;
+    short u; 
+    short w;
+    unsigned short misspackets;
+    unsigned short unsynctime;
+    unsigned short sequence;
+    unsigned short check;	
+};
+
+//When to send the synchronization quality statistics packet
+const unsigned int txtime=static_cast<int>(30*16384+0.5f);
+
 #endif //PROTOCOL_CONSTANTS_H

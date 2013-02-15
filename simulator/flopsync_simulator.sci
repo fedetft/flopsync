@@ -2,7 +2,7 @@ clear; clc
 
 //General parameters
 T=60;                  //Sync period (1 minute)
-N=5*24*60;             //Number of simulated sync periods (totaling 2 days)
+N=5*60;             //Number of simulated sync periods (totaling 2 days)
 nevents=500;           //Number of events that occur during the simulation
 tick=1/16384;          //Resolution of one timer tick
 
