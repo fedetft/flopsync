@@ -57,7 +57,7 @@ const unsigned int retransmitPoint=static_cast<int>(0.667f*nominalPeriod+0.5f);
 #endif //SECOND_HOP
 
 //time for STM32 PLL startup (500us)
-const unsigned int pllBoot=static_cast<int>(0.0005*16384+0.5f);
+const unsigned int pllBoot=static_cast<int>(0.0005f*16384+0.5f);
 
 //Time for nRF to start its clock oscillator (1.6ms)
 const unsigned int radioBoot=static_cast<int>(0.0016f*16384+0.5f);

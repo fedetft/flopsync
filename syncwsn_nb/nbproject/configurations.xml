@@ -343,6 +343,7 @@
       <in>flopsync_controllers.cpp</in>
       <in>flopsync_controllers.h</in>
       <in>flopsync_dummy.cpp</in>
+      <in>flopsync_dynamic_comb.cpp</in>
       <in>flopsync_dynamic_multihop.cpp</in>
       <in>flopsync_dynamic_multihop_aggregation.cpp</in>
       <in>flopsync_dynamic_singlehop.cpp</in>
@@ -351,6 +352,7 @@
       <in>flopsync_fixed_singlehop.cpp</in>
       <in>flopsync_rootnode.cpp</in>
       <in>flopsync_rootnode_aggregation.cpp</in>
+      <in>flopsync_rootnode_comb.cpp</in>
       <in>flopsync_rootnode_stepresponse.cpp</in>
       <in>protocol_constants.h</in>
       <in>variance_estimator.h</in>
