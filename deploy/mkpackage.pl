@@ -59,32 +59,28 @@ sub build
 	open($outfile, '>', 'protocol_constants.h');
 	while(<$infile>)
 	{
-		if(/^const unsigned int nominalPeriod=static_cast<int>/)
+		if(/#define RELATIVE_CLOCK/)
 		{
+			print $outfile '//' unless($config{'relative_clock'});
+			print $outfile "#define RELATIVE_CLOCK\n";
+		} elsif(/#define SECOND_HOP/) {
+			print $outfile '//' unless($secondhop);
+			print $outfile "#define SECOND_HOP\n";
+		} elsif(/#define INTERACTIVE_ROOTNODE/) {
+			print $outfile '//' unless($config{'interactive_rootnode'});
+			print $outfile "#define INTERACTIVE_ROOTNODE\n";
+		} elsif(/#define EVENT_TIMESTAMPING/) {
+			print $outfile '//' unless($config{'event_timestamping'});
+			print $outfile "#define EVENT_TIMESTAMPING\n";
+		} elsif(/^#define experimentName/) {
+			my $n="#define experimentName \"$config{experiment_name}#$binfile";
+			$n.='#'.localtime();
+			$n.='#secondhop' if($secondhop);
+			print $outfile "$n\"\n";
+		} elsif(/^const unsigned int nominalPeriod=/) {
 			print $outfile "const unsigned int nominalPeriod=static_cast<int>".
 						   "($config{sync_period}*16384+0.5f);\n";
-			next; # Do not print the original line
-		}
-		if(/#endif \/\/PROTOCOL_CONSTANTS_H/)
-		{
-			print $outfile "#undef RELATIVE_CLOCK\n".
-						   "#undef SECOND_HOP\n".
-						   "#undef INTERACTIVE_ROOTNODE\n".
-						   "#undef EVENT_TIMESTAMPING\n".
-						   "#undef experimentName\n";
-			print $outfile "#define RELATIVE_CLOCK\n"
-				if($config{'relative_clock'});
-			print $outfile "#define SECOND_HOP\n"
-				if($secondhop);
-			print $outfile "#define INTERACTIVE_ROOTNODE\n"
-				if($config{'interactive_rootnode'});
-			print $outfile "#define EVENT_TIMESTAMPING\n"
-				if($config{'event_timestamping'});
-			my $n="#define experimentName \"$config{experiment_name}#$binfile";
-			$n=$n.'#secondhop' if($secondhop);
-			print $outfile "$n\"\n";
-		}
-		print $outfile $_;
+		} else { print $outfile $_; }
 	}
 	close($infile);
 	close($outfile);

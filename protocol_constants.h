@@ -30,24 +30,24 @@
 
 // Define this to test the regulator performance with the relative clock model,
 // while comment it out to test the absolute clock model
-//#define RELATIVE_CLOCK
+//#define RELATIVE_CLOCK //@@ Filled in by mkpackage.pl
 
 // This is to force a node to attach to the second tier in a multihop
 // configuration
-//#define SECOND_HOP
+//#define SECOND_HOP //@@ Filled in by mkpackage.pl
 
 // Disables deep sleep in the root node to make it responsive to commands that
 // are sent from the command serial port
-//#define INTERACTIVE_ROOTNODE
+//#define INTERACTIVE_ROOTNODE //@@ Filled in by mkpackage.pl
 
 // Enables event timestamping
-//#define EVENT_TIMESTAMPING
+//#define EVENT_TIMESTAMPING //@@ Filled in by mkpackage.pl
 
 // Give a name to the experiment being done
-#define experimentName ""
+#define experimentName "" //@@ Filled in by mkpackage.pl
 
 //Sync period
-const unsigned int nominalPeriod=static_cast<int>(60*16384+0.5f);
+const unsigned int nominalPeriod=static_cast<int>(60*16384+0.5f); //@@ Filled in by mkpackage.pl
 
 //In a real implementation this should need to be computed randomly per node
 #ifndef SECOND_HOP
