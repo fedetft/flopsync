@@ -158,7 +158,13 @@ public:
     /**
      * \return The clock correction computed by the synchronization controller
      */
-    virtual int getClockCorrection() const { return clockCorrection; }
+    int getClockCorrection() const { return clockCorrection; }
+    
+    int getReceiverWindow() const { return receiverWindow; }
+    
+    int getSyncError() const { return e; }
+    
+    bool isPacketMissed() const { return missPackets>0; }
 
 private:  
     /**
@@ -173,6 +179,7 @@ private:
     unsigned int measuredFrameStart;
     unsigned int computedFrameStart;
     short clockCorrection;
+    short e;
     unsigned char receiverWindow; 
     unsigned char missPackets;
     unsigned char hop;
@@ -198,18 +205,18 @@ public:
      * \param e synchronization error
      * \return a pair with the clock correction, and the receiver window
      */
-    virtual std::pair<short,unsigned char> computeCorrection(short e);
+    std::pair<short,unsigned char> computeCorrection(short e);
     
     /**
      * Compute clock correction and receiver window when a packet is lost
      * \return a pair with the clock correction, and the receiver window
      */
-    virtual std::pair<short,unsigned char> lostPacket();
+    std::pair<short,unsigned char> lostPacket();
     
     /**
      * Used after a resynchronization to reset the controller state
      */
-    virtual void reset();
+    void reset();
     
 private:
     short uo;

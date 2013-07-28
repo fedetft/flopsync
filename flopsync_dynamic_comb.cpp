@@ -66,16 +66,22 @@ int main()
         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=2*combSpacing)
         {
             unsigned int wakeupTime=frameStart+root2localFrameTime(flooder,i)-
-                (jitterAbsorption+receiverTurnOn+smallPacketTime);
+                (jitterAbsorption+receiverTurnOn+packetTime+spiPktSend);
             rtc.setAbsoluteWakeup(wakeupTime);
             rtc.sleepAndWait();
             blueLed::high();
             rtc.setAbsoluteWakeup(wakeupTime+jitterAbsorption);
             nrf.setMode(Nrf24l01::TX);
-            nrf.setPacketLength(1);
+            nrf.setPacketLength(4);
             timer.initTimeoutTimer(0);
+            signed char packet[]=
+            {
+                flooder.getSyncError(),
+                flooder.getClockCorrection(),
+                flooder.getReceiverWindow(),
+                flooder.isPacketMissed() ? 0x01 : 0x00
+            };
             rtc.wait();
-            static const char packet[]={0xff};
             nrf.writePacket(packet);
             timer.waitForPacketOrTimeout();
             blueLed::low();

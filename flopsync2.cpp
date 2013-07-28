@@ -81,7 +81,7 @@ bool FlooderRootNode::synchronize()
 FlooderSyncNode::FlooderSyncNode(Synchronizer& synchronizer, unsigned char hop)
       : rtc(Rtc::instance()), nrf(Nrf24l01::instance()),
         timer(AuxiliaryTimer::instance()), synchronizer(synchronizer),
-        measuredFrameStart(0), computedFrameStart(0), clockCorrection(0),
+        measuredFrameStart(0), computedFrameStart(0), clockCorrection(0), e(0),
         receiverWindow(w), missPackets(maxMissPackets+1), hop(hop) {}
 
 bool FlooderSyncNode::synchronize()
@@ -124,6 +124,7 @@ bool FlooderSyncNode::synchronize()
     #endif //MULTI_HOP
     nrf.setMode(Nrf24l01::SLEEP);
     
+    e=measuredFrameStart-computedFrameStart;
     pair<short,unsigned char> r;
     if(timeout)
     {
@@ -134,15 +135,15 @@ bool FlooderSyncNode::synchronize()
         }
         r=synchronizer.lostPacket();
         measuredFrameStart=computedFrameStart;
+        e=0;
     } else {
-        r=synchronizer.computeCorrection(measuredFrameStart-computedFrameStart);
+        r=synchronizer.computeCorrection(e);
         missPackets=0;
     }
     clockCorrection=r.first;
     receiverWindow=r.second;
     
-    printf("e=%d u=%d w=%d%s\n",measuredFrameStart-computedFrameStart,
-           clockCorrection,receiverWindow,timeout ? " (miss)" : "");
+    printf("e=%d u=%d w=%d%s\n",e,clockCorrection,receiverWindow,timeout ? " (miss)" : "");
     
     measuredFrameStart-=hop*retransmitDelta; //Correct frame start considering hops
     computedFrameStart+=nominalPeriod+clockCorrection;

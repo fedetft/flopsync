@@ -71,6 +71,11 @@ const unsigned int radioBoot=static_cast<int>(0.0016f*16384+0.5f);
 //Time for the nRF to start receiving after a call to startReceiving() (130us)
 const unsigned int receiverTurnOn=static_cast<int>(0.00013f*16384+0.5f);
 
+//Time to send a 1..4 byte packet via SPI @ 6MHz to the nRF (31us)
+//Computed as the missing piece in the difference between frameStart and
+//wakeupTime in FlooderRootNode.
+const unsigned int spiPktSend=static_cast<int>(0.000031f*16384+0.5f);
+
 //Additonal delay to absorb jitter (must be greater than pllBoot+radioBoot)
 const unsigned int jitterAbsorption=static_cast<int>(0.0025f*16384+0.5f);
 

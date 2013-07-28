@@ -49,34 +49,39 @@ int main()
     {
         flooder.synchronize();
         
+        puts("----");
         unsigned int frameStart=flooder.getFrameStart();
         for(unsigned int i=combSpacing,j=0;i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
         {
             unsigned int wakeupTime=frameStart+i-
-                (jitterAbsorption+receiverTurnOn+w+smallPacketTime);
+                (jitterAbsorption+receiverTurnOn+w+packetTime);
             rtc.setAbsoluteWakeup(wakeupTime);
             rtc.sleepAndWait();
             rtc.setAbsoluteWakeup(wakeupTime+jitterAbsorption);
             nrf.setMode(Nrf24l01::RX);
-            nrf.setPacketLength(1);
+            nrf.setPacketLength(4);
             rtc.wait();
             nrf.startReceiving();
-            timer.initTimeoutTimer(receiverTurnOn+2*w+smallPacketTime);
+            timer.initTimeoutTimer(receiverTurnOn+2*w+packetTime);
             bool timeout;
             unsigned int measuredTime;
+            signed char packet[4];
             for(;;)
             {
                 timeout=timer.waitForPacketOrTimeout();
                 measuredTime=rtc.getValue();
                 if(timeout) break;
-                char packet[1];
                 nrf.readPacket(packet);
-                if(packet[0]==0xff) break;
+                if((packet[3] & 0xfe)==0) break;
             }
             timer.stopTimeoutTimer();
             nrf.setMode(Nrf24l01::SLEEP);
             if(timeout) printf("node%d timeout\n",(j & 1)+1);
-            else printf("node%d.e=%d\n",(j & 1)+1,measuredTime-(frameStart+i));
+            else {
+                if(j<2) printf("e=%d u=%d w=%d%s\n",
+                               packet[0],packet[1],packet[2],packet[3] ? "(miss)" : "");
+                printf("node%d.e=%d\n",(j & 1)+1,measuredTime-(frameStart+i));
+            }
         }
     }
 }
