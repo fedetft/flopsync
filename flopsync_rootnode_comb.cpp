@@ -26,10 +26,9 @@
  ***************************************************************************/
 
 #include <cstdio>
-#include <miosix.h>
 #include "drivers/nrf24l01.h"
-#include "drivers/rtc.h"
 #include "protocol_constants.h"
+#include "flopsync2.h"
 
 using namespace std;
 
@@ -37,36 +36,9 @@ int main()
 {
     puts(experimentName);
     const unsigned char address[]={0xab, 0xcd, 0xef};
-    static const char packet[]={0x01, 0x02, 0x03, 0x04};
-    Rtc& rtc=Rtc::instance();
     Nrf24l01& nrf=Nrf24l01::instance();
-    AuxiliaryTimer& timer=AuxiliaryTimer::instance();
     nrf.setAddress(address);
     nrf.setFrequency(2450);
-    nrf.setPacketLength(4);
-    unsigned int nextWakeup=nominalPeriod;
-    for(;;)
-    {
-        rtc.setAbsoluteWakeup(nextWakeup);
-        rtc.sleepAndWait();
-        rtc.setAbsoluteWakeup(nextWakeup+jitterAbsorption);
-        nrf.setMode(Nrf24l01::TX);
-        timer.initTimeoutTimer(0);
-        // To minimize jitter in the packet transmission time caused by the
-        // variable time sleepAndWait() takes to restart the STM32 PLL an
-        // additional wait is done here to absorb the jitter.
-        rtc.wait();
-        miosix::ledOn();
-        nrf.writePacket(packet);
-        timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
-        unsigned int timestamp=rtc.getValue();
-        miosix::ledOff(); //Falling edge signals synchronization packet sent
-        nrf.endWritePacket();
-        nrf.setMode(Nrf24l01::SLEEP);
-        
-        printf("delta=%d\n",timestamp-nextWakeup);
-        
-        nextWakeup+=nominalPeriod;
-    }
-    return 0;
+    FlooderRootNode flooder;
+    for(;;) flooder.synchronize();
 }

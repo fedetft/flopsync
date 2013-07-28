@@ -28,6 +28,8 @@
 #ifndef VARIANCE_ESTIMATOR_H
 #define VARIANCE_ESTIMATOR_H
 
+#include "protocol_constants.h"
+
 class VarianceEstimator
 {
 public:

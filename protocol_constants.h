@@ -68,8 +68,11 @@ const unsigned int receiverTurnOn=static_cast<int>(0.00013f*16384+0.5f);
 //Additonal delay to absorb jitter (must be greater than pllBoot+radioBoot)
 const unsigned int jitterAbsorption=static_cast<int>(0.0025f*16384+0.5f);
 
-//Time to transfer a 4byte packet (+6byte overhead) on an 1MBps channel (80us)
+//Time to transfer a 4byte packet (+6byte overhead) on an 1Mbps channel (80us)
 const unsigned int packetTime=static_cast<int>(0.00008f*16384+0.5f);
+
+//Time to transfer a 1byte packet (+6byte overhead) on an 1Mbps channel (56us)
+const unsigned int smallPacketTime=static_cast<int>(0.000056f*16384+0.5f);
 
 //Sync window (fixed window), or maximum sync window (dynamic window)
 const unsigned int w=static_cast<int>(0.003f*16384+0.5f);
