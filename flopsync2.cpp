@@ -77,14 +77,15 @@ bool FlooderRootNode::synchronize()
 // class FlooderSyncNode
 //
 
-FlooderSyncNode::FlooderSyncNode(unsigned char hop) : rtc(Rtc::instance()),
-        nrf(Nrf24l01::instance()), timer(AuxiliaryTimer::instance()),
+FlooderSyncNode::FlooderSyncNode(Synchronizer *synchronizer, unsigned char hop)
+      : rtc(Rtc::instance()), nrf(Nrf24l01::instance()),
+        timer(AuxiliaryTimer::instance()), synchronizer(synchronizer),
         measuredFrameStart(0), computedFrameStart(0), clockCorrection(0),
-        receiverWindow(w), missPackets(maxMissPackets), hop(hop) {}
+        receiverWindow(w), missPackets(maxMissPackets+1), hop(hop) {}
 
 bool FlooderSyncNode::synchronize()
 {
-    if(missPackets>=maxMissPackets) return true;
+    if(missPackets>maxMissPackets) return true;
     
     //TODO: check that computedFrameStart hasn't passed
     unsigned int wakeupTime=computedFrameStart-
@@ -122,28 +123,29 @@ bool FlooderSyncNode::synchronize()
     #endif //MULTI_HOP
     nrf.setMode(Nrf24l01::SLEEP);
     
-    int e=measuredFrameStart-computedFrameStart;
+    pair<short,unsigned char> r;
     if(timeout)
     {
-        if(++missPackets>=maxMissPackets)
+        if(++missPackets>maxMissPackets)
         {
             puts("Lost sync");
             return true;
         }
-        ve.setWindow(2*receiverWindow);
+        r=synchronizer->lostPacket();
         measuredFrameStart=computedFrameStart;
-        e=0;
-        //And leave clockCorrection as the previously computed value
     } else {
+        r=synchronizer->computeCorrection(measuredFrameStart-computedFrameStart);
         missPackets=0;
-        clockCorrection=controller.run(e);
-        ve.update(e);
     }
-    receiverWindow=max<int>(min<int>(ve.window(),w),minw);
+    clockCorrection=r.first;
+    receiverWindow=r.second;
+    
+    printf("e=%d u=%d w=%d%s\n",measuredFrameStart-computedFrameStart,
+           clockCorrection,receiverWindow,timeout ? " (miss)" : "");
+    
     measuredFrameStart-=hop*retransmitDelta; //Correct frame start considering hops
     computedFrameStart+=nominalPeriod+clockCorrection;
 
-    printf("e=%d u=%d w=%d%s\n",e,clockCorrection,receiverWindow,timeout ? " (miss)" : "");    
     return false;
 }
 
@@ -165,6 +167,7 @@ void FlooderSyncNode::resynchronize()
         miosix::ledOff();
     }
     nrf.setMode(Nrf24l01::SLEEP);
+    synchronizer->reset();
     missPackets=0;
 }
 
@@ -191,7 +194,7 @@ OptimizedFlopsync::OptimizedFlopsync() { reset(); }
 
 pair<short,unsigned char> OptimizedFlopsync::computeCorrection(short e)
 {
-    //u(k)=u(k-1)+1.25*e(k)-e(k-1)
+    //u(k)=u(k-1)+1.25*e(k)-e(k-1) with values kept multiplied by 4
     short u=uo+5*e-4*eo;
 
     //The controller output needs to be quantized, but instead of simply

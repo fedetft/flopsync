@@ -39,10 +39,11 @@ int main()
     Nrf24l01& nrf=Nrf24l01::instance();
     nrf.setAddress(address);
     nrf.setFrequency(2450);
+    OptimizedFlopsync flopsync;
     #ifndef SECOND_HOP
-    FlooderSyncNode sync;
+    FlooderSyncNode sync(&flopsync);
     #else //SECOND_HOP
-    FlooderSyncNode sync(1);
+    FlooderSyncNode sync(&flopsync,1);
     #endif //SECOND_HOP
     for(;;) if(sync.synchronize()) sync.resynchronize();
 }

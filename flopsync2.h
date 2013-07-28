@@ -28,10 +28,9 @@
 #ifndef FLOPSYNC2_H
 #define	FLOPSYNC2_H
 
+#include <utility>
 #include "drivers/nrf24l01.h"
 #include "drivers/rtc.h"
-#include "flopsync_controllers.h"
-#include "variance_estimator.h"
 
 /**
  * Base class from which flooding schemes derive
@@ -130,11 +129,12 @@ class FlooderSyncNode : public FloodingScheme
 public:
     /**
      * Constructor
+     * \param synchronizer pointer to synchronizer. The caller owns the pointer.
      * \param hop specifies to which hop we need to attach. 0 is the root node,
      * 1 is the first hop, ... This allows to force a multi hop network even
      * though nodes are in radio range.
      */
-    FlooderSyncNode(unsigned char hop=0);
+    FlooderSyncNode(Synchronizer *synchronizer, unsigned char hop=0);
 
     /**
      * Needs to be periodically called to send the synchronization packet.
@@ -169,18 +169,22 @@ private:
     Rtc& rtc;
     Nrf24l01& nrf;
     AuxiliaryTimer& timer;
+    Synchronizer *synchronizer;
     unsigned int measuredFrameStart;
     unsigned int computedFrameStart;
     short clockCorrection;
     unsigned char receiverWindow; 
     unsigned char missPackets;
     unsigned char hop;
-    VarianceEstimator ve;
-    Controller4 controller;
     
     static const unsigned char maxMissPackets=3;
 };
 
+/**
+ * This class is basically Controller4 from flopsync_controllers.h plus
+ * VarianceEstimator with a Synchronizer compatible interface and some
+ * small RAM usage improvements
+ */
 class OptimizedFlopsync : public Synchronizer
 {
 public:
@@ -215,7 +219,7 @@ private:
     unsigned char count;
     unsigned char var;
     
-    static const int numSamples=64;
+    static const int numSamples=64; //Number of samples for variance compuation
     static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
 };
 
