@@ -65,7 +65,7 @@ int main()
         start=strstr(experimentName,"node1") ? combSpacing : 2*combSpacing;
         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=2*combSpacing)
         {
-            unsigned int wakeupTime=frameStart+root2localFrameTime(flooder,i)-
+            unsigned int wakeupTime=frameStart+root2localFrameTime(flopsync,i)-
                 (jitterAbsorption+receiverTurnOn+packetTime+spiPktSend);
             rtc.setAbsoluteWakeup(wakeupTime);
             rtc.sleepAndWait();
@@ -76,9 +76,9 @@ int main()
             timer.initTimeoutTimer(0);
             signed char packet[]=
             {
-                flooder.getSyncError(),
-                flooder.getClockCorrection(),
-                flooder.getReceiverWindow(),
+                flopsync.getSyncError(),
+                flopsync.getClockCorrection(),
+                flopsync.getReceiverWindow(),
                 flooder.isPacketMissed() ? 0x01 : 0x00
             };
             rtc.wait();

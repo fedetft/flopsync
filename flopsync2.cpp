@@ -39,8 +39,6 @@ using namespace std;
 
 void FloodingScheme::resynchronize() {}
 
-int FloodingScheme::getClockCorrection() const { return 0; }
-
 //
 // class FlooderRootNode
 //
@@ -81,7 +79,7 @@ bool FlooderRootNode::synchronize()
 FlooderSyncNode::FlooderSyncNode(Synchronizer& synchronizer, unsigned char hop)
       : rtc(Rtc::instance()), nrf(Nrf24l01::instance()),
         timer(AuxiliaryTimer::instance()), synchronizer(synchronizer),
-        measuredFrameStart(0), computedFrameStart(0), clockCorrection(0), e(0),
+        measuredFrameStart(0), computedFrameStart(0),
         receiverWindow(w), missPackets(maxMissPackets+1), hop(hop) {}
 
 bool FlooderSyncNode::synchronize()
@@ -124,7 +122,6 @@ bool FlooderSyncNode::synchronize()
     #endif //MULTI_HOP
     nrf.setMode(Nrf24l01::SLEEP);
     
-    e=measuredFrameStart-computedFrameStart;
     pair<short,unsigned char> r;
     if(timeout)
     {
@@ -135,19 +132,19 @@ bool FlooderSyncNode::synchronize()
         }
         r=synchronizer.lostPacket();
         measuredFrameStart=computedFrameStart;
-        e=0;
     } else {
-        r=synchronizer.computeCorrection(e);
+        r=synchronizer.computeCorrection(measuredFrameStart-computedFrameStart);
         missPackets=0;
     }
-    clockCorrection=r.first;
+    short clockCorrection=r.first;
     receiverWindow=r.second;
     
-    printf("e=%d u=%d w=%d%s\n",e,clockCorrection,receiverWindow,timeout ? " (miss)" : "");
+    printf("e=%d u=%d w=%d%s\n",measuredFrameStart-computedFrameStart,
+        clockCorrection,receiverWindow,timeout ? " (miss)" : "");
     
-    measuredFrameStart-=hop*retransmitDelta; //Correct frame start considering hops
+    //Correct frame start considering hops
+    measuredFrameStart-=hop*retransmitDelta;
     computedFrameStart+=nominalPeriod+clockCorrection;
-
     return false;
 }
 
@@ -231,13 +228,7 @@ pair<short,unsigned char> OptimizedFlopsync::lostPacket()
 {
     //Double receiver window on packet loss, still clamped to max value
     var=min<int>(2*var,w);
-    
-    //Error measure is unavailable if the packet is lost, the best we can
-    //do is to reuse the past correction value
-    short sign=uo>=0 ? 1 : -1;
-    short uquant=(uo+2*sign)/4;
-    
-    return make_pair(uquant,var);
+    return make_pair(getClockCorrection(),var);
 }
 
 void OptimizedFlopsync::reset()
@@ -246,9 +237,17 @@ void OptimizedFlopsync::reset()
     var=w;
 }
 
-unsigned int root2localFrameTime(const FloodingScheme& flood, unsigned int root)
+int OptimizedFlopsync::getClockCorrection() const
+{
+    //Error measure is unavailable if the packet is lost, the best we can
+    //do is to reuse the past correction value
+    short sign=uo>=0 ? 1 : -1;
+    return (uo+2*sign)/4;
+}
+
+unsigned int root2localFrameTime(const OptimizedFlopsync& fs, unsigned int root)
 {
     int signedRoot=root; //Conversion unsigned to signed is *required*
     int period=nominalPeriod;
-    return max(0,signedRoot+flood.getClockCorrection()*signedRoot/period);
+    return max(0,signedRoot+fs.getClockCorrection()*signedRoot/period);
 }

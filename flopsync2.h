@@ -56,11 +56,6 @@ public:
      * \return The (local) time when the current frame has started.
      */
     virtual unsigned int getFrameStart() const=0;
-    
-    /**
-     * \return The clock correction computed by the synchronization controller
-     */
-    virtual int getClockCorrection() const;
 };
 
 /**
@@ -156,14 +151,8 @@ public:
     unsigned int getFrameStart() const { return measuredFrameStart; }
     
     /**
-     * \return The clock correction computed by the synchronization controller
+     * \return true if in this frame the sync packet was not received
      */
-    int getClockCorrection() const { return clockCorrection; }
-    
-    int getReceiverWindow() const { return receiverWindow; }
-    
-    int getSyncError() const { return e; }
-    
     bool isPacketMissed() const { return missPackets>0; }
 
 private:  
@@ -178,8 +167,6 @@ private:
     Synchronizer& synchronizer;
     unsigned int measuredFrameStart;
     unsigned int computedFrameStart;
-    short clockCorrection;
-    short e;
     unsigned char receiverWindow; 
     unsigned char missPackets;
     unsigned char hop;
@@ -218,6 +205,21 @@ public:
      */
     void reset();
     
+    /**
+     * \return the synchronization error (e)
+     */
+    int getSyncError() const { return eo; }
+    
+    /**
+     * \return the clock correction (u)
+     */
+    int getClockCorrection() const;
+    
+    /**
+     * \return the receiver window (w)
+     */
+    int getReceiverWindow() const { return var; }
+    
 private:
     short uo;
     short eo;
@@ -236,11 +238,11 @@ private:
  * of the root node to local time, that is the time of the local clock. It
  * can be used to send a packet to the root node at the the frame time it
  * expects it.
- * \param flood flooding scheme, used to retrieve clockCorrection
+ * \param fs flopsync controller, used to retrieve clockCorrection
  * \param root a frame time (0 to nominalPeriod) referenced to the root node
  * \return the local time time corresponding to the given root time
  */
-unsigned int root2localFrameTime(const FloodingScheme& flood, unsigned int root);
+unsigned int root2localFrameTime(const OptimizedFlopsync& fs, unsigned int root);
 
 
 
