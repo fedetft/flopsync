@@ -66,6 +66,10 @@ sub build
 		} elsif(/#define SECOND_HOP/) {
 			print $outfile '//' unless($secondhop);
 			print $outfile "#define SECOND_HOP\n";
+		} elsif(/#define MULTI_HOP/) {
+			my $mh=$config{'node1_second_hop'} || $config{'node2_second_hop'};
+			print $outfile '//' unless($mh);
+			print $outfile "#define MULTI_HOP\n";
 		} elsif(/#define INTERACTIVE_ROOTNODE/) {
 			print $outfile '//' unless($config{'interactive_rootnode'});
 			print $outfile "#define INTERACTIVE_ROOTNODE\n";

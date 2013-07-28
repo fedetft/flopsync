@@ -36,6 +36,9 @@
 // configuration
 //#define SECOND_HOP //@@ Filled in by mkpackage.pl
 
+// Defined if we're in a multi hop environment
+//#define MULTI_HOP //@@ Filled in by mkpackage.pl
+
 // Disables deep sleep in the root node to make it responsive to commands that
 // are sent from the command serial port
 //#define INTERACTIVE_ROOTNODE //@@ Filled in by mkpackage.pl
@@ -56,7 +59,10 @@ const unsigned int retransmitPoint=static_cast<int>(0.333f*nominalPeriod+0.5f);
 const unsigned int retransmitPoint=static_cast<int>(0.667f*nominalPeriod+0.5f);
 #endif //SECOND_HOP
 
-//time for STM32 PLL startup (500us)
+//Retransmit time for flopsync2 "Flooder" flooding scheme (300us)
+const unsigned int retransmitDelta=static_cast<int>(0.0003f*16384+0.5f);
+
+//Time for STM32 PLL startup (500us)
 const unsigned int pllBoot=static_cast<int>(0.0005f*16384+0.5f);
 
 //Time for nRF to start its clock oscillator (1.6ms)

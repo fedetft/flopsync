@@ -38,6 +38,8 @@ using namespace std;
 
 void FloodingScheme::resynchronize() {}
 
+unsigned int FloodingScheme::getClockCorrection() const { return 0; }
+
 //
 // class FlooderRootNode
 //
@@ -75,10 +77,10 @@ bool FlooderRootNode::synchronize()
 // class FlooderSyncNode
 //
 
-FlooderSyncNode::FlooderSyncNode() : rtc(Rtc::instance()),
+FlooderSyncNode::FlooderSyncNode(unsigned char hop) : rtc(Rtc::instance()),
         nrf(Nrf24l01::instance()), timer(AuxiliaryTimer::instance()),
         measuredFrameStart(0), computedFrameStart(0), clockCorrection(0),
-        receiverWindow(w), missPackets(maxMissPackets) {}
+        receiverWindow(w), missPackets(maxMissPackets), hop(hop) {}
 
 bool FlooderSyncNode::synchronize()
 {
@@ -111,9 +113,13 @@ bool FlooderSyncNode::synchronize()
         if(timeout) break;
         char packet[1];
         nrf.readPacket(packet);
-        if(packet[0]==0x00) break;
+        if(packet[0]==hop) break;
+        miosix::ledOn();
     }
     timer.stopTimeoutTimer();
+    #ifdef MULTI_HOP
+    if(!timeout) rebroadcast();
+    #endif //MULTI_HOP
     nrf.setMode(Nrf24l01::SLEEP);
     
     int e=measuredFrameStart-computedFrameStart;
@@ -125,6 +131,7 @@ bool FlooderSyncNode::synchronize()
             return true;
         }
         ve.setWindow(2*receiverWindow);
+        measuredFrameStart=computedFrameStart;
         e=0;
         //And leave clockCorrection as the previously computed value
     } else {
@@ -133,10 +140,10 @@ bool FlooderSyncNode::synchronize()
         ve.update(e);
     }
     receiverWindow=max<int>(min<int>(ve.window(),w),minw);
-
-    printf("e=%d u=%d w=%d%s\n",e,clockCorrection,receiverWindow,timeout ? " (miss)" : "");
-
+    measuredFrameStart-=hop*retransmitDelta; //Correct frame start considering hops
     computedFrameStart+=nominalPeriod+clockCorrection;
+
+    printf("e=%d u=%d w=%d%s\n",e,clockCorrection,receiverWindow,timeout ? " (miss)" : "");    
     return false;
 }
 
@@ -146,6 +153,7 @@ void FlooderSyncNode::resynchronize()
     nrf.setMode(Nrf24l01::RX);
     timer.initTimeoutTimer(0);
     nrf.startReceiving();
+    miosix::ledOn();
     for(;;)
     {
         timer.waitForPacketOrTimeout();
@@ -153,8 +161,82 @@ void FlooderSyncNode::resynchronize()
         computedFrameStart=measuredFrameStart+nominalPeriod;
         char packet[1];
         nrf.readPacket(packet);
-        if(packet[0]==0x00) break;
+        if(packet[0]==hop) break;
+        miosix::ledOff();
     }
     nrf.setMode(Nrf24l01::SLEEP);
     missPackets=0;
+}
+
+void FlooderSyncNode::rebroadcast()
+{
+    rtc.setAbsoluteWakeup(measuredFrameStart+retransmitDelta
+        -receiverTurnOn-smallPacketTime);
+    nrf.setMode(Nrf24l01::TX);
+    timer.initTimeoutTimer(0);
+    rtc.wait();
+    miosix::ledOn();
+    static const char packet[]={hop+1};
+    nrf.writePacket(packet);
+    timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
+    miosix::ledOff(); //Falling edge signals synchronization packet sent
+    nrf.endWritePacket();
+}
+
+//
+// class OptimizedFlopsync
+//
+
+OptimizedFlopsync::OptimizedFlopsync() { reset(); }
+
+pair<short,unsigned char> OptimizedFlopsync::computeCorrection(short e)
+{
+    //u(k)=u(k-1)+1.25*e(k)-e(k-1)
+    short u=uo+5*e-4*eo;
+
+    //The controller output needs to be quantized, but instead of simply
+    //doing u/4 which rounds towards the lowest number use a slightly more
+    //advanced algorithm to round towards the closest one, as when the error
+    //is close to +/-1 timer tick this makes a significant difference.
+    short sign=u>=0 ? 1 : -1;
+    short uquant=(u+2*sign)/4;
+
+    //Adaptive state quantization, while the output always needs to be
+    //quantized, the state is only quantized if the error is zero
+    uo= e==0 ? 4*uquant : u;
+    eo=e;
+    
+    //Update variance computation
+    sum+=e*fp;
+    squareSum+=e*e*fp;
+    if(++count>=numSamples)
+    {
+        sum/=numSamples;
+        var=squareSum/numSamples-sum*sum/fp;
+        var*=3; //Set the window size to three sigma
+        var/=fp;
+        var=max<int>(min<int>(var,w),minw); //Clamp between min and max window
+        sum=squareSum=count=0;
+    }
+
+    return make_pair(uquant,var);
+}
+
+pair<short,unsigned char> OptimizedFlopsync::lostPacket()
+{
+    //Double receiver window on packet loss, still clamped to max value
+    var=min<int>(2*var,w);
+    
+    //Error measure is unavailable if the packet is lost, the best we can
+    //do is to reuse the past correction value
+    short sign=uo>=0 ? 1 : -1;
+    short uquant=(uo+2*sign)/4;
+    
+    return make_pair(uquant,var);
+}
+
+void OptimizedFlopsync::reset()
+{
+    uo=eo=sum=squareSum=count=0;
+    var=w;
 }

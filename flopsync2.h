@@ -40,7 +40,7 @@ class FloodingScheme
 {
 public:
     /**
-     * Needs to be periodically called to send the synchronizzation packet.
+     * Needs to be periodically called to send the synchronization packet.
      * This member function sleeps till it's time to send the packet, then
      * sends it and returns. If this function isn't called again within
      * nominalPeriod, the synchronization won't work.
@@ -57,18 +57,51 @@ public:
      * \return The (local) time when the current frame has started.
      */
     virtual unsigned int getFrameStart() const=0;
+    
+    /**
+     * \return The clock correction computed by the synchronization controller
+     */
+    virtual unsigned int getClockCorrection() const;
 };
 
 /**
- * Flopsync implementation for the root node
+ * Base class from which synchronization schemes derive
+ */
+class Synchronizer
+{
+public:
+    /**
+     * Compute clock correction and receiver window given synchronization error
+     * \param e synchronization error
+     * \return a pair with the clock correction, and the receiver window
+     */
+    virtual std::pair<short,unsigned char> computeCorrection(short e)=0;
+    
+    /**
+     * Compute clock correction and receiver window when a packet is lost
+     * \return a pair with the clock correction, and the receiver window
+     */
+    virtual std::pair<short,unsigned char> lostPacket()=0;
+    
+    /**
+     * Used after a resynchronization to reset the controller state
+     */
+    virtual void reset()=0;
+};
+
+/**
+ * A very simple flooding scheme, root node implementation
  */
 class FlooderRootNode : public FloodingScheme
 {
 public:
+    /**
+     * Constructor
+     */
     FlooderRootNode();
 
     /**
-     * Needs to be periodically called to send the synchronizzation packet.
+     * Needs to be periodically called to send the synchronization packet.
      * This member function sleeps till it's time to send the packet, then
      * sends it and returns. If this function isn't called again within
      * nominalPeriod, the synchronization won't work.
@@ -89,14 +122,22 @@ private:
     unsigned int wakeupTime;
 };
 
-
+/**
+ * A very simple flooding scheme, synchronized node implementation
+ */
 class FlooderSyncNode : public FloodingScheme
 {
 public:
-    FlooderSyncNode();
+    /**
+     * Constructor
+     * \param hop specifies to which hop we need to attach. 0 is the root node,
+     * 1 is the first hop, ... This allows to force a multi hop network even
+     * though nodes are in radio range.
+     */
+    FlooderSyncNode(unsigned char hop=0);
 
     /**
-     * Needs to be periodically called to send the synchronizzation packet.
+     * Needs to be periodically called to send the synchronization packet.
      * This member function sleeps till it's time to send the packet, then
      * sends it and returns. If this function isn't called again within
      * nominalPeriod, the synchronization won't work.
@@ -113,8 +154,18 @@ public:
      * \return The (local) time when the current frame has started.
      */
     unsigned int getFrameStart() const { return measuredFrameStart; }
+    
+    /**
+     * \return The clock correction computed by the synchronization controller
+     */
+    virtual unsigned int getClockCorrection() const { return clockCorrection; }
 
-private:    
+private:  
+    /**
+     * Resend the synchronization packet to let other hops synchronize
+     */
+    void rebroadcast();
+    
     Rtc& rtc;
     Nrf24l01& nrf;
     AuxiliaryTimer& timer;
@@ -123,10 +174,49 @@ private:
     short clockCorrection;
     unsigned char receiverWindow; 
     unsigned char missPackets;
+    unsigned char hop;
     VarianceEstimator ve;
     Controller4 controller;
     
     static const unsigned char maxMissPackets=3;
+};
+
+class OptimizedFlopsync : public Synchronizer
+{
+public:
+    /**
+     * Constructor
+     */
+    OptimizedFlopsync();
+    
+    /**
+     * Compute clock correction and receiver window given synchronization error
+     * \param e synchronization error
+     * \return a pair with the clock correction, and the receiver window
+     */
+    virtual std::pair<short,unsigned char> computeCorrection(short e);
+    
+    /**
+     * Compute clock correction and receiver window when a packet is lost
+     * \return a pair with the clock correction, and the receiver window
+     */
+    virtual std::pair<short,unsigned char> lostPacket();
+    
+    /**
+     * Used after a resynchronization to reset the controller state
+     */
+    virtual void reset();
+    
+private:
+    short uo;
+    short eo;
+    int sum;
+    int squareSum;
+    unsigned char count;
+    unsigned char var;
+    
+    static const int numSamples=64;
+    static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
 };
 
 #endif //FLOPSYNC2_H
