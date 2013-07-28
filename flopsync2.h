@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012, 2013 by Terraneo Federico                         *
+ *   Copyright (C)  2013 by Terraneo Federico                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -60,7 +60,7 @@ public:
     /**
      * \return The clock correction computed by the synchronization controller
      */
-    virtual unsigned int getClockCorrection() const;
+    virtual int getClockCorrection() const;
 };
 
 /**
@@ -129,12 +129,12 @@ class FlooderSyncNode : public FloodingScheme
 public:
     /**
      * Constructor
-     * \param synchronizer pointer to synchronizer. The caller owns the pointer.
+     * \param synchronizer pointer to synchronizer.
      * \param hop specifies to which hop we need to attach. 0 is the root node,
      * 1 is the first hop, ... This allows to force a multi hop network even
      * though nodes are in radio range.
      */
-    FlooderSyncNode(Synchronizer *synchronizer, unsigned char hop=0);
+    FlooderSyncNode(Synchronizer& synchronizer, unsigned char hop=0);
 
     /**
      * Needs to be periodically called to send the synchronization packet.
@@ -158,7 +158,7 @@ public:
     /**
      * \return The clock correction computed by the synchronization controller
      */
-    virtual unsigned int getClockCorrection() const { return clockCorrection; }
+    virtual int getClockCorrection() const { return clockCorrection; }
 
 private:  
     /**
@@ -169,7 +169,7 @@ private:
     Rtc& rtc;
     Nrf24l01& nrf;
     AuxiliaryTimer& timer;
-    Synchronizer *synchronizer;
+    Synchronizer& synchronizer;
     unsigned int measuredFrameStart;
     unsigned int computedFrameStart;
     short clockCorrection;
@@ -222,5 +222,19 @@ private:
     static const int numSamples=64; //Number of samples for variance compuation
     static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
 };
+
+/**
+ * This function concerns frame time, that is, a time that starts from 0 at
+ * every frameStart. It converts from root time, that is the same time
+ * of the root node to local time, that is the time of the local clock. It
+ * can be used to send a packet to the root node at the the frame time it
+ * expects it.
+ * \param flood flooding scheme, used to retrieve clockCorrection
+ * \param root a frame time (0 to nominalPeriod) referenced to the root node
+ * \return the local time time corresponding to the given root time
+ */
+unsigned int root2localFrameTime(const FloodingScheme& flood, unsigned int root);
+
+
 
 #endif //FLOPSYNC2_H

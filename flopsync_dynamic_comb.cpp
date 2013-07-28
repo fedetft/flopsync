@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012, 2013 by Terraneo Federico                         *
+ *   Copyright (C) 2013 by Terraneo Federico                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -26,11 +26,16 @@
  ***************************************************************************/
 
 #include <cstdio>
+#include <cstring>
+#include <miosix.h>
 #include "drivers/nrf24l01.h"
+#include "drivers/rtc.h"
 #include "protocol_constants.h"
 #include "flopsync2.h"
 
 using namespace std;
+
+typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
 
 int main()
 {
@@ -41,9 +46,41 @@ int main()
     nrf.setFrequency(2450);
     OptimizedFlopsync flopsync;
     #ifndef SECOND_HOP
-    FlooderSyncNode sync(&flopsync);
+    FlooderSyncNode flooder(flopsync);
     #else //SECOND_HOP
-    FlooderSyncNode sync(&flopsync,1);
+    FlooderSyncNode flooder(flopsync,1);
     #endif //SECOND_HOP
-    for(;;) if(sync.synchronize()) sync.resynchronize();
+    
+    Rtc& rtc=Rtc::instance();
+    AuxiliaryTimer& timer=AuxiliaryTimer::instance();
+    blueLed::mode(miosix::Mode::OUTPUT);
+    
+    for(;;)
+    {
+        if(flooder.synchronize()) flooder.resynchronize();
+        
+        unsigned int frameStart=flooder.getFrameStart();
+        unsigned int start;
+        //Node1 gets even comb slots, node2 even slots
+        start=strstr(experimentName,"node1") ? combSpacing : 2*combSpacing;
+        for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=2*combSpacing)
+        {
+            unsigned int wakeupTime=frameStart+root2localFrameTime(flooder,i)-
+                (jitterAbsorption+receiverTurnOn+smallPacketTime);
+            rtc.setAbsoluteWakeup(wakeupTime);
+            rtc.sleepAndWait();
+            blueLed::high();
+            rtc.setAbsoluteWakeup(wakeupTime+jitterAbsorption);
+            nrf.setMode(Nrf24l01::TX);
+            nrf.setPacketLength(1);
+            timer.initTimeoutTimer(0);
+            rtc.wait();
+            static const char packet[]={0xff};
+            nrf.writePacket(packet);
+            timer.waitForPacketOrTimeout();
+            blueLed::low();
+            nrf.endWritePacket();
+            nrf.setMode(Nrf24l01::SLEEP);
+        }
+    }
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012 by Terraneo Federico                               *
+ *   Copyright (C) 2012, 2013 by Terraneo Federico                         *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -95,10 +95,13 @@ struct Packet
     unsigned short misspackets;
     unsigned short unsynctime;
     unsigned short sequence;
-    unsigned short check;	
+    unsigned short check;
 };
 
 //When to send the synchronization quality statistics packet
 const unsigned int txtime=static_cast<int>(30*16384+0.5f);
+
+//Comb spacing, for intra-frame error measure
+const unsigned int combSpacing=static_cast<int>(0.5f*16384+0.5f);
 
 #endif //PROTOCOL_CONSTANTS_H

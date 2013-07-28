@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012, 2013 by Terraneo Federico                         *
+ *   Copyright (C)  2013 by Terraneo Federico                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,6 +27,7 @@
 
 #include "flopsync2.h"
 #include <cstdio>
+#include <cassert>
 #include <miosix.h>
 #include "protocol_constants.h"
 
@@ -38,7 +39,7 @@ using namespace std;
 
 void FloodingScheme::resynchronize() {}
 
-unsigned int FloodingScheme::getClockCorrection() const { return 0; }
+int FloodingScheme::getClockCorrection() const { return 0; }
 
 //
 // class FlooderRootNode
@@ -50,7 +51,7 @@ FlooderRootNode::FlooderRootNode() : rtc(Rtc::instance()),
 
 bool FlooderRootNode::synchronize()
 {
-    //TODO: check that wakeupTime hasn't passed
+    assert(static_cast<int>(rtc.getValue()-wakeupTime)<0);
     rtc.setAbsoluteWakeup(wakeupTime);
     rtc.sleepAndWait();
     rtc.setAbsoluteWakeup(wakeupTime+jitterAbsorption);
@@ -68,7 +69,7 @@ bool FlooderRootNode::synchronize()
     frameStart=rtc.getValue();
     miosix::ledOff(); //Falling edge signals synchronization packet sent
     nrf.endWritePacket();
-    nrf.setMode(Nrf24l01::SLEEP);    
+    nrf.setMode(Nrf24l01::SLEEP);
     wakeupTime+=nominalPeriod;
     return false; //Root node does not desynchronize
 }
@@ -77,7 +78,7 @@ bool FlooderRootNode::synchronize()
 // class FlooderSyncNode
 //
 
-FlooderSyncNode::FlooderSyncNode(Synchronizer *synchronizer, unsigned char hop)
+FlooderSyncNode::FlooderSyncNode(Synchronizer& synchronizer, unsigned char hop)
       : rtc(Rtc::instance()), nrf(Nrf24l01::instance()),
         timer(AuxiliaryTimer::instance()), synchronizer(synchronizer),
         measuredFrameStart(0), computedFrameStart(0), clockCorrection(0),
@@ -87,9 +88,9 @@ bool FlooderSyncNode::synchronize()
 {
     if(missPackets>maxMissPackets) return true;
     
-    //TODO: check that computedFrameStart hasn't passed
     unsigned int wakeupTime=computedFrameStart-
         (jitterAbsorption+receiverTurnOn+receiverWindow+smallPacketTime);
+    assert(static_cast<int>(rtc.getValue()-wakeupTime)<0);
     rtc.setAbsoluteWakeup(wakeupTime);
     rtc.sleepAndWait();
     rtc.setAbsoluteWakeup(wakeupTime+jitterAbsorption);
@@ -131,10 +132,10 @@ bool FlooderSyncNode::synchronize()
             puts("Lost sync");
             return true;
         }
-        r=synchronizer->lostPacket();
+        r=synchronizer.lostPacket();
         measuredFrameStart=computedFrameStart;
     } else {
-        r=synchronizer->computeCorrection(measuredFrameStart-computedFrameStart);
+        r=synchronizer.computeCorrection(measuredFrameStart-computedFrameStart);
         missPackets=0;
     }
     clockCorrection=r.first;
@@ -164,10 +165,10 @@ void FlooderSyncNode::resynchronize()
         char packet[1];
         nrf.readPacket(packet);
         if(packet[0]==hop) break;
-        miosix::ledOff();
     }
+    miosix::ledOff();
     nrf.setMode(Nrf24l01::SLEEP);
-    synchronizer->reset();
+    synchronizer.reset();
     missPackets=0;
 }
 
@@ -242,4 +243,11 @@ void OptimizedFlopsync::reset()
 {
     uo=eo=sum=squareSum=count=0;
     var=w;
+}
+
+unsigned int root2localFrameTime(const FloodingScheme& flood, unsigned int root)
+{
+    int signedRoot=root; //Conversion unsigned to signed is *required*
+    int period=nominalPeriod;
+    return max(0,signedRoot+flood.getClockCorrection()*signedRoot/period);
 }

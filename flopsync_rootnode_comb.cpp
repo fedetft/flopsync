@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012, 2013 by Terraneo Federico                         *
+ *   Copyright (C) 2013 by Terraneo Federico                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,6 +27,7 @@
 
 #include <cstdio>
 #include "drivers/nrf24l01.h"
+#include "drivers/rtc.h"
 #include "protocol_constants.h"
 #include "flopsync2.h"
 
@@ -40,5 +41,42 @@ int main()
     nrf.setAddress(address);
     nrf.setFrequency(2450);
     FlooderRootNode flooder;
-    for(;;) flooder.synchronize();
+    
+    Rtc& rtc=Rtc::instance();
+    AuxiliaryTimer& timer=AuxiliaryTimer::instance();
+    
+    for(;;)
+    {
+        flooder.synchronize();
+        
+        unsigned int frameStart=flooder.getFrameStart();
+        for(unsigned int i=combSpacing,j=0;i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
+        {
+            unsigned int wakeupTime=frameStart+i-
+                (jitterAbsorption+receiverTurnOn+w+smallPacketTime);
+            rtc.setAbsoluteWakeup(wakeupTime);
+            rtc.sleepAndWait();
+            rtc.setAbsoluteWakeup(wakeupTime+jitterAbsorption);
+            nrf.setMode(Nrf24l01::RX);
+            nrf.setPacketLength(1);
+            rtc.wait();
+            nrf.startReceiving();
+            timer.initTimeoutTimer(receiverTurnOn+2*w+smallPacketTime);
+            bool timeout;
+            unsigned int measuredTime;
+            for(;;)
+            {
+                timeout=timer.waitForPacketOrTimeout();
+                measuredTime=rtc.getValue();
+                if(timeout) break;
+                char packet[1];
+                nrf.readPacket(packet);
+                if(packet[0]==0xff) break;
+            }
+            timer.stopTimeoutTimer();
+            nrf.setMode(Nrf24l01::SLEEP);
+            if(timeout) printf("node%d timeout\n",(j & 1)+1);
+            else printf("node%d.e=%d\n",(j & 1)+1,measuredTime-(frameStart+i));
+        }
+    }
 }
