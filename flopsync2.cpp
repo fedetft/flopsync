@@ -247,6 +247,7 @@ int OptimizedFlopsync::getClockCorrection() const
 
 unsigned int root2localFrameTime(const OptimizedFlopsync& fs, unsigned int root)
 {
+    //TODO: round towards the closest!
     int signedRoot=root; //Conversion unsigned to signed is *required*
     int period=nominalPeriod;
     return max(0,signedRoot+fs.getClockCorrection()*signedRoot/period);
