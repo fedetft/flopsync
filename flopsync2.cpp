@@ -29,7 +29,6 @@
 #include <cstdio>
 #include <cassert>
 #include <miosix.h>
-#include "protocol_constants.h"
 
 using namespace std;
 
@@ -56,12 +55,12 @@ bool FlooderRootNode::synchronize()
     nrf.setMode(Nrf24l01::TX);
     nrf.setPacketLength(1);
     timer.initTimeoutTimer(0);
+    const char packet[]={0x00};
     // To minimize jitter in the packet transmission time caused by the
     // variable time sleepAndWait() takes to restart the STM32 PLL an
     // additional wait is done here to absorb the jitter.
     rtc.wait();
-    miosix::ledOn();
-    static const char packet[]={0x00};
+    miosix::ledOn(); 
     nrf.writePacket(packet);
     timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
     frameStart=rtc.getValue();
@@ -79,13 +78,14 @@ bool FlooderRootNode::synchronize()
 FlooderSyncNode::FlooderSyncNode(Synchronizer& synchronizer, unsigned char hop)
       : rtc(Rtc::instance()), nrf(Nrf24l01::instance()),
         timer(AuxiliaryTimer::instance()), synchronizer(synchronizer),
-        measuredFrameStart(0), computedFrameStart(0),
+        measuredFrameStart(0), computedFrameStart(0), clockCorrection(0),
         receiverWindow(w), missPackets(maxMissPackets+1), hop(hop) {}
 
 bool FlooderSyncNode::synchronize()
 {
     if(missPackets>maxMissPackets) return true;
     
+    computedFrameStart+=nominalPeriod+clockCorrection;
     unsigned int wakeupTime=computedFrameStart-
         (jitterAbsorption+receiverTurnOn+receiverWindow+smallPacketTime);
     assert(static_cast<int>(rtc.getValue()-wakeupTime)<0);
@@ -136,7 +136,7 @@ bool FlooderSyncNode::synchronize()
         r=synchronizer.computeCorrection(measuredFrameStart-computedFrameStart);
         missPackets=0;
     }
-    short clockCorrection=r.first;
+    clockCorrection=r.first;
     receiverWindow=r.second;
     
     printf("e=%d u=%d w=%d%s\n",measuredFrameStart-computedFrameStart,
@@ -144,7 +144,6 @@ bool FlooderSyncNode::synchronize()
     
     //Correct frame start considering hops
     measuredFrameStart-=hop*retransmitDelta;
-    computedFrameStart+=nominalPeriod+clockCorrection;
     return false;
 }
 
@@ -159,7 +158,7 @@ void FlooderSyncNode::resynchronize()
     {
         timer.waitForPacketOrTimeout();
         measuredFrameStart=rtc.getValue();
-        computedFrameStart=measuredFrameStart+nominalPeriod;
+        computedFrameStart=measuredFrameStart;
         char packet[1];
         nrf.readPacket(packet);
         if(packet[0]==hop) break;
@@ -167,18 +166,20 @@ void FlooderSyncNode::resynchronize()
     miosix::ledOff();
     nrf.setMode(Nrf24l01::SLEEP);
     synchronizer.reset();
+    clockCorrection=0;
+    receiverWindow=w;
     missPackets=0;
 }
 
 void FlooderSyncNode::rebroadcast()
 {
-    rtc.setAbsoluteWakeup(measuredFrameStart+retransmitDelta
-        -receiverTurnOn-smallPacketTime);
+//     rtc.setAbsoluteWakeup(measuredFrameStart+retransmitDelta
+//         -(receiverTurnOn+smallPacketTime+spiPktSend));
     nrf.setMode(Nrf24l01::TX);
     timer.initTimeoutTimer(0);
-    rtc.wait();
+    const char packet[]={hop+1};
+//     rtc.wait();
     miosix::ledOn();
-    static const char packet[]={hop+1};
     nrf.writePacket(packet);
     timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
     miosix::ledOff(); //Falling edge signals synchronization packet sent
@@ -202,7 +203,7 @@ pair<short,unsigned char> OptimizedFlopsync::computeCorrection(short e)
     //is close to +/-1 timer tick this makes a significant difference.
     short sign=u>=0 ? 1 : -1;
     short uquant=(u+2*sign)/4;
-
+    
     //Adaptive state quantization, while the output always needs to be
     //quantized, the state is only quantized if the error is zero
     uo= e==0 ? 4*uquant : u;
@@ -247,8 +248,10 @@ int OptimizedFlopsync::getClockCorrection() const
 
 unsigned int root2localFrameTime(const OptimizedFlopsync& fs, unsigned int root)
 {
-    //TODO: round towards the closest!
     int signedRoot=root; //Conversion unsigned to signed is *required*
     int period=nominalPeriod;
-    return max(0,signedRoot+fs.getClockCorrection()*signedRoot/period);
+    int correction=fs.getClockCorrection()*signedRoot;
+    int sign=correction>=0 ? 1 : -1; //Round towards closest
+    int dividedCorrection=(correction+sign*period/2)/period;
+    return max(0,signedRoot+dividedCorrection);
 }

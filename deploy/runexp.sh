@@ -10,11 +10,13 @@ echo 'Flashing boards...'
 flashboard_keep 0 node0.bin
 flashboard_keep 1 node1.bin
 flashboard_keep 2 node2.bin
+flashboard_keep 3 node3.bin
 
 echo 'Starting loggers...'
 seriallogger --port=$BOARD0 --baudrate=19200 --file=node0.txt &
 seriallogger --port=$BOARD1 --baudrate=19200 --file=node1.txt &
 seriallogger --port=$BOARD2 --baudrate=19200 --file=node2.txt &
+seriallogger --port=$BOARD3 --baudrate=19200 --file=node3.txt &
 
 echo 'Booting boards...'
 releaseboards

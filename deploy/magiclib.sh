@@ -6,6 +6,7 @@
 BOARD0=/dev/ttyUSB0
 BOARD1=/dev/ttyUSB1
 BOARD2=/dev/ttyUSB2
+BOARD3=/dev/ttyUSB3
 
 # $1=serial port to flush
 flushbuffer() {
@@ -27,6 +28,8 @@ flashboard() {
 			BOARD=$BOARD1;;
 		2)
 			BOARD=$BOARD2;;
+		3)
+			BOARD=$BOARD3;;
 		*)
 			return;;
 	esac
@@ -44,6 +47,8 @@ flashboard_keep() {
 			BOARD=$BOARD1;;
 		2)
 			BOARD=$BOARD2;;
+		3)
+			BOARD=$BOARD3;;
 		*)
 			return;;
 	esac

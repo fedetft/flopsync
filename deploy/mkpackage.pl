@@ -18,7 +18,8 @@ close($file);
 my @configkeys=('experiment_name','experiment_time','sync_period',
 				'relative_clock','interactive_rootnode','event_timestamping',
 				'node0_file','node0_second_hop','node1_file',
-				'node1_second_hop','node2_file','node2_second_hop');
+				'node1_second_hop','node2_file','node2_second_hop',
+				'node3_file','node3_second_hop');
 @configkeys=sort(@configkeys);
 my @sortedconfig=sort(keys(%config));
 #  If arrays not equal, some coniguration parameters are missing
@@ -111,6 +112,7 @@ sub build
 build($config{'node0_file'},'node0.bin',$config{'node0_second_hop'});
 build($config{'node1_file'},'node1.bin',$config{'node1_second_hop'});
 build($config{'node2_file'},'node2.bin',$config{'node2_second_hop'});
+build($config{'node3_file'},'node3.bin',$config{'node3_second_hop'});
 
 # Fixup runexp.sh to set the experimen duration
 open(my $infile, '<', 'deploy/runexp.sh');

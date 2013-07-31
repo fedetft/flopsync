@@ -59,8 +59,10 @@ const unsigned int retransmitPoint=static_cast<int>(0.333f*nominalPeriod+0.5f);
 const unsigned int retransmitPoint=static_cast<int>(0.667f*nominalPeriod+0.5f);
 #endif //SECOND_HOP
 
-//Retransmit time for flopsync2 "Flooder" flooding scheme (300us)
-const unsigned int retransmitDelta=static_cast<int>(0.0003f*16384+0.5f);
+//Retransmit time for flopsync2 "Flooder" flooding scheme (252us)
+//Note that this is the time needed to rebroadcast a packet as soon as it's
+//received, measured with an oscilloscope
+const unsigned int retransmitDelta=static_cast<int>(0.000252f*16384+0.5f);
 
 //Time for STM32 PLL startup (500us)
 const unsigned int pllBoot=static_cast<int>(0.0005f*16384+0.5f);

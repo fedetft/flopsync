@@ -31,6 +31,7 @@
 #include <utility>
 #include "drivers/nrf24l01.h"
 #include "drivers/rtc.h"
+#include "protocol_constants.h"
 
 /**
  * Base class from which flooding schemes derive
@@ -151,6 +152,15 @@ public:
     unsigned int getFrameStart() const { return measuredFrameStart; }
     
     /**
+     * \return The (local) time when the current frame has started.
+     */
+    unsigned int getComputedFrameStart() const
+    {
+        //Correct frame start considering hops
+        return computedFrameStart-hop*retransmitDelta;
+    }
+    
+    /**
      * \return true if in this frame the sync packet was not received
      */
     bool isPacketMissed() const { return missPackets>0; }
@@ -167,6 +177,7 @@ private:
     Synchronizer& synchronizer;
     unsigned int measuredFrameStart;
     unsigned int computedFrameStart;
+    short clockCorrection;
     unsigned char receiverWindow; 
     unsigned char missPackets;
     unsigned char hop;

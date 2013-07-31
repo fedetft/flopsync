@@ -30,11 +30,13 @@
 #include "drivers/rtc.h"
 #include "protocol_constants.h"
 #include "flopsync2.h"
+#include "low_power_setup.h"
 
 using namespace std;
 
 int main()
 {
+    lowPowerSetup();
     puts(experimentName);
     const unsigned char address[]={0xab, 0xcd, 0xef};
     Nrf24l01& nrf=Nrf24l01::instance();
@@ -76,11 +78,11 @@ int main()
             }
             timer.stopTimeoutTimer();
             nrf.setMode(Nrf24l01::SLEEP);
-            if(timeout) printf("node%d timeout\n",(j & 1)+1);
+            if(timeout) printf("node%d timeout\n",(j % 3)+1);
             else {
-                if(j<2) printf("e=%d u=%d w=%d%s\n",
+                if(j<3) printf("e=%d u=%d w=%d%s\n",
                                packet[0],packet[1],packet[2],packet[3] ? "(miss)" : "");
-                printf("node%d.e=%d\n",(j & 1)+1,measuredTime-(frameStart+i));
+                printf("node%d.e=%d\n",(j % 3)+1,measuredTime-(frameStart+i));
             }
         }
     }
