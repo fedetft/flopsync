@@ -169,6 +169,8 @@ void FlooderSyncNode::resynchronize()
     clockCorrection=0;
     receiverWindow=w;
     missPackets=0;
+    //Correct frame start considering hops
+    measuredFrameStart-=hop*retransmitDelta;
 }
 
 void FlooderSyncNode::rebroadcast()
@@ -194,19 +196,20 @@ OptimizedFlopsync::OptimizedFlopsync() { reset(); }
 
 pair<short,unsigned char> OptimizedFlopsync::computeCorrection(short e)
 {
-    //u(k)=u(k-1)+1.25*e(k)-e(k-1) with values kept multiplied by 4
-    short u=uo+5*e-4*eo;
+    //u(k)=u(k-1)+1.46875*e(k)-e(k-1) with values kept multiplied by 32
+    short u=uo+47*e-32*eo;
 
     //The controller output needs to be quantized, but instead of simply
     //doing u/4 which rounds towards the lowest number use a slightly more
     //advanced algorithm to round towards the closest one, as when the error
     //is close to +/-1 timer tick this makes a significant difference.
     short sign=u>=0 ? 1 : -1;
-    short uquant=(u+2*sign)/4;
+    short uquant=(u+16*sign)/32;
     
     //Adaptive state quantization, while the output always needs to be
     //quantized, the state is only quantized if the error is zero
-    uo= e==0 ? 4*uquant : u;
+    uo= e==0 ? 32*uquant : u;
+    uoo=uquant;
     eo=e;
     
     //Update variance computation
@@ -234,7 +237,7 @@ pair<short,unsigned char> OptimizedFlopsync::lostPacket()
 
 void OptimizedFlopsync::reset()
 {
-    uo=eo=sum=squareSum=count=0;
+    uo=uoo=eo=sum=squareSum=count=0;
     var=w;
 }
 
@@ -243,15 +246,33 @@ int OptimizedFlopsync::getClockCorrection() const
     //Error measure is unavailable if the packet is lost, the best we can
     //do is to reuse the past correction value
     short sign=uo>=0 ? 1 : -1;
-    return (uo+2*sign)/4;
+    return (uo+16*sign)/32;
 }
 
-unsigned int root2localFrameTime(const OptimizedFlopsync& fs, unsigned int root)
+//
+// class MonotonicClock
+//
+
+unsigned int MonotonicClock::rootFrame2localAbsolute(unsigned int root)
 {
     int signedRoot=root; //Conversion unsigned to signed is *required*
     int period=nominalPeriod;
-    int correction=fs.getClockCorrection()*signedRoot;
+    int correction=sync.getClockCorrection()*signedRoot;
     int sign=correction>=0 ? 1 : -1; //Round towards closest
     int dividedCorrection=(correction+sign*period/2)/period;
-    return max(0,signedRoot+dividedCorrection);
+    return flood.getComputedFrameStart()+max(0,signedRoot+dividedCorrection);
+}
+
+//
+// class NonMonotonicClock
+//
+
+unsigned int NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
+{
+    int signedRoot=root; //Conversion unsigned to signed is *required*
+    int period=nominalPeriod;
+    int correction=(sync.getPreviousClockCorrection()-sync.getSyncError())*signedRoot;
+    int sign=correction>=0 ? 1 : -1; //Round towards closest
+    int dividedCorrection=(correction+sign*period/2)/period;
+    return flood.getMeasuredFrameStart()+max(0,signedRoot+dividedCorrection);
 }

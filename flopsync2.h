@@ -40,9 +40,9 @@ class FloodingScheme
 {
 public:
     /**
-     * Needs to be periodically called to send the synchronization packet.
-     * This member function sleeps till it's time to send the packet, then
-     * sends it and returns. If this function isn't called again within
+     * Needs to be periodically called to send/receive the synchronization
+     * packet. This member function sleeps till it's time to send the packet,
+     * then sends it and returns. If this function isn't called again within
      * nominalPeriod, the synchronization won't work.
      * \return true if the node desynchronized
      */
@@ -54,9 +54,16 @@ public:
     virtual void resynchronize();
     
     /**
-     * \return The (local) time when the current frame has started.
+     * \return The (local) time when the synchronization packet was
+     * actually received
      */
-    virtual unsigned int getFrameStart() const=0;
+    virtual unsigned int getMeasuredFrameStart() const=0;
+    
+    /**
+     * \return The (local) time when the synchronization packet was
+     * expected to be received
+     */
+    virtual unsigned int getComputedFrameStart() const=0;
 };
 
 /**
@@ -82,6 +89,43 @@ public:
      * Used after a resynchronization to reset the controller state
      */
     virtual void reset()=0;
+    
+    /**
+     * \return the synchronization error e(k)
+     */
+    virtual int getSyncError() const=0;
+    
+    /**
+     * \return the clock correction u(k)
+     */
+    virtual int getClockCorrection() const=0;
+    
+    /**
+     * \return the previous clock correction u(k-1)
+     */
+    virtual int getPreviousClockCorrection() const=0;
+    
+    /**
+     * \return the receiver window (w)
+     */
+    virtual int getReceiverWindow() const=0;
+};
+
+/**
+ * Base class from which clocks derive
+ */
+class Clock
+{
+public:
+    /**
+     * This member function converts between root frame time, that is, a time
+     * that starts goes from 0 to nominalPeriod-1 and is referenced to the root
+     * node, to absolute time referenced to the local node time. It can be used
+     * to send a packet to the root node at the the frame time it expects it.
+     * \param root a frame time (0 to nominalPeriod-1) referenced to the root node
+     * \return the local absolute time time corresponding to the given root time
+     */
+    virtual unsigned int rootFrame2localAbsolute(unsigned int root)=0;
 };
 
 /**
@@ -105,9 +149,16 @@ public:
     bool synchronize();
     
     /**
-     * \return The (local) time when the current frame has started.
+     * \return The (local) time when the synchronization packet was
+     * actually received
      */
-    unsigned int getFrameStart() const { return frameStart; }
+    unsigned int getMeasuredFrameStart() const { return frameStart; }
+    
+    /**
+     * \return The (local) time when the synchronization packet was
+     * expected to be received
+     */
+    unsigned int getComputedFrameStart() const { return frameStart; }
 
 private:
     Rtc& rtc;
@@ -147,12 +198,14 @@ public:
     void resynchronize();
     
     /**
-     * \return The (local) time when the current frame has started.
+     * \return The (local) time when the synchronization packet was
+     * actually received
      */
-    unsigned int getFrameStart() const { return measuredFrameStart; }
+    unsigned int getMeasuredFrameStart() const { return measuredFrameStart; }
     
     /**
-     * \return The (local) time when the current frame has started.
+     * \return The (local) time when the synchronization packet was
+     * expected to be received
      */
     unsigned int getComputedFrameStart() const
     {
@@ -217,14 +270,19 @@ public:
     void reset();
     
     /**
-     * \return the synchronization error (e)
+     * \return the synchronization error e(k)
      */
     int getSyncError() const { return eo; }
     
     /**
-     * \return the clock correction (u)
+     * \return the clock correction u(k)
      */
     int getClockCorrection() const;
+    
+    /**
+     * \return the previous clock correction u(k-1)
+     */
+    int getPreviousClockCorrection() const { return uoo; }
     
     /**
      * \return the receiver window (w)
@@ -233,6 +291,7 @@ public:
     
 private:
     short uo;
+    short uoo; //Used by non-monotonic clock
     short eo;
     int sum;
     int squareSum;
@@ -244,17 +303,61 @@ private:
 };
 
 /**
- * This function concerns frame time, that is, a time that starts from 0 at
- * every frameStart. It converts from root time, that is the same time
- * of the root node to local time, that is the time of the local clock. It
- * can be used to send a packet to the root node at the the frame time it
- * expects it.
- * \param fs flopsync controller, used to retrieve clockCorrection
- * \param root a frame time (0 to nominalPeriod) referenced to the root node
- * \return the local time time corresponding to the given root time
+ * A clock that is guaranteed to be monotonic
  */
-unsigned int root2localFrameTime(const OptimizedFlopsync& fs, unsigned int root);
+class MonotonicClock : public Clock
+{
+public:
+    /**
+     * Constructor
+     * \param fs the flopsynch controller
+     * \param flood the flooding scheme
+     */
+    MonotonicClock(const Synchronizer& sync, const FloodingScheme& flood)
+        : sync(sync), flood(flood) {}
+    
+    /**
+     * This member function converts between root frame time, that is, a time
+     * that starts goes from 0 to nominalPeriod-1 and is referenced to the root
+     * node, to absolute time referenced to the local node time. It can be used
+     * to send a packet to the root node at the the frame time it expects it.
+     * \param root a frame time (0 to nominalPeriod-1) referenced to the root node
+     * \return the local absolute time time corresponding to the given root time
+     */
+    unsigned int rootFrame2localAbsolute(unsigned int root);
+    
+private:
+    const Synchronizer& sync;
+    const FloodingScheme& flood;
+};
 
-
+/**
+ * A non-monotonic clock
+ */
+class NonMonotonicClock : public Clock
+{
+public:
+    /**
+     * Constructor
+     * \param fs the flopsynch controller
+     * \param flood the flooding scheme
+     */
+    NonMonotonicClock(const Synchronizer& sync, const FloodingScheme& flood)
+        : sync(sync), flood(flood) {}
+    
+    /**
+     * This member function converts between root frame time, that is, a time
+     * that starts goes from 0 to nominalPeriod-1 and is referenced to the root
+     * node, to absolute time referenced to the local node time. It can be used
+     * to send a packet to the root node at the the frame time it expects it.
+     * \param root a frame time (0 to nominalPeriod-1) referenced to the root node
+     * \return the local absolute time time corresponding to the given root time
+     */
+    unsigned int rootFrame2localAbsolute(unsigned int root);
+    
+private:
+    const Synchronizer& sync;
+    const FloodingScheme& flood;
+};
 
 #endif //FLOPSYNC2_H

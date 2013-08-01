@@ -52,7 +52,7 @@ int main()
         flooder.synchronize();
         
         puts("----");
-        unsigned int frameStart=flooder.getFrameStart();
+        unsigned int frameStart=flooder.getMeasuredFrameStart();
         for(unsigned int i=combSpacing,j=0;i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
         {
             unsigned int wakeupTime=frameStart+i-

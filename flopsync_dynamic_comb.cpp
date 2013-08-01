@@ -70,12 +70,11 @@ int main()
     {
         if(flooder.synchronize()) flooder.resynchronize();
         
-        //unsigned int frameStart=flooder.getFrameStart(); //Non-monotonic clock
-        unsigned int frameStart=flooder.getComputedFrameStart(); //Monotonic clock
+        MonotonicClock clock(flopsync,flooder);
         unsigned int start=node*combSpacing;
         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
         {
-            unsigned int wakeupTime=frameStart+root2localFrameTime(flopsync,i)-
+            unsigned int wakeupTime=clock.rootFrame2localAbsolute(i)-
                 (jitterAbsorption+receiverTurnOn+packetTime+spiPktSend);
             rtc.setAbsoluteWakeup(wakeupTime);
             rtc.sleepAndWait();
