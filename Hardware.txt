@@ -6,6 +6,9 @@ The hardware reference platform for FLOPSYNC is composed of the following:
 -optionally an arduino for automated firmware upgrade through ssh
  and event generation for event timestamping experiments
 
+GPIO mapping stm32vldiscovery to itself
+---------------------------------------
+Connect PC13 and PB1 together
  
 GPIO mapping stm32vldiscovery to nRF24L01+
 ------------------------------------------

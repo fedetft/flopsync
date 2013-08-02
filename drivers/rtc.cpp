@@ -40,6 +40,9 @@ static volatile bool timeout=false;        ///< A timeout happened
 static volatile bool packetReceived=false; ///< A packet was received
 static void (*eventHandler)(unsigned int)=0; ///< Called when event received
 
+typedef Gpio<GPIOC_BASE,13> clockout;
+typedef Gpio<GPIOB_BASE,1> clockin;
+
 /**
  * RTC interrupt
  */
@@ -324,6 +327,8 @@ void Rtc::sleepAndWait()
 Rtc::Rtc()
 {
     FastInterruptDisableLock dLock;
+    clockin::mode(Mode::INPUT);
+    clockout::mode(Mode::OUTPUT);
     RCC->APB1ENR |= RCC_APB1ENR_BKPEN | RCC_APB1ENR_PWREN;
     PWR->CR |= PWR_CR_DBP;
     RCC->BDCR |= RCC_BDCR_LSEON     //Enable 32KHz oscillator
@@ -344,6 +349,7 @@ Rtc::Rtc()
     EXTI->EMR |= EXTI_EMR_MR17;
     EXTI->RTSR |= EXTI_RTSR_TR17;
     EXTI->PR=EXTI_PR_PR17; //Clear eventual pending IRQ
+    BKP->RTCCR=BKP_RTCCR_ASOS | BKP_RTCCR_ASOE; //Enable RTC clock out
     NVIC_SetPriority(RTC_IRQn,10); //Low priority
 	NVIC_EnableIRQ(RTC_IRQn);
 }

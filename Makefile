@@ -15,9 +15,8 @@ SUBDIRS := miosix
 ##
 # Please note that the file containing main() has to be on the same text line
 # as the one with SRC or mkpackage.pl won't work
-SRC := flopsync_rootnode.cpp \
-flopsync_controllers.cpp \
-clocksync.cpp \
+SRC := flopsync_rootnode_comb.cpp \
+flopsync2.cpp \
 drivers/rtc.cpp \
 drivers/nrf24l01.cpp
 
