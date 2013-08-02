@@ -124,6 +124,40 @@ private:
 };
 
 /**
+ * Virtual high resolution timer
+ */
+class VHT
+{
+public:
+    /**
+     * \return an instance to the VHT (singleton)
+     */
+    static VHT& instance();
+    
+    /**
+     * Synchronize the VHT timer with the low frequency RTC
+     */
+    void synchronizeWith(Rtc& rtc);
+    
+    /**
+     * \return the precise time when the IRQ signal of the nRF24L01 was asserted
+     */
+    unsigned int getPacketTimestamp();
+    
+    /**
+     * Wait until a specified time
+     * \param time a 16 bit unsigned value in VHT time units
+     */
+    void waitUntil(unsigned short time);
+    
+private:
+    /**
+     * Constructor
+     */
+    VHT();
+};
+
+/**
  * \param handler a function pointer that will be called when an event is
  * received. Its unsigned int parameter is the timestamp of the event.
  * If NULL is passed, the event handling is disabled. The event handler

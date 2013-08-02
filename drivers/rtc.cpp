@@ -39,6 +39,9 @@ static Thread *timeoutWaiting=0;         ///< Thread waiting for the receiveWith
 static volatile bool timeout=false;        ///< A timeout happened
 static volatile bool packetReceived=false; ///< A packet was received
 static void (*eventHandler)(unsigned int)=0; ///< Called when event received
+static Thread *vhtWaiting;               ///< Thread waiting on VHT
+static unsigned int vhtSyncPointRtc;     ///< Rtc time corresponding to vht time
+static unsigned int vhtSyncPointVht;     ///< Vht time corresponding to rtc time
 
 typedef Gpio<GPIOC_BASE,13> clockout;
 typedef Gpio<GPIOB_BASE,1> clockin;
@@ -132,6 +135,40 @@ void __attribute__((used)) tim7handlerImpl()
 	if(timeoutWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
 		Scheduler::IRQfindNextThread();
     timeoutWaiting=0;
+}
+
+/**
+ * TIM7 is the timeout timer
+ */
+void __attribute__((naked)) TIM3_IRQHandler()
+{
+    saveContext();
+    asm volatile("bl _Z15tim3handlerImplv");
+    restoreContext();
+}
+
+/**
+ * TIM7 irq actual implementation
+ */
+void __attribute__((used)) tim3handlerImpl()
+{
+    if(TIM3->SR & TIM_SR_CC4IF)
+    {
+        //Get RTC value
+        unsigned int a,b;
+        do {
+            a=RTC->CNTL;
+            b=RTC->CNTH;
+        } while(a!=RTC->CNTL); //Ensure no updates in the middle
+        vhtSyncPointRtc=a | b<<16;
+        vhtSyncPointVht=TIM3->CCR4;
+    }
+    TIM3->SR=0;
+    if(!vhtWaiting) return;
+    vhtWaiting->IRQwakeup();
+    if(vhtWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+        Scheduler::IRQfindNextThread();
+    vhtWaiting=0;
 }
 
 //
@@ -371,6 +408,79 @@ void setEventHandler(void (*handler)(unsigned int))
     NVIC_ClearPendingIRQ(EXTI1_IRQn);
     NVIC_SetPriority(EXTI1_IRQn,2); //High priority
     NVIC_EnableIRQ(EXTI1_IRQn); 
+}
+
+//
+// class VHT
+//
+
+VHT& VHT::instance()
+{
+    static VHT timer;
+    return timer;
+}
+
+void VHT::synchronizeWith(Rtc& rtc)
+{
+    TIM3->CNT=0;
+    {
+        FastInterruptDisableLock dLock;
+        TIM3->CCER |= TIM_CCER_CC4E; //Enable capture on channel4
+        vhtWaiting=Thread::IRQgetCurrentThread();
+        while(vhtWaiting)
+        {
+            Thread::IRQwait();
+            {
+                FastInterruptEnableLock eLock(dLock);
+                Thread::yield();
+            }
+        }
+        TIM3->CCER &=~ TIM_CCER_CC4E; //Enable capture on channel4
+    }
+}
+
+unsigned int VHT::getPacketTimestamp()
+{
+    return TIM3->CCR3;
+}
+
+void VHT::waitUntil(unsigned short time)
+{
+    TIM3->CCR1=time;
+    FastInterruptDisableLock dLock;
+    TIM3->DIER |= TIM_DIER_CC1IE;
+    vhtWaiting=Thread::IRQgetCurrentThread();
+    while(vhtWaiting)
+    {
+        Thread::IRQwait();
+        {
+            FastInterruptEnableLock eLock(dLock);
+            Thread::yield();
+        }
+    }
+    TIM3->DIER &=~ TIM_DIER_CC1IE;
+}
+
+VHT::VHT()
+{
+    {
+        FastInterruptDisableLock dLock;
+        RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+    }
+    
+    TIM3->CNT=0;
+    TIM3->PSC=24000000/1000000-1; //High frequency timer runs @ 1MHz
+    TIM3->CCMR2=TIM_CCMR2_CC3S_0  //CC3 connected to input 3 (nRF IRQ)
+              | TIM_CCMR2_IC3F_0  //Sample at 24MHz, resynchronize with 2 samples
+              | TIM_CCMR2_CC4S_0  //CC4 connected to input 4 (rtc freq for resync)
+              | TIM_CCMR2_IC4F_0; //Sample at 24MHz, resynchronize with 2 samples
+    TIM3->CCER=TIM_CCER_CC3P  //Capture nRF IRQ on falling edge
+             | TIM_CCER_CC3E; //Capture enabled for nRF IRQ
+    TIM3->DIER=TIM_DIER_CC3IE;
+    TIM3->CR1=TIM_CR1_CEN;
+    NVIC_SetPriority(TIM3_IRQn,10); //Low priority
+    NVIC_ClearPendingIRQ(TIM3_IRQn);
+    NVIC_EnableIRQ(TIM3_IRQn);
 }
 
 #else //_BOARD_STM32VLDISCOVERY

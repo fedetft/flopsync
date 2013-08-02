@@ -49,6 +49,7 @@ int identifyNode()
 int main()
 {
     lowPowerSetup();
+    blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
     const unsigned char address[]={0xab, 0xcd, 0xef};
     Nrf24l01& nrf=Nrf24l01::instance();
@@ -64,7 +65,6 @@ int main()
     
     Rtc& rtc=Rtc::instance();
     AuxiliaryTimer& timer=AuxiliaryTimer::instance();
-    blueLed::mode(miosix::Mode::OUTPUT);
     
     for(;;)
     {

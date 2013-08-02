@@ -34,9 +34,12 @@
 
 using namespace std;
 
+typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
+
 int main()
 {
     lowPowerSetup();
+    blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
     const unsigned char address[]={0xab, 0xcd, 0xef};
     Nrf24l01& nrf=Nrf24l01::instance();
@@ -46,6 +49,9 @@ int main()
     
     Rtc& rtc=Rtc::instance();
     AuxiliaryTimer& timer=AuxiliaryTimer::instance();
+    
+    VHT& vht=VHT::instance();
+    vht.synchronizeWith(rtc);
     
     for(;;)
     {
