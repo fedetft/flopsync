@@ -25,6 +25,7 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
 
+#include <cassert>
 #include <miosix.h>
 #include <miosix/kernel/scheduler/scheduler.h>
 #include "rtc.h"
@@ -152,17 +153,7 @@ void __attribute__((naked)) TIM3_IRQHandler()
  */
 void __attribute__((used)) tim3handlerImpl()
 {
-    if(TIM3->SR & TIM_SR_CC4IF)
-    {
-        //Get RTC value
-        unsigned int a,b;
-        do {
-            a=RTC->CNTL;
-            b=RTC->CNTH;
-        } while(a!=RTC->CNTL); //Ensure no updates in the middle
-        vhtSyncPointRtc=a | b<<16;
-        vhtSyncPointVht=TIM3->CCR4;
-    }
+    if(TIM3->SR & TIM_SR_CC4IF) vhtSyncPointVht=TIM3->CCR4;
     TIM3->SR=0;
     if(!vhtWaiting) return;
     vhtWaiting->IRQwakeup();
@@ -268,7 +259,18 @@ unsigned int Rtc::getValue() const
     return a | b<<16;
 }
 
-void Rtc::setAbsoluteWakeup(unsigned int value)
+unsigned int Rtc::getPacketTimestamp() const
+{
+    //Same as getValue(), inlining code to avoid an additional function call overhead
+    unsigned int a,b;
+    do {
+        a=RTC->CNTL;
+        b=RTC->CNTH;
+    } while(a!=RTC->CNTL); //Ensure no updates in the middle
+    return a | b<<16;
+}
+
+void Rtc::setAbsoluteWakeupWait(unsigned int value)
 {
     RTC->CRL |= RTC_CRL_CNF;
     RTC->ALRL=value & 0xffff;
@@ -280,7 +282,7 @@ void Rtc::setAbsoluteWakeup(unsigned int value)
 
 void Rtc::setRelativeWakeup(unsigned int value)
 {
-    setAbsoluteWakeup(getValue()+value);
+    setAbsoluteWakeupWait(getValue()+value);
 }
 
 void Rtc::wait()
@@ -297,7 +299,12 @@ void Rtc::wait()
     }
 }
 
-void Rtc::sleepAndWait()
+void Rtc::setAbsoluteWakeupSleep(unsigned int value)
+{
+    setAbsoluteWakeupWait(value); //For RTC there's no difference
+}
+
+void Rtc::sleep()
 {
     while(Console::txComplete()==false) ;
 
@@ -420,33 +427,25 @@ VHT& VHT::instance()
     return timer;
 }
 
-void VHT::synchronizeWith(Rtc& rtc)
+unsigned int VHT::getValue() const
 {
-    TIM3->CNT=0;
-    {
-        FastInterruptDisableLock dLock;
-        TIM3->CCER |= TIM_CCER_CC4E; //Enable capture on channel4
-        vhtWaiting=Thread::IRQgetCurrentThread();
-        while(vhtWaiting)
-        {
-            Thread::IRQwait();
-            {
-                FastInterruptEnableLock eLock(dLock);
-                Thread::yield();
-            }
-        }
-        TIM3->CCER &=~ TIM_CCER_CC4E; //Enable capture on channel4
-    }
+    return (TIM3->CNT-vhtSyncPointVht)+vhtSyncPointRtc*scaleFactor;
 }
 
-unsigned int VHT::getPacketTimestamp()
+unsigned int VHT::getPacketTimestamp() const
 {
-    return TIM3->CCR3;
+    return (TIM3->CCR3-vhtSyncPointVht)+vhtSyncPointRtc*scaleFactor;
 }
 
-void VHT::waitUntil(unsigned short time)
+void VHT::setAbsoluteWakeupWait(unsigned int value)
 {
-    TIM3->CCR1=time;
+    unsigned int t=(value-vhtSyncPointRtc*scaleFactor)+vhtSyncPointVht;
+    assert(t<0xffff);
+    TIM3->CCR1=t;
+}
+
+void VHT::wait()
+{
     FastInterruptDisableLock dLock;
     TIM3->DIER |= TIM_DIER_CC1IE;
     vhtWaiting=Thread::IRQgetCurrentThread();
@@ -461,7 +460,48 @@ void VHT::waitUntil(unsigned short time)
     TIM3->DIER &=~ TIM_DIER_CC1IE;
 }
 
-VHT::VHT()
+void VHT::setAbsoluteWakeupSleep(unsigned int value)
+{
+    rtc.setAbsoluteWakeupSleep(value/scaleFactor);
+}
+
+void VHT::sleep()
+{
+    rtc.sleep();
+    synchronizeWithRtc();
+}
+
+void VHT::synchronizeWithRtc()
+{
+    FastInterruptDisableLock dLock;
+    TIM3->CNT=0;
+    //These two wait make sure the next code is run exactly after
+    //the falling edge of the 32KHz clock
+    while(clockin::value()==0) ;
+    while(clockin::value()==1) ;
+    //Get RTC value
+    unsigned int a,b;
+    do {
+        a=RTC->CNTL;
+        b=RTC->CNTH;
+    } while(a!=RTC->CNTL); //Ensure no updates in the middle
+    vhtSyncPointRtc=a | b<<16;
+    TIM3->DIER |= TIM_DIER_CC4IE;
+    TIM3->CCER |= TIM_CCER_CC4E; //Enable capture on channel4
+    vhtWaiting=Thread::IRQgetCurrentThread();
+    while(vhtWaiting)
+    {
+        Thread::IRQwait();
+        {
+            FastInterruptEnableLock eLock(dLock);
+            Thread::yield();
+        }
+    }
+    TIM3->DIER &=~ TIM_DIER_CC4IE;
+    TIM3->CCER &=~ TIM_CCER_CC4E; //Disable capture on channel4
+}
+
+VHT::VHT() : rtc(Rtc::instance())
 {
     {
         FastInterruptDisableLock dLock;
@@ -476,7 +516,7 @@ VHT::VHT()
               | TIM_CCMR2_IC4F_0; //Sample at 24MHz, resynchronize with 2 samples
     TIM3->CCER=TIM_CCER_CC3P  //Capture nRF IRQ on falling edge
              | TIM_CCER_CC3E; //Capture enabled for nRF IRQ
-    TIM3->DIER=TIM_DIER_CC3IE;
+    TIM3->DIER=0;
     TIM3->CR1=TIM_CR1_CEN;
     NVIC_SetPriority(TIM3_IRQn,10); //Low priority
     NVIC_ClearPendingIRQ(TIM3_IRQn);

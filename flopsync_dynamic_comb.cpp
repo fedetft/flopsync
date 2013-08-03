@@ -52,18 +52,18 @@ int main()
     blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
     const unsigned char address[]={0xab, 0xcd, 0xef};
+    Rtc& rtc=Rtc::instance();
     Nrf24l01& nrf=Nrf24l01::instance();
     nrf.setAddress(address);
     nrf.setFrequency(2450);
     const int node=identifyNode();
     OptimizedFlopsync flopsync;
     #ifndef MULTI_HOP
-    FlooderSyncNode flooder(flopsync);
+    FlooderSyncNode flooder(rtc,flopsync);
     #else //SECOND_HOP
-    FlooderSyncNode flooder(flopsync,node-1);
+    FlooderSyncNode flooder(rtc,flopsync,node-1);
     #endif //SECOND_HOP
     
-    Rtc& rtc=Rtc::instance();
     AuxiliaryTimer& timer=AuxiliaryTimer::instance();
     
     for(;;)
@@ -76,10 +76,10 @@ int main()
         {
             unsigned int wakeupTime=clock.rootFrame2localAbsolute(i)-
                 (jitterAbsorption+receiverTurnOn+packetTime+spiPktSend);
-            rtc.setAbsoluteWakeup(wakeupTime);
-            rtc.sleepAndWait();
+            rtc.setAbsoluteWakeupSleep(wakeupTime);
+            rtc.sleep();
             blueLed::high();
-            rtc.setAbsoluteWakeup(wakeupTime+jitterAbsorption);
+            rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
             nrf.setMode(Nrf24l01::TX);
             nrf.setPacketLength(4);
             timer.initTimeoutTimer(0);

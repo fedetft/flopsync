@@ -136,8 +136,9 @@ class FlooderRootNode : public FloodingScheme
 public:
     /**
      * Constructor
+     * \param rtc the main timer
      */
-    FlooderRootNode();
+    FlooderRootNode(Timer& rtc);
 
     /**
      * Needs to be periodically called to send the synchronization packet.
@@ -161,7 +162,7 @@ public:
     unsigned int getComputedFrameStart() const { return frameStart; }
 
 private:
-    Rtc& rtc;
+    Timer& rtc;
     Nrf24l01& nrf;
     AuxiliaryTimer& timer;
     unsigned int frameStart;
@@ -176,12 +177,13 @@ class FlooderSyncNode : public FloodingScheme
 public:
     /**
      * Constructor
+     * \param rtc the main timer
      * \param synchronizer pointer to synchronizer.
      * \param hop specifies to which hop we need to attach. 0 is the root node,
      * 1 is the first hop, ... This allows to force a multi hop network even
      * though nodes are in radio range.
      */
-    FlooderSyncNode(Synchronizer& synchronizer, unsigned char hop=0);
+    FlooderSyncNode(Timer& rtc, Synchronizer& synchronizer, unsigned char hop=0);
 
     /**
      * Needs to be periodically called to send the synchronization packet.
@@ -224,7 +226,7 @@ private:
      */
     void rebroadcast();
     
-    Rtc& rtc;
+    Timer& rtc;
     Nrf24l01& nrf;
     AuxiliaryTimer& timer;
     Synchronizer& synchronizer;

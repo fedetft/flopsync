@@ -74,9 +74,57 @@ private:
 };
 
 /**
+ * Base class from which timers derive
+ */
+class Timer
+{
+public:
+    /**
+     * \return the timer counter value
+     */
+    virtual unsigned int getValue() const=0;
+    
+    /**
+     * \return the precise time when the IRQ signal of the nRF24L01 was asserted.
+     * This member function has two possible implementations: in case no hardware
+     * input capture module is used, this function is the same as getValue(), and
+     * simply return the current time, otherwise if the underlying timer has an
+     * input capture event connected with the radio IRQ signal the time when the
+     * IRQ was asserted is returned. Note that you should call this member function
+     * <b>as soon as</b> the packet is received, because if the implementation #1
+     * is used, this function just returns the current time
+     */
+    virtual unsigned int getPacketTimestamp() const=0;
+    
+    /**
+     * Set the timer timer interrupt to occur at an absolute value
+     * \param value absolute value when the interrupt will occur
+     */
+    virtual void setAbsoluteWakeupWait(unsigned int value)=0;
+    
+    /**
+     * Wait for the interrupt.
+     *  You must have called setAbsoluteWakeupWait() before this.
+     */
+    virtual void wait()=0;
+    
+    /**
+     * Set the timer timer interrupt to occur at an absolute value
+     * \param value absolute value when the interrupt will occur
+     */
+    virtual void setAbsoluteWakeupSleep(unsigned int value)=0;
+    
+    /**
+     * Puts the microcontroller in low power mode (few uA) and wait for the
+     * interrupt. You must have called setAbsoluteWakeupSleep() before this
+     */
+    virtual void sleep()=0;
+};
+
+/**
  * Manages the 32KHz hardware timer that runs also in low power mode
  */
-class Rtc
+class Rtc : public Timer
 {
 public:
     /**
@@ -90,10 +138,15 @@ public:
     unsigned int getValue() const;
     
     /**
+     * No input capture used, this is the same as getValue()
+     */
+    unsigned int getPacketTimestamp() const;
+    
+    /**
      * Set the RTC timer interrupt to occur at an absolute value
      * \param value absolute value when the interrupt will occur
      */
-    void setAbsoluteWakeup(unsigned int value);
+    void setAbsoluteWakeupWait(unsigned int value);
     
     /**
      * Set the RTC timer interrupt to occur at a relative value.
@@ -111,10 +164,16 @@ public:
     void wait();
     
     /**
+     * Set the timer timer interrupt to occur at an absolute value
+     * \param value absolute value when the interrupt will occur
+     */
+    void setAbsoluteWakeupSleep(unsigned int value);
+    
+    /**
      * Puts the microcontroller in low power mode (few uA) and wait for the
      * RTC interrupt
      */
-    void sleepAndWait();
+    void sleep();
     
 private:
     /**
@@ -126,7 +185,7 @@ private:
 /**
  * Virtual high resolution timer
  */
-class VHT
+class VHT : public Timer
 {
 public:
     /**
@@ -135,26 +194,58 @@ public:
     static VHT& instance();
     
     /**
+     * \return the timer counter value
+     */
+    unsigned int getValue() const;
+    
+    /**
+     * \return the precise time when the IRQ signal of the nRF24L01 was asserted.
+     * This implementation uses an input capture hardware module for additional
+     * precision
+     */
+    unsigned int getPacketTimestamp() const;
+    
+    /**
+     * Set the timer timer interrupt to occur at an absolute value
+     * \param value absolute value when the interrupt will occur
+     */
+    void setAbsoluteWakeupWait(unsigned int value);
+    
+    /**
+     * Wait for the interrupt.
+     *  You must have called setAbsoluteWakeupWait() before this.
+     */
+    void wait();
+    
+    /**
+     * Set the timer timer interrupt to occur at an absolute value
+     * \param value absolute value when the interrupt will occur
+     */
+    void setAbsoluteWakeupSleep(unsigned int value);
+    
+    /**
+     * Puts the microcontroller in low power mode (few uA) and wait for the
+     * interrupt. You must have called setAbsoluteWakeupSleep() before this
+     */
+    void sleep();
+    
+    /**
      * Synchronize the VHT timer with the low frequency RTC
      */
-    void synchronizeWith(Rtc& rtc);
-    
-    /**
-     * \return the precise time when the IRQ signal of the nRF24L01 was asserted
-     */
-    unsigned int getPacketTimestamp();
-    
-    /**
-     * Wait until a specified time
-     * \param time a 16 bit unsigned value in VHT time units
-     */
-    void waitUntil(unsigned short time);
+    void synchronizeWithRtc();
     
 private:
     /**
      * Constructor
      */
     VHT();
+    
+    // Ratio between timers 1MHz / 16384Hz. Note that the division is
+    // not exact, and this introduces a clock skew by itself, even if
+    // the RTC was perfect. We rely on flopsync to compensate for this
+    static const unsigned int scaleFactor=61;
+    
+    Rtc& rtc; //The underlying rtc
 };
 
 /**

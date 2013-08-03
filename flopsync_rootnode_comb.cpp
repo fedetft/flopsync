@@ -43,15 +43,21 @@ int main()
     puts(experimentName);
     const unsigned char address[]={0xab, 0xcd, 0xef};
     Nrf24l01& nrf=Nrf24l01::instance();
+    Rtc& rtc=Rtc::instance();
     nrf.setAddress(address);
     nrf.setFrequency(2450);
-    FlooderRootNode flooder;
+    FlooderRootNode flooder(rtc);
     
-    Rtc& rtc=Rtc::instance();
     AuxiliaryTimer& timer=AuxiliaryTimer::instance();
     
-    VHT& vht=VHT::instance();
-    vht.synchronizeWith(rtc);
+//     VHT& vht=VHT::instance();
+//     rtc.setAbsoluteWakeup(5);
+//     rtc.wait();
+//     for(;;)
+//     {
+//         vht.synchronizeWith(rtc);
+//         miosix::Thread::sleep(1000);
+//     }
     
     for(;;)
     {
@@ -63,9 +69,9 @@ int main()
         {
             unsigned int wakeupTime=frameStart+i-
                 (jitterAbsorption+receiverTurnOn+w+packetTime);
-            rtc.setAbsoluteWakeup(wakeupTime);
-            rtc.sleepAndWait();
-            rtc.setAbsoluteWakeup(wakeupTime+jitterAbsorption);
+            rtc.setAbsoluteWakeupSleep(wakeupTime);
+            rtc.sleep();
+            rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
             nrf.setMode(Nrf24l01::RX);
             nrf.setPacketLength(4);
             rtc.wait();
@@ -77,7 +83,7 @@ int main()
             for(;;)
             {
                 timeout=timer.waitForPacketOrTimeout();
-                measuredTime=rtc.getValue();
+                measuredTime=rtc.getPacketTimestamp();
                 if(timeout) break;
                 nrf.readPacket(packet);
                 if((packet[3] & 0xfe)==0) break;

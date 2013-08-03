@@ -42,16 +42,16 @@ void FloodingScheme::resynchronize() {}
 // class FlooderRootNode
 //
 
-FlooderRootNode::FlooderRootNode() : rtc(Rtc::instance()),
+FlooderRootNode::FlooderRootNode(Timer& rtc) : rtc(rtc),
         nrf(Nrf24l01::instance()), timer(AuxiliaryTimer::instance()),
         frameStart(0), wakeupTime(rtc.getValue()+nominalPeriod) {}
 
 bool FlooderRootNode::synchronize()
 {
     assert(static_cast<int>(rtc.getValue()-wakeupTime)<0);
-    rtc.setAbsoluteWakeup(wakeupTime);
-    rtc.sleepAndWait();
-    rtc.setAbsoluteWakeup(wakeupTime+jitterAbsorption);
+    rtc.setAbsoluteWakeupSleep(wakeupTime);
+    rtc.sleep();
+    rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
     nrf.setMode(Nrf24l01::TX);
     nrf.setPacketLength(1);
     timer.initTimeoutTimer(0);
@@ -63,7 +63,7 @@ bool FlooderRootNode::synchronize()
     miosix::ledOn(); 
     nrf.writePacket(packet);
     timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
-    frameStart=rtc.getValue();
+    frameStart=rtc.getPacketTimestamp();
     miosix::ledOff(); //Falling edge signals synchronization packet sent
     nrf.endWritePacket();
     nrf.setMode(Nrf24l01::SLEEP);
@@ -75,8 +75,8 @@ bool FlooderRootNode::synchronize()
 // class FlooderSyncNode
 //
 
-FlooderSyncNode::FlooderSyncNode(Synchronizer& synchronizer, unsigned char hop)
-      : rtc(Rtc::instance()), nrf(Nrf24l01::instance()),
+FlooderSyncNode::FlooderSyncNode(Timer& rtc, Synchronizer& synchronizer,
+        unsigned char hop) : rtc(rtc), nrf(Nrf24l01::instance()),
         timer(AuxiliaryTimer::instance()), synchronizer(synchronizer),
         measuredFrameStart(0), computedFrameStart(0), clockCorrection(0),
         receiverWindow(w), missPackets(maxMissPackets+1), hop(hop) {}
@@ -89,9 +89,9 @@ bool FlooderSyncNode::synchronize()
     unsigned int wakeupTime=computedFrameStart-
         (jitterAbsorption+receiverTurnOn+receiverWindow+smallPacketTime);
     assert(static_cast<int>(rtc.getValue()-wakeupTime)<0);
-    rtc.setAbsoluteWakeup(wakeupTime);
-    rtc.sleepAndWait();
-    rtc.setAbsoluteWakeup(wakeupTime+jitterAbsorption);
+    rtc.setAbsoluteWakeupSleep(wakeupTime);
+    rtc.sleep();
+    rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
     nrf.setMode(Nrf24l01::RX);
     nrf.setPacketLength(1);
     // To minimize jitter in the packet transmission time caused by the
@@ -105,7 +105,7 @@ bool FlooderSyncNode::synchronize()
     for(;;)
     {
         timeout=timer.waitForPacketOrTimeout();
-        measuredFrameStart=rtc.getValue();
+        measuredFrameStart=rtc.getPacketTimestamp();
         // Falling edge signals RX received the packet.
         // It happens between 4 and 16us from the transmitter's falling edge
         // (measured with an oscilloscope)
@@ -157,7 +157,7 @@ void FlooderSyncNode::resynchronize()
     for(;;)
     {
         timer.waitForPacketOrTimeout();
-        measuredFrameStart=rtc.getValue();
+        measuredFrameStart=rtc.getPacketTimestamp();
         computedFrameStart=measuredFrameStart;
         char packet[1];
         nrf.readPacket(packet);
@@ -175,7 +175,7 @@ void FlooderSyncNode::resynchronize()
 
 void FlooderSyncNode::rebroadcast()
 {
-//     rtc.setAbsoluteWakeup(measuredFrameStart+retransmitDelta
+//     rtc.setAbsoluteWakeupWait(measuredFrameStart+retransmitDelta
 //         -(receiverTurnOn+smallPacketTime+spiPktSend));
     nrf.setMode(Nrf24l01::TX);
     timer.initTimeoutTimer(0);
