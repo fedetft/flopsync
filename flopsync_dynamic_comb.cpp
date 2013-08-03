@@ -27,6 +27,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <miosix.h>
 #include "drivers/nrf24l01.h"
 #include "drivers/rtc.h"
@@ -75,23 +76,24 @@ int main()
         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
         {
             unsigned int wakeupTime=clock.rootFrame2localAbsolute(i)-
-                (jitterAbsorption+receiverTurnOn+packetTime+spiPktSend);
+                (jitterAbsorption+receiverTurnOn+longPacketTime+spiPktSend);
             rtc.setAbsoluteWakeupSleep(wakeupTime);
             rtc.sleep();
             blueLed::high();
             rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
             nrf.setMode(Nrf24l01::TX);
-            nrf.setPacketLength(4);
+            nrf.setPacketLength(sizeof(Packet2));
             timer.initTimeoutTimer(0);
-            signed char packet[]=
-            {
-                flopsync.getSyncError(),
-                flopsync.getClockCorrection(),
-                flopsync.getReceiverWindow(),
-                flooder.isPacketMissed() ? 0x01 : 0x00
-            };
+            Packet2 packet;
+            packet.e=flopsync.getSyncError();
+            packet.u=max<int>(numeric_limits<short>::min(),
+                min<int>(numeric_limits<short>::max(),
+                flopsync.getClockCorrection()));
+            packet.w=flopsync.getReceiverWindow();
+            packet.miss=flooder.isPacketMissed() ? 1 : 0;
+            packet.check=0;
             rtc.wait();
-            nrf.writePacket(packet);
+            nrf.writePacket(&packet);
             timer.waitForPacketOrTimeout();
             blueLed::low();
             nrf.endWritePacket();

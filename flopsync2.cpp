@@ -122,7 +122,7 @@ bool FlooderSyncNode::synchronize()
     #endif //MULTI_HOP
     nrf.setMode(Nrf24l01::SLEEP);
     
-    pair<short,unsigned char> r;
+    pair<int,int> r;
     if(timeout)
     {
         if(++missPackets>maxMissPackets)
@@ -194,17 +194,17 @@ void FlooderSyncNode::rebroadcast()
 
 OptimizedFlopsync::OptimizedFlopsync() { reset(); }
 
-pair<short,unsigned char> OptimizedFlopsync::computeCorrection(short e)
+pair<int,int> OptimizedFlopsync::computeCorrection(int e)
 {
     //u(k)=u(k-1)+1.46875*e(k)-e(k-1) with values kept multiplied by 32
-    short u=uo+47*e-32*eo;
+    int u=uo+47*e-32*eo;
 
     //The controller output needs to be quantized, but instead of simply
     //doing u/4 which rounds towards the lowest number use a slightly more
     //advanced algorithm to round towards the closest one, as when the error
     //is close to +/-1 timer tick this makes a significant difference.
-    short sign=u>=0 ? 1 : -1;
-    short uquant=(u+16*sign)/32;
+    int sign=u>=0 ? 1 : -1;
+    int uquant=(u+16*sign)/32;
     
     //Adaptive state quantization, while the output always needs to be
     //quantized, the state is only quantized if the error is zero
@@ -228,7 +228,7 @@ pair<short,unsigned char> OptimizedFlopsync::computeCorrection(short e)
     return make_pair(uquant,var);
 }
 
-pair<short,unsigned char> OptimizedFlopsync::lostPacket()
+pair<int,int> OptimizedFlopsync::lostPacket()
 {
     //Double receiver window on packet loss, still clamped to max value
     var=min<int>(2*var,w);
@@ -245,7 +245,7 @@ int OptimizedFlopsync::getClockCorrection() const
 {
     //Error measure is unavailable if the packet is lost, the best we can
     //do is to reuse the past correction value
-    short sign=uo>=0 ? 1 : -1;
+    int sign=uo>=0 ? 1 : -1;
     return (uo+16*sign)/32;
 }
 

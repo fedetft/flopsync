@@ -87,6 +87,9 @@ const unsigned int packetTime=static_cast<int>(0.00008f*16384+0.5f);
 //Time to transfer a 1byte packet (+6byte overhead) on an 1Mbps channel (56us)
 const unsigned int smallPacketTime=static_cast<int>(0.000056f*16384+0.5f);
 
+//Time to transfer a 8byte packet (+6byte overhead) on an 1Mbps channel (56us)
+const unsigned int longPacketTime=static_cast<int>(0.000112f*16384+0.5f);
+
 //Sync window (fixed window), or maximum sync window (dynamic window)
 const unsigned int w=static_cast<int>(0.003f*16384+0.5f);
 
@@ -94,6 +97,7 @@ const unsigned int w=static_cast<int>(0.003f*16384+0.5f);
 const unsigned int minw=static_cast<int>(0.00018f*16384+0.5f);
 
 //Packet containing synchronization quality statistics, to send to base station
+// (legacy, not unused)
 struct Packet
 { 
     short e;
@@ -103,6 +107,16 @@ struct Packet
     unsigned short unsynctime;
     unsigned short sequence;
     unsigned short check;
+};
+
+//New sync quality packet
+struct Packet2
+{
+    short e;
+    short u;
+    short w;
+    unsigned char miss;
+    unsigned char check;
 };
 
 //When to send the synchronization quality statistics packet

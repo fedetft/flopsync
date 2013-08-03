@@ -77,13 +77,13 @@ public:
      * \param e synchronization error
      * \return a pair with the clock correction, and the receiver window
      */
-    virtual std::pair<short,unsigned char> computeCorrection(short e)=0;
+    virtual std::pair<int,int> computeCorrection(int e)=0;
     
     /**
      * Compute clock correction and receiver window when a packet is lost
      * \return a pair with the clock correction, and the receiver window
      */
-    virtual std::pair<short,unsigned char> lostPacket()=0;
+    virtual std::pair<int,int> lostPacket()=0;
     
     /**
      * Used after a resynchronization to reset the controller state
@@ -232,8 +232,8 @@ private:
     Synchronizer& synchronizer;
     unsigned int measuredFrameStart;
     unsigned int computedFrameStart;
-    short clockCorrection;
-    unsigned char receiverWindow; 
+    int clockCorrection;
+    int receiverWindow; 
     unsigned char missPackets;
     unsigned char hop;
     
@@ -258,13 +258,13 @@ public:
      * \param e synchronization error
      * \return a pair with the clock correction, and the receiver window
      */
-    std::pair<short,unsigned char> computeCorrection(short e);
+    std::pair<int,int> computeCorrection(int e);
     
     /**
      * Compute clock correction and receiver window when a packet is lost
      * \return a pair with the clock correction, and the receiver window
      */
-    std::pair<short,unsigned char> lostPacket();
+    std::pair<int,int> lostPacket();
     
     /**
      * Used after a resynchronization to reset the controller state
@@ -292,11 +292,11 @@ public:
     int getReceiverWindow() const { return var; }
     
 private:
-    short uo;
-    short uoo; //Used by non-monotonic clock
-    short eo;
+    int uo;
+    int uoo; //Used by non-monotonic clock
     int sum;
     int squareSum;
+    short eo;
     unsigned char count;
     unsigned char var;
     
