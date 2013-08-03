@@ -98,7 +98,7 @@ const unsigned int jitterAbsorption=static_cast<int>(0.0025f*hz+0.5f);
 #else //USE_VHT
 //Additonal delay to absorb jitter (must be greater than pllBoot+radioBoot)
 //Also needs to account for vht resynchronization time
-const unsigned int jitterAbsorption=static_cast<int>(0.0035f*hz+0.5f);
+const unsigned int jitterAbsorption=static_cast<int>(0.003f*hz+0.5f);
 #endif //USE_VHT
 
 //Time to transfer a 4byte packet (+6byte overhead) on an 1Mbps channel (80us)

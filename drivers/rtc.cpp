@@ -433,21 +433,33 @@ unsigned int VHT::getValue() const
 {
     //Unfortunately the timer is only 16 bits, so when waiting long
     //in resynchronize it times out. In this case fallback to rtc
-    if(vhtTimeout) return rtc.getValue()*scaleFactor;
-    else return (TIM3->CNT-vhtSyncPointVht)+vhtSyncPointRtc*scaleFactor;
+    if(vhtTimeout)
+    {
+        unsigned long long conversion=rtc.getValue();
+        conversion*=1000000;
+        conversion+=16384/2; //Round to nearest
+        conversion/=16384;
+        return conversion;
+    } else return TIM3->CNT-vhtSyncPointVht+vhtBase;
 }
 
 unsigned int VHT::getPacketTimestamp() const
 {
     //Unfortunately the timer is only 16 bits, so when waiting long
     //in resynchronize it times out. In this case fallback to rtc
-    if(vhtTimeout) return rtc.getValue()*scaleFactor;
-    else return (TIM3->CCR3-vhtSyncPointVht)+vhtSyncPointRtc*scaleFactor;
+    if(vhtTimeout)
+    {
+        unsigned long long conversion=rtc.getValue();
+        conversion*=1000000;
+        conversion+=16384/2; //Round to nearest
+        conversion/=16384;
+        return conversion;
+    } else return TIM3->CCR3-vhtSyncPointVht+vhtBase;
 }
 
 void VHT::setAbsoluteWakeupWait(unsigned int value)
 {
-    unsigned int t=(value-vhtSyncPointRtc*scaleFactor)+vhtSyncPointVht;
+    unsigned int t=value-vhtBase+vhtSyncPointVht;
     assert(t<0xffff);
     TIM3->CCR1=t;
 }
@@ -470,7 +482,19 @@ void VHT::wait()
 
 void VHT::setAbsoluteWakeupSleep(unsigned int value)
 {
-    rtc.setAbsoluteWakeupSleep(value/scaleFactor);
+    //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
+    //while the other timer run at a submultiple of 24MHz, 1MHz in
+    //the current setting, and since 1MHz is not a multiple of 16384
+    //the conversion is a little complex and requires the use of
+    //64bit numbers for intermendiate results. If the main XTAL was
+    //8.388608MHz instead of 8MHz a simple shift operation on 32bit
+    //numbers would suffice.
+    unsigned long long conversion=value;
+    conversion*=16384;
+    conversion+=1000000/2; //Round to nearest
+    conversion/=1000000;
+    unsigned int rtcTime=conversion;
+    rtc.setAbsoluteWakeupSleep(rtcTime);
 }
 
 void VHT::sleep()
@@ -481,34 +505,54 @@ void VHT::sleep()
 
 void VHT::synchronizeWithRtc()
 {
-    FastInterruptDisableLock dLock;
-    TIM3->CNT=0;
-    TIM3->EGR=TIM_EGR_UG;
-    //These two wait make sure the next code is run exactly after
-    //the falling edge of the 32KHz clock
-    while(clockin::value()==0) ;
-    while(clockin::value()==1) ;
-    //Get RTC value
-    unsigned int a,b;
-    do {
-        a=RTC->CNTL;
-        b=RTC->CNTH;
-    } while(a!=RTC->CNTL); //Ensure no updates in the middle
-    vhtSyncPointRtc=a | b<<16;
-    TIM3->DIER |= TIM_DIER_CC4IE;
-    TIM3->CCER |= TIM_CCER_CC4E; //Enable capture on channel4
-    vhtWaiting=Thread::IRQgetCurrentThread();
-    while(vhtWaiting)
     {
-        Thread::IRQwait();
+        FastInterruptDisableLock dLock;
+        TIM3->CNT=0;
+        TIM3->EGR=TIM_EGR_UG;
+        //These two wait make sure the next code is run exactly after
+        //the falling edge of the 16KHz clock
+        while(clockin::value()==0) ;
+        while(clockin::value()==1) ;
+        //This dely is extremely important. There appears to be some
+        //kind of resynchronization between clock domains happening
+        //and reading the RTC registers immediately after the falling
+        //edge sometimes returns the old value, and sometimes the new
+        //one. This jitter is unacceptable, and the delay fixes it.
+        delayUs(18);
+        //Get RTC value
+        unsigned int a,b;
+        do {
+            a=RTC->CNTL;
+            b=RTC->CNTH;
+        } while(a!=RTC->CNTL); //Ensure no updates in the middle
+        vhtSyncPointRtc=a | b<<16;
+        TIM3->DIER |= TIM_DIER_CC4IE;
+        TIM3->CCER |= TIM_CCER_CC4E; //Enable capture on channel4
+        vhtWaiting=Thread::IRQgetCurrentThread();
+        while(vhtWaiting)
         {
-            FastInterruptEnableLock eLock(dLock);
-            Thread::yield();
+            Thread::IRQwait();
+            {
+                FastInterruptEnableLock eLock(dLock);
+                Thread::yield();
+            }
         }
+        TIM3->DIER &=~ TIM_DIER_CC4IE;
+        TIM3->CCER &=~ TIM_CCER_CC4E; //Disable capture on channel4
+        vhtTimeout=false;
     }
-    TIM3->DIER &=~ TIM_DIER_CC4IE;
-    TIM3->CCER &=~ TIM_CCER_CC4E; //Disable capture on channel4
-    vhtTimeout=false;
+    //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
+    //while the other timer run at a submultiple of 24MHz, 1MHz in
+    //the current setting, and since 1MHz is not a multiple of 16384
+    //the conversion is a little complex and requires the use of
+    //64bit numbers for intermendiate results. If the main XTAL was
+    //8.388608MHz instead of 8MHz a simple bitmask operation on 32bit
+    //numbers would suffice.
+    unsigned long long conversion=vhtSyncPointRtc;
+    conversion*=1000000;
+    conversion+=16384/2; //Round to nearest
+    conversion/=16384;
+    vhtBase=conversion;
 }
 
 VHT::VHT() : rtc(Rtc::instance())

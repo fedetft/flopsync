@@ -59,9 +59,15 @@ bool FlooderRootNode::synchronize()
     // To minimize jitter in the packet transmission time caused by the
     // variable time sleepAndWait() takes to restart the STM32 PLL an
     // additional wait is done here to absorb the jitter.
+    
+    SysTick->CTRL=0; //FIXME: experimental
+    
     rtc.wait();
     miosix::ledOn(); 
     nrf.writePacket(packet);
+    
+    SysTick->CTRL=SysTick_CTRL_ENABLE | SysTick_CTRL_TICKINT | SysTick_CTRL_CLKSOURCE; //FIXME: experimental
+    
     timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
     frameStart=rtc.getPacketTimestamp();
     miosix::ledOff(); //Falling edge signals synchronization packet sent
@@ -103,6 +109,9 @@ bool FlooderSyncNode::synchronize()
     timer.initTimeoutTimer(toAuxiliaryTimer(
         receiverTurnOn+2*receiverWindow+smallPacketTime));
     bool timeout;
+    
+    SysTick->CTRL=0; //FIXME: experimental
+    
     for(;;)
     {
         timeout=timer.waitForPacketOrTimeout();
@@ -121,6 +130,9 @@ bool FlooderSyncNode::synchronize()
     #ifdef MULTI_HOP
     if(!timeout) rebroadcast();
     #endif //MULTI_HOP
+    
+    SysTick->CTRL=SysTick_CTRL_ENABLE | SysTick_CTRL_TICKINT | SysTick_CTRL_CLKSOURCE; //FIXME: experimental
+    
     nrf.setMode(Nrf24l01::SLEEP);
     
     pair<int,int> r;

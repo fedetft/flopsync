@@ -247,6 +247,7 @@ private:
     VHT();
     
     Rtc& rtc; //The underlying rtc
+    unsigned int vhtBase;
 };
 
 /**

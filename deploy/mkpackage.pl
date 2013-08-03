@@ -85,9 +85,8 @@ sub build
 			$n.='#'.localtime();
 			$n.='#secondhop' if($secondhop);
 			print $outfile "$n\"\n";
-		} elsif(/^const unsigned int nominalPeriod=/) {
-			print $outfile "const unsigned int nominalPeriod=static_cast<int>".
-						   "($config{sync_period}*16384+0.5f);\n";
+		} elsif(/^(const unsigned int nominalPeriod=static_cast<int>\().*(\*hz\+0.5f\);)/) {
+			print $outfile "$1$config{sync_period}$2\n";
 		} else { print $outfile $_; }
 	}
 	close($infile);
