@@ -28,6 +28,8 @@
 #ifndef PROTOCOL_CONSTANTS_H
 #define	PROTOCOL_CONSTANTS_H
 
+#include "drivers/rtc.h"
+
 // Define this to test the regulator performance with the relative clock model,
 // while comment it out to test the absolute clock model
 //#define RELATIVE_CLOCK //@@ Filled in by mkpackage.pl
@@ -46,13 +48,25 @@
 // Enables event timestamping
 //#define EVENT_TIMESTAMPING //@@ Filled in by mkpackage.pl
 
+// Enables virtual high resolution timer
+//#define USE_VHT //@@ Filled in by mkpackage.pl
+
 // Give a name to the experiment being done
 #define experimentName "" //@@ Filled in by mkpackage.pl
 
+#ifndef USE_VHT
+const unsigned int hz=16384;
+inline unsigned short toAuxiliaryTimer(unsigned int t) { return t; }
+#else //USE_VHT
+const unsigned int hz=1000000;
+inline unsigned short toAuxiliaryTimer(unsigned int t) { return t/VHT::scaleFactor; }
+#endif //USE_VHT
+
 //Sync period
-const unsigned int nominalPeriod=static_cast<int>(60*16384+0.5f); //@@ Filled in by mkpackage.pl
+const unsigned int nominalPeriod=static_cast<int>(60*hz+0.5f); //@@ Filled in by mkpackage.pl
 
 //In a real implementation this should need to be computed randomly per node
+//(legacy, not unused)
 #ifndef SECOND_HOP
 const unsigned int retransmitPoint=static_cast<int>(0.333f*nominalPeriod+0.5f);
 #else //SECOND_HOP
@@ -62,39 +76,45 @@ const unsigned int retransmitPoint=static_cast<int>(0.667f*nominalPeriod+0.5f);
 //Retransmit time for flopsync2 "Flooder" flooding scheme (252us)
 //Note that this is the time needed to rebroadcast a packet as soon as it's
 //received, measured with an oscilloscope
-const unsigned int retransmitDelta=static_cast<int>(0.000252f*16384+0.5f);
+const unsigned int retransmitDelta=static_cast<int>(0.000252f*hz+0.5f);
 
 //Time for STM32 PLL startup (500us)
-const unsigned int pllBoot=static_cast<int>(0.0005f*16384+0.5f);
+const unsigned int pllBoot=static_cast<int>(0.0005f*hz+0.5f);
 
 //Time for nRF to start its clock oscillator (1.6ms)
-const unsigned int radioBoot=static_cast<int>(0.0016f*16384+0.5f);
+const unsigned int radioBoot=static_cast<int>(0.0016f*hz+0.5f);
 
 //Time for the nRF to start receiving after a call to startReceiving() (130us)
-const unsigned int receiverTurnOn=static_cast<int>(0.00013f*16384+0.5f);
+const unsigned int receiverTurnOn=static_cast<int>(0.00013f*hz+0.5f);
 
 //Time to send a 1..4 byte packet via SPI @ 6MHz to the nRF (31us)
 //Computed as the missing piece in the difference between frameStart and
 //wakeupTime in FlooderRootNode.
-const unsigned int spiPktSend=static_cast<int>(0.000031f*16384+0.5f);
+const unsigned int spiPktSend=static_cast<int>(0.000031f*hz+0.5f);
 
+#ifndef USE_VHT
 //Additonal delay to absorb jitter (must be greater than pllBoot+radioBoot)
-const unsigned int jitterAbsorption=static_cast<int>(0.0025f*16384+0.5f);
+const unsigned int jitterAbsorption=static_cast<int>(0.0025f*hz+0.5f);
+#else //USE_VHT
+//Additonal delay to absorb jitter (must be greater than pllBoot+radioBoot)
+//Also needs to account for vht resynchronization time
+const unsigned int jitterAbsorption=static_cast<int>(0.0035f*hz+0.5f);
+#endif //USE_VHT
 
 //Time to transfer a 4byte packet (+6byte overhead) on an 1Mbps channel (80us)
-const unsigned int packetTime=static_cast<int>(0.00008f*16384+0.5f);
+const unsigned int packetTime=static_cast<int>(0.00008f*hz+0.5f);
 
 //Time to transfer a 1byte packet (+6byte overhead) on an 1Mbps channel (56us)
-const unsigned int smallPacketTime=static_cast<int>(0.000056f*16384+0.5f);
+const unsigned int smallPacketTime=static_cast<int>(0.000056f*hz+0.5f);
 
 //Time to transfer a 8byte packet (+6byte overhead) on an 1Mbps channel (56us)
-const unsigned int longPacketTime=static_cast<int>(0.000112f*16384+0.5f);
+const unsigned int longPacketTime=static_cast<int>(0.000112f*hz+0.5f);
 
 //Sync window (fixed window), or maximum sync window (dynamic window)
-const unsigned int w=static_cast<int>(0.003f*16384+0.5f);
+const unsigned int w=static_cast<int>(0.003f*hz+0.5f);
 
 //Minimum sync window (dynamic window only)
-const unsigned int minw=static_cast<int>(0.00018f*16384+0.5f);
+const unsigned int minw=static_cast<int>(0.00018f*hz+0.5f);
 
 //Packet containing synchronization quality statistics, to send to base station
 // (legacy, not unused)
@@ -119,10 +139,10 @@ struct Packet2
     unsigned char check;
 };
 
-//When to send the synchronization quality statistics packet
-const unsigned int txtime=static_cast<int>(30*16384+0.5f);
+//When to send the synchronization quality statistics packet (legacy, not unused)
+const unsigned int txtime=static_cast<int>(30*hz+0.5f);
 
 //Comb spacing, for intra-frame error measure
-const unsigned int combSpacing=static_cast<int>(0.5f*16384+0.5f);
+const unsigned int combSpacing=static_cast<int>(0.5f*hz+0.5f);
 
 #endif //PROTOCOL_CONSTANTS_H

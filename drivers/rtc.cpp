@@ -43,6 +43,7 @@ static void (*eventHandler)(unsigned int)=0; ///< Called when event received
 static Thread *vhtWaiting;               ///< Thread waiting on VHT
 static unsigned int vhtSyncPointRtc;     ///< Rtc time corresponding to vht time
 static unsigned int vhtSyncPointVht;     ///< Vht time corresponding to rtc time
+static bool vhtTimeout=false;            ///< VHT timed out
 
 typedef Gpio<GPIOC_BASE,13> clockout;
 typedef Gpio<GPIOB_BASE,1> clockin;
@@ -139,7 +140,7 @@ void __attribute__((used)) tim7handlerImpl()
 }
 
 /**
- * TIM7 is the timeout timer
+ * TIM3 is the vht timer
  */
 void __attribute__((naked)) TIM3_IRQHandler()
 {
@@ -149,11 +150,12 @@ void __attribute__((naked)) TIM3_IRQHandler()
 }
 
 /**
- * TIM7 irq actual implementation
+ * TIM3 irq actual implementation
  */
 void __attribute__((used)) tim3handlerImpl()
 {
     if(TIM3->SR & TIM_SR_CC4IF) vhtSyncPointVht=TIM3->CCR4;
+    if(TIM3->SR & TIM_SR_UIF) vhtTimeout=true;
     TIM3->SR=0;
     if(!vhtWaiting) return;
     vhtWaiting->IRQwakeup();
@@ -429,12 +431,18 @@ VHT& VHT::instance()
 
 unsigned int VHT::getValue() const
 {
-    return (TIM3->CNT-vhtSyncPointVht)+vhtSyncPointRtc*scaleFactor;
+    //Unfortunately the timer is only 16 bits, so when waiting long
+    //in resynchronize it times out. In this case fallback to rtc
+    if(vhtTimeout) return rtc.getValue()*scaleFactor;
+    else return (TIM3->CNT-vhtSyncPointVht)+vhtSyncPointRtc*scaleFactor;
 }
 
 unsigned int VHT::getPacketTimestamp() const
 {
-    return (TIM3->CCR3-vhtSyncPointVht)+vhtSyncPointRtc*scaleFactor;
+    //Unfortunately the timer is only 16 bits, so when waiting long
+    //in resynchronize it times out. In this case fallback to rtc
+    if(vhtTimeout) return rtc.getValue()*scaleFactor;
+    else return (TIM3->CCR3-vhtSyncPointVht)+vhtSyncPointRtc*scaleFactor;
 }
 
 void VHT::setAbsoluteWakeupWait(unsigned int value)
@@ -475,6 +483,7 @@ void VHT::synchronizeWithRtc()
 {
     FastInterruptDisableLock dLock;
     TIM3->CNT=0;
+    TIM3->EGR=TIM_EGR_UG;
     //These two wait make sure the next code is run exactly after
     //the falling edge of the 32KHz clock
     while(clockin::value()==0) ;
@@ -499,6 +508,7 @@ void VHT::synchronizeWithRtc()
     }
     TIM3->DIER &=~ TIM_DIER_CC4IE;
     TIM3->CCER &=~ TIM_CCER_CC4E; //Disable capture on channel4
+    vhtTimeout=false;
 }
 
 VHT::VHT() : rtc(Rtc::instance())
@@ -516,11 +526,13 @@ VHT::VHT() : rtc(Rtc::instance())
               | TIM_CCMR2_IC4F_0; //Sample at 24MHz, resynchronize with 2 samples
     TIM3->CCER=TIM_CCER_CC3P  //Capture nRF IRQ on falling edge
              | TIM_CCER_CC3E; //Capture enabled for nRF IRQ
-    TIM3->DIER=0;
+    TIM3->DIER=TIM_DIER_UIE;  //Enable interrupt @ end of time to set flag
     TIM3->CR1=TIM_CR1_CEN;
     NVIC_SetPriority(TIM3_IRQn,10); //Low priority
     NVIC_ClearPendingIRQ(TIM3_IRQn);
     NVIC_EnableIRQ(TIM3_IRQn);
+    
+    synchronizeWithRtc();
 }
 
 #else //_BOARD_STM32VLDISCOVERY

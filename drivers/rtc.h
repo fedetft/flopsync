@@ -234,16 +234,17 @@ public:
      */
     void synchronizeWithRtc();
     
+    // Ratio between timers 1MHz / 16384Hz. Note that the division is
+    // not exact, and this introduces a clock skew by itself, even if
+    // the RTC was perfect. So don't use it to make precise conversions
+    // from VHT to RTC
+    static const unsigned int scaleFactor=61;
+    
 private:
     /**
      * Constructor
      */
     VHT();
-    
-    // Ratio between timers 1MHz / 16384Hz. Note that the division is
-    // not exact, and this introduces a clock skew by itself, even if
-    // the RTC was perfect. We rely on flopsync to compensate for this
-    static const unsigned int scaleFactor=61;
     
     Rtc& rtc; //The underlying rtc
 };

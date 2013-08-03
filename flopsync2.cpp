@@ -100,7 +100,8 @@ bool FlooderSyncNode::synchronize()
     rtc.wait();
     miosix::ledOn();
     nrf.startReceiving();
-    timer.initTimeoutTimer(receiverTurnOn+2*receiverWindow+smallPacketTime);
+    timer.initTimeoutTimer(toAuxiliaryTimer(
+        receiverTurnOn+2*receiverWindow+smallPacketTime));
     bool timeout;
     for(;;)
     {
@@ -212,6 +213,14 @@ pair<int,int> OptimizedFlopsync::computeCorrection(int e)
     uoo=uquant;
     eo=e;
     
+    #ifndef USE_VHT
+    const int wMax=w;
+    const int wMin=minw;
+    #else //USE_VHT
+    e/=61;
+    const int wMax=w/61;
+    const int wMin=minw/61;
+    #endif //USE_VHT
     //Update variance computation
     sum+=e*fp;
     squareSum+=e*e*fp;
@@ -221,24 +230,38 @@ pair<int,int> OptimizedFlopsync::computeCorrection(int e)
         var=squareSum/numSamples-sum*sum/fp;
         var*=3; //Set the window size to three sigma
         var/=fp;
-        var=max<int>(min<int>(var,w),minw); //Clamp between min and max window
+        var=max<int>(min<int>(var,wMax),wMin); //Clamp between min and max window
         sum=squareSum=count=0;
     }
 
+    #ifndef USE_VHT
     return make_pair(uquant,var);
+    #else //USE_VHT
+    return make_pair(uquant,var*61);
+    #endif //USE_VHT
 }
 
 pair<int,int> OptimizedFlopsync::lostPacket()
 {
     //Double receiver window on packet loss, still clamped to max value
+    #ifndef USE_VHT
     var=min<int>(2*var,w);
-    return make_pair(getClockCorrection(),var);
+    int result=var;
+    #else //USE_VHT
+    var=min<int>(2*var,w/61);
+    int result=var*61;
+    #endif //USE_VHT
+    return make_pair(getClockCorrection(),result);
 }
 
 void OptimizedFlopsync::reset()
 {
     uo=uoo=eo=sum=squareSum=count=0;
+    #ifndef USE_VHT
     var=w;
+    #else
+    var=w/61;
+    #endif
 }
 
 int OptimizedFlopsync::getClockCorrection() const

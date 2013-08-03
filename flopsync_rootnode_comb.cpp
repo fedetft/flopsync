@@ -43,59 +43,53 @@ int main()
     puts(experimentName);
     const unsigned char address[]={0xab, 0xcd, 0xef};
     Nrf24l01& nrf=Nrf24l01::instance();
-    Rtc& rtc=Rtc::instance();
     nrf.setAddress(address);
     nrf.setFrequency(2450);
+    #ifndef USE_VHT
+    Timer& rtc=Rtc::instance();
+    #else //USE_VHT
+    Timer& rtc=VHT::instance();
+    #endif //USE_VHT
     FlooderRootNode flooder(rtc);
     
     AuxiliaryTimer& timer=AuxiliaryTimer::instance();
-    
-//     VHT& vht=VHT::instance();
-//     rtc.setAbsoluteWakeup(5);
-//     rtc.wait();
-//     for(;;)
-//     {
-//         vht.synchronizeWith(rtc);
-//         miosix::Thread::sleep(1000);
-//     }
-    
     for(;;)
     {
         flooder.synchronize();
         
         puts("----");
-        unsigned int frameStart=flooder.getMeasuredFrameStart();
-        for(unsigned int i=combSpacing,j=0;i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
-        {
-            unsigned int wakeupTime=frameStart+i-
-                (jitterAbsorption+receiverTurnOn+w+longPacketTime);
-            rtc.setAbsoluteWakeupSleep(wakeupTime);
-            rtc.sleep();
-            rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
-            nrf.setMode(Nrf24l01::RX);
-            nrf.setPacketLength(sizeof(Packet2));
-            rtc.wait();
-            nrf.startReceiving();
-            timer.initTimeoutTimer(receiverTurnOn+2*w+longPacketTime);
-            bool timeout;
-            unsigned int measuredTime;
-            Packet2 packet;
-            for(;;)
-            {
-                timeout=timer.waitForPacketOrTimeout();
-                measuredTime=rtc.getPacketTimestamp();
-                if(timeout) break;
-                nrf.readPacket(&packet);
-                if(packet.check==0) break;
-            }
-            timer.stopTimeoutTimer();
-            nrf.setMode(Nrf24l01::SLEEP);
-            if(timeout) printf("node%d timeout\n",(j % 3)+1);
-            else {
-                if(j<3) printf("e=%d u=%d w=%d%s\n",packet.e,packet.u,packet.w,
-                    packet.miss ? "(miss)" : "");
-                printf("node%d.e=%d\n",(j % 3)+1,measuredTime-(frameStart+i));
-            }
-        }
+//         unsigned int frameStart=flooder.getMeasuredFrameStart();
+//         for(unsigned int i=combSpacing,j=0;i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
+//         {
+//             unsigned int wakeupTime=frameStart+i-
+//                 (jitterAbsorption+receiverTurnOn+w+longPacketTime);
+//             rtc.setAbsoluteWakeupSleep(wakeupTime);
+//             rtc.sleep();
+//             rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
+//             nrf.setMode(Nrf24l01::RX);
+//             nrf.setPacketLength(sizeof(Packet2));
+//             rtc.wait();
+//             nrf.startReceiving();
+//             timer.initTimeoutTimer(toAuxiliaryTimer(receiverTurnOn+2*w+longPacketTime));
+//             bool timeout;
+//             unsigned int measuredTime;
+//             Packet2 packet;
+//             for(;;)
+//             {
+//                 timeout=timer.waitForPacketOrTimeout();
+//                 measuredTime=rtc.getPacketTimestamp();
+//                 if(timeout) break;
+//                 nrf.readPacket(&packet);
+//                 if(packet.check==0) break;
+//             }
+//             timer.stopTimeoutTimer();
+//             nrf.setMode(Nrf24l01::SLEEP);
+//             if(timeout) printf("node%d timeout\n",(j % 3)+1);
+//             else {
+//                 if(j<3) printf("e=%d u=%d w=%d%s\n",packet.e,packet.u,packet.w,
+//                     packet.miss ? "(miss)" : "");
+//                 printf("node%d.e=%d\n",(j % 3)+1,measuredTime-(frameStart+i));
+//             }
+//         }
     }
 }

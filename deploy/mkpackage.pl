@@ -17,7 +17,7 @@ while(<$file>)
 close($file);
 my @configkeys=('experiment_name','experiment_time','sync_period',
 				'relative_clock','interactive_rootnode','event_timestamping',
-				'node0_file','node0_second_hop','node1_file',
+				'vht','node0_file','node0_second_hop','node1_file',
 				'node1_second_hop','node2_file','node2_second_hop',
 				'node3_file','node3_second_hop');
 @configkeys=sort(@configkeys);
@@ -77,6 +77,9 @@ sub build
 		} elsif(/#define EVENT_TIMESTAMPING/) {
 			print $outfile '//' unless($config{'event_timestamping'});
 			print $outfile "#define EVENT_TIMESTAMPING\n";
+		} elsif(/#define USE_VHT/) {
+			print $outfile '//' unless($config{'vht'});
+			print $outfile "#define USE_VHT\n";
 		} elsif(/^#define experimentName/) {
 			my $n="#define experimentName \"$config{experiment_name}#$binfile";
 			$n.='#'.localtime();
