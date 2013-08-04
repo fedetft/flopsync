@@ -1,7 +1,8 @@
-diff -ruN flopsync/drivers/nrf24l01.cpp flopsync_temp/drivers/nrf24l01.cpp
---- flopsync/drivers/nrf24l01.cpp	2013-07-29 00:02:51.791594009 +0200
-+++ flopsync_temp/drivers/nrf24l01.cpp	2013-07-28 23:11:15.000000000 +0200
-@@ -92,15 +92,15 @@
+diff --git a/drivers/nrf24l01.cpp b/drivers/nrf24l01.cpp
+index 4c9a7f4..8b17e79 100644
+--- a/drivers/nrf24l01.cpp
++++ b/drivers/nrf24l01.cpp
+@@ -92,15 +92,15 @@ void Nrf24l01::setMode(Mode mode)
          delayUs(1);
      }
      
@@ -26,10 +27,11 @@ diff -ruN flopsync/drivers/nrf24l01.cpp flopsync_temp/drivers/nrf24l01.cpp
      
  //    if(mode==RX) nrf::ce::high(); //Start receiving right now if RX
      this->mode=mode;
-diff -ruN flopsync/drivers/rtc.cpp flopsync_temp/drivers/rtc.cpp
---- flopsync/drivers/rtc.cpp	2013-07-29 00:02:51.791594009 +0200
-+++ flopsync_temp/drivers/rtc.cpp	2013-07-28 23:03:41.000000000 +0200
-@@ -150,9 +150,16 @@
+diff --git a/drivers/rtc.cpp b/drivers/rtc.cpp
+index e279033..362133d 100644
+--- a/drivers/rtc.cpp
++++ b/drivers/rtc.cpp
+@@ -183,9 +183,16 @@ void AuxiliaryTimer::initTimeoutTimer(unsigned short ctr)
      TIM7->CR1 |= TIM_CR1_CEN;
  }
  
@@ -46,7 +48,7 @@ diff -ruN flopsync/drivers/rtc.cpp flopsync_temp/drivers/rtc.cpp
      while(packetReceived==false && timeout==false)
      {
          timeoutWaiting=Thread::IRQgetCurrentThread();
-@@ -163,12 +170,18 @@
+@@ -196,12 +203,18 @@ bool AuxiliaryTimer::waitForPacketOrTimeout()
          }
      }
      packetReceived=false;
@@ -65,7 +67,7 @@ diff -ruN flopsync/drivers/rtc.cpp flopsync_temp/drivers/rtc.cpp
      while(timeout==false)
      {
          timeoutWaiting=Thread::IRQgetCurrentThread();
-@@ -178,6 +191,9 @@
+@@ -211,6 +224,9 @@ void AuxiliaryTimer::waitForTimeout()
              Thread::yield();
          }
      }
@@ -75,7 +77,7 @@ diff -ruN flopsync/drivers/rtc.cpp flopsync_temp/drivers/rtc.cpp
  }
  
  void AuxiliaryTimer::stopTimeoutTimer()
-@@ -246,6 +262,9 @@
+@@ -290,6 +306,9 @@ void Rtc::setRelativeWakeup(unsigned int value)
  void Rtc::wait()
  {
      FastInterruptDisableLock dLock;
@@ -85,7 +87,7 @@ diff -ruN flopsync/drivers/rtc.cpp flopsync_temp/drivers/rtc.cpp
      while(rtcInterrupt==false)
      {
          waiting=Thread::IRQgetCurrentThread();
-@@ -255,6 +274,9 @@
+@@ -299,6 +318,9 @@ void Rtc::wait()
              Thread::yield();
          }
      }
@@ -94,8 +96,8 @@ diff -ruN flopsync/drivers/rtc.cpp flopsync_temp/drivers/rtc.cpp
 +   
  }
  
- void Rtc::sleepAndWait()
-@@ -264,7 +286,9 @@
+ void Rtc::setAbsoluteWakeupSleep(unsigned int value)
+@@ -313,7 +335,9 @@ void Rtc::sleep()
      {
          FastInterruptDisableLock dLock;
          if(rtcInterrupt) return;
@@ -106,7 +108,7 @@ diff -ruN flopsync/drivers/rtc.cpp flopsync_temp/drivers/rtc.cpp
          sleepAgain:
          PWR->CR |= PWR_CR_LPDS;
          SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
-@@ -315,6 +339,9 @@
+@@ -364,6 +388,9 @@ void Rtc::sleep()
  
          RCC->CR |= RCC_CR_PLLON;
          while((RCC->CR & RCC_CR_PLLRDY)==0) ;
@@ -116,30 +118,45 @@ diff -ruN flopsync/drivers/rtc.cpp flopsync_temp/drivers/rtc.cpp
          RCC->CFGR &= ~RCC_CFGR_SW;
          RCC->CFGR |= RCC_CFGR_SW_PLL;    
          while((RCC->CFGR & RCC_CFGR_SWS)!=0x08) ; 
-diff -ruN flopsync/experiment.conf flopsync_temp/experiment.conf
---- flopsync/experiment.conf	2013-07-29 00:02:51.791594009 +0200
-+++ flopsync_temp/experiment.conf	2013-07-28 23:47:29.000000000 +0200
+@@ -467,6 +494,9 @@ void VHT::setAbsoluteWakeupWait(unsigned int value)
+ void VHT::wait()
+ {
+     FastInterruptDisableLock dLock;
++
++    fixme::low();
++
+     TIM3->DIER |= TIM_DIER_CC1IE;
+     vhtWaiting=Thread::IRQgetCurrentThread();
+     while(vhtWaiting)
+@@ -478,6 +508,8 @@ void VHT::wait()
+         }
+     }
+     TIM3->DIER &=~ TIM_DIER_CC1IE;
++
++    fixme::high();
+ }
+ 
+ void VHT::setAbsoluteWakeupSleep(unsigned int value)
+diff --git a/experiment.conf b/experiment.conf
+index 8d7e23c..82061bc 100644
+--- a/experiment.conf
++++ b/experiment.conf
 @@ -5,7 +5,7 @@
  # General config parameters
- experiment_name="again10"
- experiment_time="30*60"
--sync_period="15"
+ experiment_name="test"
+ experiment_time="60*24*60*60"
+-sync_period="60"
 +sync_period="5"
  relative_clock="0"
  interactive_rootnode="0"
  event_timestamping="0"
-@@ -20,4 +20,4 @@
- 
- # Node 2
- node2_file="flopsync_dynamic_comb.cpp flopsync2.cpp"
--node2_second_hop="1"
-+node2_second_hop="0"
-diff -ruN flopsync/flopsync2.cpp flopsync_temp/flopsync2.cpp
---- flopsync/flopsync2.cpp	2013-07-29 00:02:51.791594009 +0200
-+++ flopsync_temp/flopsync2.cpp	2013-07-28 23:41:42.000000000 +0200
-@@ -138,9 +138,9 @@
+diff --git a/flopsync2.cpp b/flopsync2.cpp
+index 99b1773..e00e6f5 100644
+--- a/flopsync2.cpp
++++ b/flopsync2.cpp
+@@ -144,9 +144,9 @@ bool FlooderSyncNode::synchronize()
      }
-     short clockCorrection=r.first;
+     clockCorrection=r.first;
      receiverWindow=r.second;
 -    
 -    printf("e=%d u=%d w=%d%s\n",measuredFrameStart-computedFrameStart,
@@ -150,10 +167,11 @@ diff -ruN flopsync/flopsync2.cpp flopsync_temp/flopsync2.cpp
      
      //Correct frame start considering hops
      measuredFrameStart-=hop*retransmitDelta;
-diff -ruN flopsync/flopsync2.h flopsync_temp/flopsync2.h
---- flopsync/flopsync2.h	2013-07-29 00:02:51.791594009 +0200
-+++ flopsync_temp/flopsync2.h	2013-07-28 23:47:15.000000000 +0200
-@@ -228,7 +228,7 @@
+diff --git a/flopsync2.h b/flopsync2.h
+index daa81d6..3c0be4b 100644
+--- a/flopsync2.h
++++ b/flopsync2.h
+@@ -290,7 +290,7 @@ private:
      unsigned char count;
      unsigned char var;
      
@@ -162,54 +180,48 @@ diff -ruN flopsync/flopsync2.h flopsync_temp/flopsync2.h
      static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
  };
  
-diff -ruN flopsync/flopsync_dynamic_comb.cpp flopsync_temp/flopsync_dynamic_comb.cpp
---- flopsync/flopsync_dynamic_comb.cpp	2013-07-29 00:02:51.791594009 +0200
-+++ flopsync_temp/flopsync_dynamic_comb.cpp	2013-07-28 22:54:50.000000000 +0200
-@@ -59,6 +59,7 @@
+@@ -348,7 +348,7 @@ private:
+     unsigned char count;
+     unsigned char var;
+     
+-    static const int numSamples=64; //Number of samples for variance compuation
++    static const int numSamples=32; //Number of samples for variance compuation
+     static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
+ };
+ 
+diff --git a/flopsync_dynamic_comb.cpp b/flopsync_dynamic_comb.cpp
+index d4273a8..7e2e0f4 100644
+--- a/flopsync_dynamic_comb.cpp
++++ b/flopsync_dynamic_comb.cpp
+@@ -75,6 +75,7 @@ int main()
      {
          if(flooder.synchronize()) flooder.resynchronize();
          
 +#if 0
-         unsigned int frameStart=flooder.getFrameStart();
-         unsigned int start;
-         //Node1 gets even comb slots, node2 even slots
-@@ -88,5 +89,6 @@
+         MonotonicClock clock(flopsync,flooder);
+         unsigned int start=node*combSpacing;
+         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
+@@ -106,5 +107,6 @@ int main()
              nrf.endWritePacket();
              nrf.setMode(Nrf24l01::SLEEP);
          }
 +#endif
      }
  }
-diff -ruN flopsync/flopsync_rootnode_comb.cpp flopsync_temp/flopsync_rootnode_comb.cpp
---- flopsync/flopsync_rootnode_comb.cpp	2013-07-29 00:02:51.791594009 +0200
-+++ flopsync_temp/flopsync_rootnode_comb.cpp	2013-07-28 23:05:25.000000000 +0200
-@@ -33,8 +33,16 @@
- 
- using namespace std;
- 
-+#include <miosix.h>
-+//--------------
-+typedef miosix::Gpio<GPIOC_BASE,8> fixme;
-+//--------------
-+
- int main()
- {
-+    fixme::mode(miosix::Mode::OUTPUT);
-+    fixme::low();
-+    
-     puts(experimentName);
-     const unsigned char address[]={0xab, 0xcd, 0xef};
-     Nrf24l01& nrf=Nrf24l01::instance();
-@@ -49,6 +57,7 @@
+diff --git a/flopsync_rootnode_comb.cpp b/flopsync_rootnode_comb.cpp
+index 1f67b81..eaefd84 100644
+--- a/flopsync_rootnode_comb.cpp
++++ b/flopsync_rootnode_comb.cpp
+@@ -57,6 +57,7 @@ int main()
      {
          flooder.synchronize();
          
 +#if 0
          puts("----");
-         unsigned int frameStart=flooder.getFrameStart();
+         unsigned int frameStart=flooder.getMeasuredFrameStart();
          for(unsigned int i=combSpacing,j=0;i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
-@@ -83,5 +92,6 @@
-                 printf("node%d.e=%d\n",(j & 1)+1,measuredTime-(frameStart+i));
+@@ -91,5 +92,6 @@ int main()
+                 printf("node%d.e=%d\n",(j % 3)+1,measuredTime-(frameStart+i));
              }
          }
 +#endif
