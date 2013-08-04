@@ -75,33 +75,36 @@ int main()
     {
         if(flooder.synchronize()) flooder.resynchronize();
         
-//         MonotonicClock clock(flopsync,flooder);
-//         unsigned int start=node*combSpacing;
-//         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
-//         {
-//             unsigned int wakeupTime=clock.rootFrame2localAbsolute(i)-
-//                 (jitterAbsorption+receiverTurnOn+longPacketTime+spiPktSend);
-//             rtc.setAbsoluteWakeupSleep(wakeupTime);
-//             rtc.sleep();
-//             blueLed::high();
-//             rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
-//             nrf.setMode(Nrf24l01::TX);
-//             nrf.setPacketLength(sizeof(Packet2));
-//             timer.initTimeoutTimer(0);
-//             Packet2 packet;
-//             packet.e=flopsync.getSyncError();
-//             packet.u=max<int>(numeric_limits<short>::min(),
-//                 min<int>(numeric_limits<short>::max(),
-//                 flopsync.getClockCorrection()));
-//             packet.w=flopsync.getReceiverWindow();
-//             packet.miss=flooder.isPacketMissed() ? 1 : 0;
-//             packet.check=0;
-//             rtc.wait();
-//             nrf.writePacket(&packet);
-//             timer.waitForPacketOrTimeout();
-//             blueLed::low();
-//             nrf.endWritePacket();
-//             nrf.setMode(Nrf24l01::SLEEP);
-//         }
+        MonotonicClock clock(flopsync,flooder);
+        unsigned int start=node*combSpacing;
+        for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
+        {
+            unsigned int wakeupTime=clock.rootFrame2localAbsolute(i)-
+                (jitterAbsorption+receiverTurnOn+longPacketTime+spiPktSend);
+            rtc.setAbsoluteWakeupSleep(wakeupTime);
+            rtc.sleep();
+            blueLed::high();
+            rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
+            nrf.setMode(Nrf24l01::TX);
+            nrf.setPacketLength(sizeof(Packet2));
+            timer.initTimeoutTimer(0);
+            Packet2 packet;
+            packet.e=flopsync.getSyncError();
+            packet.u=max<int>(numeric_limits<short>::min(),
+                min<int>(numeric_limits<short>::max(),
+                flopsync.getClockCorrection()));
+            packet.w=flopsync.getReceiverWindow();
+            packet.miss=flooder.isPacketMissed() ? 1 : 0;
+            packet.check=0;
+            {
+                CriticalSection cs;
+                rtc.wait();
+                nrf.writePacket(&packet);
+            }
+            timer.waitForPacketOrTimeout();
+            blueLed::low();
+            nrf.endWritePacket();
+            nrf.setMode(Nrf24l01::SLEEP);
+        }
     }
 }

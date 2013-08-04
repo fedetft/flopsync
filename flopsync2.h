@@ -32,6 +32,7 @@
 #include "drivers/nrf24l01.h"
 #include "drivers/rtc.h"
 #include "protocol_constants.h"
+#include <miosix.h>
 
 /**
  * Base class from which flooding schemes derive
@@ -99,11 +100,6 @@ public:
      * \return the clock correction u(k)
      */
     virtual int getClockCorrection() const=0;
-    
-    /**
-     * \return the previous clock correction u(k-1)
-     */
-    virtual int getPreviousClockCorrection() const=0;
     
     /**
      * \return the receiver window (w)
@@ -282,18 +278,12 @@ public:
     int getClockCorrection() const;
     
     /**
-     * \return the previous clock correction u(k-1)
-     */
-    int getPreviousClockCorrection() const { return uoo; }
-    
-    /**
      * \return the receiver window (w)
      */
     int getReceiverWindow() const { return var; }
     
 private:
     int uo;
-    int uoo; //Used by non-monotonic clock
     int sum;
     int squareSum;
     short eo;
@@ -302,6 +292,112 @@ private:
     
     static const int numSamples=64; //Number of samples for variance compuation
     static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
+};
+
+/**
+ * This class is basically Controller2 from flopsync_controllers.h plus
+ * VarianceEstimator with a Synchronizer compatible interface and some
+ * small RAM usage improvements
+ */
+class OptimizedDeadbeatFlopsync : public Synchronizer
+{
+public:
+    /**
+     * Constructor
+     */
+    OptimizedDeadbeatFlopsync();
+    
+    /**
+     * Compute clock correction and receiver window given synchronization error
+     * \param e synchronization error
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> computeCorrection(int e);
+    
+    /**
+     * Compute clock correction and receiver window when a packet is lost
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> lostPacket();
+    
+    /**
+     * Used after a resynchronization to reset the controller state
+     */
+    void reset();
+    
+    /**
+     * \return the synchronization error e(k)
+     */
+    int getSyncError() const { return eo; }
+    
+    /**
+     * \return the clock correction u(k)
+     */
+    int getClockCorrection() const { return uo; }
+    
+    /**
+     * \return the receiver window (w)
+     */
+    int getReceiverWindow() const { return var; }
+    
+private:
+    int uo;
+    int sum;
+    int squareSum;
+    short eo;
+    unsigned char count;
+    unsigned char var;
+    
+    static const int numSamples=64; //Number of samples for variance compuation
+    static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
+};
+
+/**
+ * Dummy synchronizer that does not perform skew/drift compensation
+ */
+class DummySynchronizer : public Synchronizer
+{
+public:
+    /**
+     * Constructor
+     */
+    DummySynchronizer();
+    
+    /**
+     * Compute clock correction and receiver window given synchronization error
+     * \param e synchronization error
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> computeCorrection(int e);
+    
+    /**
+     * Compute clock correction and receiver window when a packet is lost
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> lostPacket();
+    
+    /**
+     * Used after a resynchronization to reset the controller state
+     */
+    void reset();
+    
+    /**
+     * \return the synchronization error e(k)
+     */
+    int getSyncError() const { return 0; }
+    
+    /**
+     * \return the clock correction u(k)
+     */
+    int getClockCorrection() const { return 0; }
+    
+    /**
+     * \return the receiver window (w)
+     */
+    int getReceiverWindow() const { return w; }
+    
+private:
+    int uo;
 };
 
 /**
@@ -360,6 +456,36 @@ public:
 private:
     const Synchronizer& sync;
     const FloodingScheme& flood;
+};
+
+/**
+ * To send (in the root node) or rebroadcast (in the synchronized nodes) the
+ * synchronization packet with a jitter as low as possible, disable the systick
+ * interrupt, that in Miosix is used for preemption. Note that it's not
+ * possible to simply disable all interrupts as the radio code is
+ * interrupt-driven.
+ * This is a bit of a hack, and may break in future Miosix versions.
+ */
+class CriticalSection
+{
+public:
+    /**
+     * Constructor
+     */
+    CriticalSection()
+    {
+        SysTick->CTRL=0;
+    }
+    
+    /**
+     * Destructor
+     */
+    ~CriticalSection()
+    {
+        SysTick->CTRL=SysTick_CTRL_ENABLE
+                    | SysTick_CTRL_TICKINT
+                    | SysTick_CTRL_CLKSOURCE;
+    }
 };
 
 #endif //FLOPSYNC2_H

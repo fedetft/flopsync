@@ -28,7 +28,6 @@
 #include "flopsync2.h"
 #include <cstdio>
 #include <cassert>
-#include <miosix.h>
 
 using namespace std;
 
@@ -59,15 +58,12 @@ bool FlooderRootNode::synchronize()
     // To minimize jitter in the packet transmission time caused by the
     // variable time sleepAndWait() takes to restart the STM32 PLL an
     // additional wait is done here to absorb the jitter.
-    
-    SysTick->CTRL=0; //FIXME: experimental
-    
-    rtc.wait();
-    miosix::ledOn(); 
-    nrf.writePacket(packet);
-    
-    SysTick->CTRL=SysTick_CTRL_ENABLE | SysTick_CTRL_TICKINT | SysTick_CTRL_CLKSOURCE; //FIXME: experimental
-    
+    {
+        CriticalSection cs;
+        rtc.wait();
+        miosix::ledOn(); 
+        nrf.writePacket(packet);
+    }
     timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
     frameStart=rtc.getPacketTimestamp();
     miosix::ledOff(); //Falling edge signals synchronization packet sent
@@ -109,30 +105,27 @@ bool FlooderSyncNode::synchronize()
     timer.initTimeoutTimer(toAuxiliaryTimer(
         receiverTurnOn+2*receiverWindow+smallPacketTime));
     bool timeout;
-    
-    SysTick->CTRL=0; //FIXME: experimental
-    
-    for(;;)
     {
-        timeout=timer.waitForPacketOrTimeout();
-        measuredFrameStart=rtc.getPacketTimestamp();
-        // Falling edge signals RX received the packet.
-        // It happens between 4 and 16us from the transmitter's falling edge
-        // (measured with an oscilloscope)
-        miosix::ledOff();
-        if(timeout) break;
-        char packet[1];
-        nrf.readPacket(packet);
-        if(packet[0]==hop) break;
-        miosix::ledOn();
+        CriticalSection cs;
+        for(;;)
+        {
+            timeout=timer.waitForPacketOrTimeout();
+            measuredFrameStart=rtc.getPacketTimestamp();
+            // Falling edge signals RX received the packet.
+            // It happens between 4 and 16us from the transmitter's falling edge
+            // (measured with an oscilloscope)
+            miosix::ledOff();
+            if(timeout) break;
+            char packet[1];
+            nrf.readPacket(packet);
+            if(packet[0]==hop) break;
+            miosix::ledOn();
+        }
+        timer.stopTimeoutTimer();
+        #ifdef MULTI_HOP
+        if(!timeout) rebroadcast();
+        #endif //MULTI_HOP
     }
-    timer.stopTimeoutTimer();
-    #ifdef MULTI_HOP
-    if(!timeout) rebroadcast();
-    #endif //MULTI_HOP
-    
-    SysTick->CTRL=SysTick_CTRL_ENABLE | SysTick_CTRL_TICKINT | SysTick_CTRL_CLKSOURCE; //FIXME: experimental
-    
     nrf.setMode(Nrf24l01::SLEEP);
     
     pair<int,int> r;
@@ -222,7 +215,6 @@ pair<int,int> OptimizedFlopsync::computeCorrection(int e)
     //Adaptive state quantization, while the output always needs to be
     //quantized, the state is only quantized if the error is zero
     uo= e==0 ? 32*uquant : u;
-    uoo=uquant;
     eo=e;
     
     #ifndef USE_VHT
@@ -268,7 +260,7 @@ pair<int,int> OptimizedFlopsync::lostPacket()
 
 void OptimizedFlopsync::reset()
 {
-    uo=uoo=eo=sum=squareSum=count=0;
+    uo=eo=sum=squareSum=count=0;
     #ifndef USE_VHT
     var=w;
     #else
@@ -285,6 +277,92 @@ int OptimizedFlopsync::getClockCorrection() const
 }
 
 //
+// class OptimizedDeadbeatFlopsync
+//
+
+OptimizedDeadbeatFlopsync::OptimizedDeadbeatFlopsync() { reset(); }
+
+pair<int,int> OptimizedDeadbeatFlopsync::computeCorrection(int e)
+{
+    //u(k)=u(k-1)+2*e(k)-e(k-1)
+    int u=uo+2*e-eo;
+    uo=u;
+    eo=e;
+    
+    #ifndef USE_VHT
+    const int wMax=w;
+    const int wMin=minw;
+    #else //USE_VHT
+    e/=61;
+    const int wMax=w/61;
+    const int wMin=minw/61;
+    #endif //USE_VHT
+    //Update variance computation
+    sum+=e*fp;
+    squareSum+=e*e*fp;
+    if(++count>=numSamples)
+    {
+        sum/=numSamples;
+        var=squareSum/numSamples-sum*sum/fp;
+        var*=3; //Set the window size to three sigma
+        var/=fp;
+        var=max<int>(min<int>(var,wMax),wMin); //Clamp between min and max window
+        sum=squareSum=count=0;
+    }
+
+    #ifndef USE_VHT
+    return make_pair(u,var);
+    #else //USE_VHT
+    return make_pair(u,var*61);
+    #endif //USE_VHT
+}
+
+pair<int,int> OptimizedDeadbeatFlopsync::lostPacket()
+{
+    //Double receiver window on packet loss, still clamped to max value
+    #ifndef USE_VHT
+    var=min<int>(2*var,w);
+    int result=var;
+    #else //USE_VHT
+    var=min<int>(2*var,w/61);
+    int result=var*61;
+    #endif //USE_VHT
+    return make_pair(getClockCorrection(),result);
+}
+
+void OptimizedDeadbeatFlopsync::reset()
+{
+    uo=eo=sum=squareSum=count=0;
+    #ifndef USE_VHT
+    var=w;
+    #else
+    var=w/61;
+    #endif
+}
+
+//
+// class DummySynchronizer
+//
+
+DummySynchronizer::DummySynchronizer() { reset(); }
+
+pair<int,int> DummySynchronizer::computeCorrection(int e)
+{
+    uo=e;
+    return make_pair(uo,w);
+}
+
+pair<int,int> DummySynchronizer::lostPacket()
+{
+    return make_pair(uo,w);
+}
+
+void DummySynchronizer::reset()
+{
+    uo=0;
+}
+
+//
 // class MonotonicClock
 //
 
@@ -292,9 +370,10 @@ unsigned int MonotonicClock::rootFrame2localAbsolute(unsigned int root)
 {
     int signedRoot=root; //Conversion unsigned to signed is *required*
     int period=nominalPeriod;
-    int correction=sync.getClockCorrection()*signedRoot;
+    long long correction=signedRoot;
+    correction*=sync.getClockCorrection();
     int sign=correction>=0 ? 1 : -1; //Round towards closest
-    int dividedCorrection=(correction+sign*period/2)/period;
+    int dividedCorrection=(correction+(sign*period/2))/period;
     return flood.getComputedFrameStart()+max(0,signedRoot+dividedCorrection);
 }
 
@@ -306,8 +385,9 @@ unsigned int NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
 {
     int signedRoot=root; //Conversion unsigned to signed is *required*
     int period=nominalPeriod;
-    int correction=(sync.getPreviousClockCorrection()-sync.getSyncError())*signedRoot;
+    long long correction=signedRoot;
+    correction*=sync.getClockCorrection()-sync.getSyncError();
     int sign=correction>=0 ? 1 : -1; //Round towards closest
-    int dividedCorrection=(correction+sign*period/2)/period;
+    int dividedCorrection=(correction+(sign*period/2))/period;
     return flood.getMeasuredFrameStart()+max(0,signedRoot+dividedCorrection);
 }

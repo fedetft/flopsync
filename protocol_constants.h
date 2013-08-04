@@ -87,10 +87,10 @@ const unsigned int radioBoot=static_cast<int>(0.0016f*hz+0.5f);
 //Time for the nRF to start receiving after a call to startReceiving() (130us)
 const unsigned int receiverTurnOn=static_cast<int>(0.00013f*hz+0.5f);
 
-//Time to send a 1..4 byte packet via SPI @ 6MHz to the nRF (31us)
+//Time to send a 1..8 byte packet via SPI @ 6MHz to the nRF (50us)
 //Computed as the missing piece in the difference between frameStart and
-//wakeupTime in FlooderRootNode.
-const unsigned int spiPktSend=static_cast<int>(0.000031f*hz+0.5f);
+//wakeupTime in FlooderRootNode. This is tricky to get right, especially with VHT.
+const unsigned int spiPktSend=static_cast<int>(0.000050f*hz+0.5f);
 
 #ifndef USE_VHT
 //Additonal delay to absorb jitter (must be greater than pllBoot+radioBoot)
