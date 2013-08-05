@@ -482,6 +482,8 @@ void VHT::wait()
 
 void VHT::setAbsoluteWakeupSleep(unsigned int value)
 {
+    if(value<last) overflows++;
+    last=value;
     //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
     //while the other timer run at a submultiple of 24MHz, 1MHz in
     //the current setting, and since 1MHz is not a multiple of 16384
@@ -489,7 +491,9 @@ void VHT::setAbsoluteWakeupSleep(unsigned int value)
     //64bit numbers for intermendiate results. If the main XTAL was
     //8.388608MHz instead of 8MHz a simple shift operation on 32bit
     //numbers would suffice.
-    unsigned long long conversion=value;
+    unsigned long long conversion=overflows;
+    conversion<<=32;
+    conversion|=value;
     conversion*=16384;
     conversion+=1000000/2; //Round to nearest
     conversion/=1000000;
@@ -555,7 +559,7 @@ void VHT::synchronizeWithRtc()
     vhtBase=conversion;
 }
 
-VHT::VHT() : rtc(Rtc::instance())
+VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), last(0), overflows(0)
 {
     {
         FastInterruptDisableLock dLock;
