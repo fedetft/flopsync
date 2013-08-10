@@ -217,55 +217,43 @@ pair<int,int> OptimizedFlopsync::computeCorrection(int e)
     uo= e==0 ? 32*uquant : u;
     eo=e;
     
-    #ifndef USE_VHT
-    const int wMax=w;
-    const int wMin=minw;
-    #else //USE_VHT
-    e/=61;
-    const int wMax=w/61;
-    const int wMin=minw/61;
-    #endif //USE_VHT
-    //Update variance computation
+    //Scale numbers if VHT is enabled to prevent overflows
+    int wMax=w/scaleFactor;
+    int wMin=minw/scaleFactor;
+    e/=scaleFactor;
+    
+    //Update receiver window size
     sum+=e*fp;
     squareSum+=e*e*fp;
     if(++count>=numSamples)
     {
-        sum/=numSamples;
-        var=squareSum/numSamples-sum*sum/fp;
-        var*=3; //Set the window size to three sigma
-        var/=fp;
-        var=max<int>(min<int>(var,wMax),wMin); //Clamp between min and max window
+        //Variance computed as E[X^2]-E[X]^2
+        int average=sum/numSamples;
+        int var=squareSum/numSamples-average*average/fp;
+        //Using the Babylonian method to approximate square root
+        int stddev=var/7;
+        for(int j=0;j<3;j++) if(stddev>0) stddev=(stddev+var*fp/stddev)/2;
+        //Set the window size to three sigma
+        int winSize=stddev*3/fp;
+        //Clamp between min and max window
+        dw=max<int>(min<int>(winSize,wMax),wMin);
         sum=squareSum=count=0;
     }
 
-    #ifndef USE_VHT
-    return make_pair(uquant,var);
-    #else //USE_VHT
-    return make_pair(uquant,var*61);
-    #endif //USE_VHT
+    return make_pair(uquant,scaleFactor*dw);
 }
 
 pair<int,int> OptimizedFlopsync::lostPacket()
 {
     //Double receiver window on packet loss, still clamped to max value
-    #ifndef USE_VHT
-    var=min<int>(2*var,w);
-    int result=var;
-    #else //USE_VHT
-    var=min<int>(2*var,w/61);
-    int result=var*61;
-    #endif //USE_VHT
-    return make_pair(getClockCorrection(),result);
+    dw=min<int>(2*dw,w/scaleFactor);
+    return make_pair(getClockCorrection(),scaleFactor*dw);
 }
 
 void OptimizedFlopsync::reset()
 {
     uo=eo=sum=squareSum=count=0;
-    #ifndef USE_VHT
-    var=w;
-    #else
-    var=w/61;
-    #endif
+    dw=w/scaleFactor;
 }
 
 int OptimizedFlopsync::getClockCorrection() const
@@ -289,55 +277,43 @@ pair<int,int> OptimizedDeadbeatFlopsync::computeCorrection(int e)
     uo=u;
     eo=e;
     
-    #ifndef USE_VHT
-    const int wMax=w;
-    const int wMin=minw;
-    #else //USE_VHT
-    e/=61;
-    const int wMax=w/61;
-    const int wMin=minw/61;
-    #endif //USE_VHT
-    //Update variance computation
+    //Scale numbers if VHT is enabled to prevent overflows
+    int wMax=w/scaleFactor;
+    int wMin=minw/scaleFactor;
+    e/=scaleFactor;
+    
+    //Update receiver window size
     sum+=e*fp;
     squareSum+=e*e*fp;
     if(++count>=numSamples)
     {
-        sum/=numSamples;
-        var=squareSum/numSamples-sum*sum/fp;
-        var*=3; //Set the window size to three sigma
-        var/=fp;
-        var=max<int>(min<int>(var,wMax),wMin); //Clamp between min and max window
+        //Variance computed as E[X^2]-E[X]^2
+        int average=sum/numSamples;
+        int var=squareSum/numSamples-average*average/fp;
+        //Using the Babylonian method to approximate square root
+        int stddev=var/7;
+        for(int j=0;j<3;j++) if(stddev>0) stddev=(stddev+var*fp/stddev)/2;
+        //Set the window size to three sigma
+        int winSize=stddev*3/fp;
+        //Clamp between min and max window
+        dw=max<int>(min<int>(winSize,wMax),wMin);
         sum=squareSum=count=0;
     }
 
-    #ifndef USE_VHT
-    return make_pair(u,var);
-    #else //USE_VHT
-    return make_pair(u,var*61);
-    #endif //USE_VHT
+    return make_pair(u,scaleFactor*dw);
 }
 
 pair<int,int> OptimizedDeadbeatFlopsync::lostPacket()
 {
     //Double receiver window on packet loss, still clamped to max value
-    #ifndef USE_VHT
-    var=min<int>(2*var,w);
-    int result=var;
-    #else //USE_VHT
-    var=min<int>(2*var,w/61);
-    int result=var*61;
-    #endif //USE_VHT
-    return make_pair(getClockCorrection(),result);
+    dw=min<int>(2*dw,w/scaleFactor);
+    return make_pair(getClockCorrection(),scaleFactor*dw);
 }
 
 void OptimizedDeadbeatFlopsync::reset()
 {
     uo=eo=sum=squareSum=count=0;
-    #ifndef USE_VHT
-    var=w;
-    #else
-    var=w/61;
-    #endif
+    dw=w/scaleFactor;
 }
 
 //

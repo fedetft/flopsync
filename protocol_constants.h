@@ -56,10 +56,10 @@
 
 #ifndef USE_VHT
 const unsigned int hz=16384;
-inline unsigned short toAuxiliaryTimer(unsigned int t) { return t; }
+inline unsigned short toAuxiliaryTimer(unsigned int t) { return t*VHT::scaleFactor; }
 #else //USE_VHT
 const unsigned int hz=1000000;
-inline unsigned short toAuxiliaryTimer(unsigned int t) { return t/VHT::scaleFactor; }
+inline unsigned short toAuxiliaryTimer(unsigned int t) { return t; }
 #endif //USE_VHT
 
 //Sync period
@@ -114,7 +114,11 @@ const unsigned int longPacketTime=static_cast<int>(0.000112f*hz+0.5f);
 const unsigned int w=static_cast<int>(0.003f*hz+0.5f);
 
 //Minimum sync window (dynamic window only)
+#ifndef USE_VHT
 const unsigned int minw=static_cast<int>(0.00018f*hz+0.5f);
+#else //USE_VHT
+const unsigned int minw=static_cast<int>(0.00006f*hz+0.5f);
+#endif //USE_VHT
 
 //Packet containing synchronization quality statistics, to send to base station
 // (legacy, not unused)

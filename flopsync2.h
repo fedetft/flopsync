@@ -280,7 +280,7 @@ public:
     /**
      * \return the receiver window (w)
      */
-    int getReceiverWindow() const { return var; }
+    int getReceiverWindow() const { return scaleFactor*dw; }
     
 private:
     int uo;
@@ -288,10 +288,22 @@ private:
     int squareSum;
     short eo;
     unsigned char count;
-    unsigned char var;
+    unsigned char dw;
     
     static const int numSamples=64; //Number of samples for variance compuation
     static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
+    #ifndef USE_VHT
+    static const int scaleFactor=1;
+    #else //USE_VHT
+    //The maximum value that can enter the window computation algorithm without
+    //without causing overflows is around 700, resulting in a scaleFactor of
+    //5 when the vht resolution is 1us, and w is 3ms. That however would cause
+    //overflow when writing the result to dw, which is just an unsigned char
+    //(to save RAM). This requires a higher scale factor, of about w/255, or 12.
+    //However, this requires more iterations to approximate the square root,
+    //so we're using a scale factor of 30.
+    static const int scaleFactor=30;
+    #endif //USE_VHT
 };
 
 /**
@@ -338,7 +350,7 @@ public:
     /**
      * \return the receiver window (w)
      */
-    int getReceiverWindow() const { return var; }
+    int getReceiverWindow() const { return scaleFactor*dw; }
     
 private:
     int uo;
@@ -346,10 +358,22 @@ private:
     int squareSum;
     short eo;
     unsigned char count;
-    unsigned char var;
+    unsigned char dw;
     
     static const int numSamples=64; //Number of samples for variance compuation
     static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
+    #ifndef USE_VHT
+    static const int scaleFactor=1;
+    #else //USE_VHT
+    //The maximum value that can enter the window computation algorithm without
+    //without causing overflows is around 700, resulting in a scaleFactor of
+    //5 when the vht resolution is 1us, and w is 3ms. That however would cause
+    //overflow when writing the result to dw, which is just an unsigned char
+    //(to save RAM). This requires a higher scale factor, of about w/255, or 12.
+    //However, this requires more iterations to approximate the square root,
+    //so we're using a scale factor of 30.
+    static const int scaleFactor=30;
+    #endif //USE_VHT
 };
 
 /**

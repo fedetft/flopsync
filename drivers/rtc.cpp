@@ -231,7 +231,7 @@ AuxiliaryTimer::AuxiliaryTimer()
     }
     TIM7->CR1=TIM_CR1_OPM;
     TIM7->DIER=TIM_DIER_UIE;
-    TIM7->PSC=24000000/16384-1;
+    TIM7->PSC=24000000/1000000-1;
     TIM7->CNT=0;
     NVIC_ClearPendingIRQ(EXTI0_IRQn);
     NVIC_SetPriority(EXTI0_IRQn,10); //Low priority
