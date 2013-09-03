@@ -63,6 +63,7 @@ int main()
     Timer& rtc=VHT::instance();
     #endif //USE_VHT
     OptimizedFlopsync flopsync;
+    //OptimizedDeadbeatFlopsync flopsync;
     #ifndef MULTI_HOP
     FlooderSyncNode flooder(rtc,flopsync);
     #else //SECOND_HOP
@@ -76,6 +77,7 @@ int main()
         if(flooder.synchronize()) flooder.resynchronize();
         
         MonotonicClock clock(flopsync,flooder);
+        //NonMonotonicClock clock(flopsync,flooder);
         unsigned int start=node*combSpacing;
         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
         {

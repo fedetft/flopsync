@@ -248,8 +248,10 @@ private:
     
     Rtc& rtc; //The underlying rtc
     unsigned int vhtBase;
-    unsigned int last;
-    unsigned int overflows;
+    unsigned int vhtLast;
+    unsigned int vhtOverflows;
+    mutable unsigned int rtcLast;
+    mutable unsigned int rtcOverflows;
 };
 
 /**

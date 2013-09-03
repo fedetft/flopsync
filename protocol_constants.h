@@ -66,7 +66,7 @@ inline unsigned short toAuxiliaryTimer(unsigned int t) { return t; }
 const unsigned int nominalPeriod=static_cast<int>(60*hz+0.5f); //@@ Filled in by mkpackage.pl
 
 //In a real implementation this should need to be computed randomly per node
-//(legacy, not unused)
+//(legacy, not used)
 #ifndef SECOND_HOP
 const unsigned int retransmitPoint=static_cast<int>(0.333f*nominalPeriod+0.5f);
 #else //SECOND_HOP
@@ -107,7 +107,7 @@ const unsigned int packetTime=static_cast<int>(0.00008f*hz+0.5f);
 //Time to transfer a 1byte packet (+6byte overhead) on an 1Mbps channel (56us)
 const unsigned int smallPacketTime=static_cast<int>(0.000056f*hz+0.5f);
 
-//Time to transfer a 8byte packet (+6byte overhead) on an 1Mbps channel (56us)
+//Time to transfer a 8byte packet (+6byte overhead) on an 1Mbps channel (112us)
 const unsigned int longPacketTime=static_cast<int>(0.000112f*hz+0.5f);
 
 //Sync window (fixed window), or maximum sync window (dynamic window)
@@ -121,7 +121,7 @@ const unsigned int minw=static_cast<int>(0.00006f*hz+0.5f);
 #endif //USE_VHT
 
 //Packet containing synchronization quality statistics, to send to base station
-// (legacy, not unused)
+// (legacy, not used)
 struct Packet
 { 
     short e;
@@ -143,7 +143,7 @@ struct Packet2
     unsigned char check;
 };
 
-//When to send the synchronization quality statistics packet (legacy, not unused)
+//When to send the synchronization quality statistics packet (legacy, not used)
 const unsigned int txtime=static_cast<int>(30*hz+0.5f);
 
 //Comb spacing, for intra-frame error measure

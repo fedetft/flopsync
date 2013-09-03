@@ -435,7 +435,12 @@ unsigned int VHT::getValue() const
     //in resynchronize it times out. In this case fallback to rtc
     if(vhtTimeout)
     {
-        unsigned long long conversion=rtc.getValue();
+        unsigned int r=rtc.getValue();
+        if(r<rtcLast) rtcOverflows++;
+        rtcLast=r;
+        unsigned long long conversion=rtcOverflows;
+        conversion<<=32;
+        conversion|=r;
         conversion*=1000000;
         conversion+=16384/2; //Round to nearest
         conversion/=16384;
@@ -449,7 +454,12 @@ unsigned int VHT::getPacketTimestamp() const
     //in resynchronize it times out. In this case fallback to rtc
     if(vhtTimeout)
     {
-        unsigned long long conversion=rtc.getValue();
+        unsigned int r=rtc.getValue();
+        if(r<rtcLast) rtcOverflows++;
+        rtcLast=r;
+        unsigned long long conversion=rtcOverflows;
+        conversion<<=32;
+        conversion|=r;
         conversion*=1000000;
         conversion+=16384/2; //Round to nearest
         conversion/=16384;
@@ -482,8 +492,8 @@ void VHT::wait()
 
 void VHT::setAbsoluteWakeupSleep(unsigned int value)
 {
-    if(value<last) overflows++;
-    last=value;
+    if(value<vhtLast) vhtOverflows++;
+    vhtLast=value;
     //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
     //while the other timer run at a submultiple of 24MHz, 1MHz in
     //the current setting, and since 1MHz is not a multiple of 16384
@@ -491,7 +501,7 @@ void VHT::setAbsoluteWakeupSleep(unsigned int value)
     //64bit numbers for intermendiate results. If the main XTAL was
     //8.388608MHz instead of 8MHz a simple shift operation on 32bit
     //numbers would suffice.
-    unsigned long long conversion=overflows;
+    unsigned long long conversion=vhtOverflows;
     conversion<<=32;
     conversion|=value;
     conversion*=16384;
@@ -552,14 +562,19 @@ void VHT::synchronizeWithRtc()
     //64bit numbers for intermendiate results. If the main XTAL was
     //8.388608MHz instead of 8MHz a simple bitmask operation on 32bit
     //numbers would suffice.
-    unsigned long long conversion=vhtSyncPointRtc;
+    if(vhtSyncPointRtc<rtcLast) rtcOverflows++;
+    rtcLast=vhtSyncPointRtc;
+    unsigned long long conversion=rtcOverflows;
+    conversion<<=32;
+    conversion|=vhtSyncPointRtc;
     conversion*=1000000;
     conversion+=16384/2; //Round to nearest
     conversion/=16384;
     vhtBase=conversion;
 }
 
-VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), last(0), overflows(0)
+VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), vhtLast(0), vhtOverflows(0),
+        rtcLast(0), rtcOverflows(0)
 {
     {
         FastInterruptDisableLock dLock;
