@@ -62,7 +62,8 @@ int main()
     #else //USE_VHT
     Timer& rtc=VHT::instance();
     #endif //USE_VHT
-    OptimizedFlopsync flopsync;
+    OptimizedRampFlopsync flopsync;
+    //OptimizedFlopsync flopsync;
     //OptimizedDeadbeatFlopsync flopsync;
     #ifndef MULTI_HOP
     FlooderSyncNode flooder(rtc,flopsync);

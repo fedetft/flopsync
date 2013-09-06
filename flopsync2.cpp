@@ -37,6 +37,20 @@ using namespace std;
 
 void FloodingScheme::resynchronize() {}
 
+FloodingScheme::~FloodingScheme() {}
+
+//
+// class Synchronizer
+//
+
+Synchronizer::~Synchronizer() {}
+
+//
+// class Clock
+//
+
+Clock::~Clock() {}
+
 //
 // class FlooderRootNode
 //
@@ -63,10 +77,10 @@ bool FlooderRootNode::synchronize()
         rtc.wait();
         miosix::ledOn(); 
         nrf.writePacket(packet);
+        timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
+        frameStart=rtc.getPacketTimestamp();
+        miosix::ledOff(); //Falling edge signals synchronization packet sent
     }
-    timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
-    frameStart=rtc.getPacketTimestamp();
-    miosix::ledOff(); //Falling edge signals synchronization packet sent
     nrf.endWritePacket();
     nrf.setMode(Nrf24l01::SLEEP);
     wakeupTime+=nominalPeriod;
@@ -192,6 +206,75 @@ void FlooderSyncNode::rebroadcast()
     timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
     miosix::ledOff(); //Falling edge signals synchronization packet sent
     nrf.endWritePacket();
+}
+
+//
+// class OptimizedRampFlopsync
+//
+
+OptimizedRampFlopsync::OptimizedRampFlopsync() { reset(); }
+
+pair<int,int> OptimizedRampFlopsync::computeCorrection(int e)
+{
+    //u(k)=2u(k-1)-u(k-2)+2.75e(k)-2.984375e(k-1)+e(k-2) with values kept multiplied by 64
+    //int u=2*uo-uoo+176*e-191*eo+64*eoo;
+    
+    //u(k)=2u(k-1)-u(k-2)+2.25e(k)-2.859375e(k-1)+e(k-2) with values kept multiplied by 64
+    int u=2*uo-uoo+144*e-183*eo+64*eoo;
+    uoo=uo;
+    uo=u;
+    eoo=eo;
+    eo=e;
+
+    int sign=u>=0 ? 1 : -1;
+    int uquant=(u+32*sign)/64;
+    
+    
+    //Scale numbers if VHT is enabled to prevent overflows
+    int wMax=w/scaleFactor;
+    int wMin=minw/scaleFactor;
+    e/=scaleFactor;
+    
+    //Update receiver window size
+    sum+=e*fp;
+    squareSum+=e*e*fp;
+    if(++count>=numSamples)
+    {
+        //Variance computed as E[X^2]-E[X]^2
+        int average=sum/numSamples;
+        int var=squareSum/numSamples-average*average/fp;
+        //Using the Babylonian method to approximate square root
+        int stddev=var/7;
+        for(int j=0;j<3;j++) if(stddev>0) stddev=(stddev+var*fp/stddev)/2;
+        //Set the window size to three sigma
+        int winSize=stddev*3/fp;
+        //Clamp between min and max window
+        dw=max<int>(min<int>(winSize,wMax),wMin);
+        sum=squareSum=count=0;
+    }
+
+    return make_pair(uquant,scaleFactor*dw);
+}
+
+pair<int,int> OptimizedRampFlopsync::lostPacket()
+{
+    //Double receiver window on packet loss, still clamped to max value
+    dw=min<int>(2*dw,w/scaleFactor);
+    return make_pair(getClockCorrection(),scaleFactor*dw);
+}
+
+void OptimizedRampFlopsync::reset()
+{
+    uo=uoo=eo=eoo=sum=squareSum=count=0;
+    dw=w/scaleFactor;
+}
+
+int OptimizedRampFlopsync::getClockCorrection() const
+{
+    //Error measure is unavailable if the packet is lost, the best we can
+    //do is to reuse the past correction value
+    int sign=uo>=0 ? 1 : -1;
+    return (uo+32*sign)/64;
 }
 
 //

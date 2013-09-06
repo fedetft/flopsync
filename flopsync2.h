@@ -65,6 +65,11 @@ public:
      * expected to be received
      */
     virtual unsigned int getComputedFrameStart() const=0;
+
+    /**
+     * Destructor
+     */
+    virtual ~FloodingScheme();
 };
 
 /**
@@ -105,6 +110,11 @@ public:
      * \return the receiver window (w)
      */
     virtual int getReceiverWindow() const=0;
+
+    /**
+     * Destructor
+     */
+    virtual ~Synchronizer();
 };
 
 /**
@@ -122,6 +132,11 @@ public:
      * \return the local absolute time time corresponding to the given root time
      */
     virtual unsigned int rootFrame2localAbsolute(unsigned int root)=0;
+
+    /**
+     * Destructor
+     */
+    virtual ~Clock();
 };
 
 /**
@@ -234,6 +249,78 @@ private:
     unsigned char hop;
     
     static const unsigned char maxMissPackets=3;
+};
+
+/**
+ * A new flopsync controller that can reach zero steady-state error both
+ * with step-like and ramp-like disturbances.
+ * It provides better synchronization under temperature changes, that occur
+ * so slowly with respect to the controller operation to look like ramp
+ * changes in clock skew.
+ */
+class OptimizedRampFlopsync : public Synchronizer
+{
+public:
+    /**
+     * Constructor
+     */
+    OptimizedRampFlopsync();
+    
+    /**
+     * Compute clock correction and receiver window given synchronization error
+     * \param e synchronization error
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> computeCorrection(int e);
+    
+    /**
+     * Compute clock correction and receiver window when a packet is lost
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> lostPacket();
+    
+    /**
+     * Used after a resynchronization to reset the controller state
+     */
+    void reset();
+    
+    /**
+     * \return the synchronization error e(k)
+     */
+    int getSyncError() const { return eo; }
+    
+    /**
+     * \return the clock correction u(k)
+     */
+    int getClockCorrection() const;
+    
+    /**
+     * \return the receiver window (w)
+     */
+    int getReceiverWindow() const { return scaleFactor*dw; }
+    
+private:
+    int uo, uoo;
+    int sum;
+    int squareSum;
+    short eo, eoo;
+    unsigned char count;
+    unsigned char dw;
+    
+    static const int numSamples=64; //Number of samples for variance compuation
+    static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
+    #ifndef USE_VHT
+    static const int scaleFactor=1;
+    #else //USE_VHT
+    //The maximum value that can enter the window computation algorithm without
+    //without causing overflows is around 700, resulting in a scaleFactor of
+    //5 when the vht resolution is 1us, and w is 3ms. That however would cause
+    //overflow when writing the result to dw, which is just an unsigned char
+    //(to save RAM). This requires a higher scale factor, of about w/255, or 12.
+    //However, this requires more iterations to approximate the square root,
+    //so we're using a scale factor of 30.
+    static const int scaleFactor=30;
+    #endif //USE_VHT
 };
 
 /**
