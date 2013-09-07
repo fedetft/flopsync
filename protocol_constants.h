@@ -51,6 +51,9 @@
 // Enables virtual high resolution timer
 //#define USE_VHT //@@ Filled in by mkpackage.pl
 
+//Synchronized nodes send temperature to root node
+//#define SENSE_TEMPERATURE //@@ Filled in by mkpackage.pl
+
 // Give a name to the experiment being done
 #define experimentName "" //@@ Filled in by mkpackage.pl
 
@@ -140,6 +143,8 @@ struct Packet2
     short u;
     short w;
     unsigned char miss;
+    //if check & 0xf0==0x00 miss=1 if packet missed
+    //if check & 0xf0==0x10 (miss | (check & 0xf)<<8)=raw temperature
     unsigned char check;
 };
 

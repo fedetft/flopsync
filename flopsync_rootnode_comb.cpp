@@ -80,15 +80,22 @@ int main()
                 measuredTime=rtc.getPacketTimestamp();
                 if(timeout) break;
                 nrf.readPacket(&packet);
-                if(packet.check==0) break;
+                if(packet.check==0 || (packet.check & 0xf0)==0x10) break;
             }
             timer.stopTimeoutTimer();
             nrf.setMode(Nrf24l01::SLEEP);
             if(timeout) printf("node%d timeout\n",(j % 3)+1);
             else {
                 if(j<3) printf("e=%d u=%d w=%d%s\n",packet.e,packet.u,packet.w,
-                    packet.miss ? "(miss)" : "");
-                printf("node%d.e=%d\n",(j % 3)+1,measuredTime-(frameStart+i));
+                    (packet.miss && packet.check==0) ? "(miss)" : "");
+                printf("node%d.e=%d",(j % 3)+1,measuredTime-(frameStart+i));
+                if(packet.check==0) printf("\n");
+                else {
+                    unsigned short temperature=packet.check & 0x0f;
+                    temperature<<=8;
+                    temperature|=packet.miss;
+                    printf(" t=%d\n",temperature);
+                }
             }
         }
     }

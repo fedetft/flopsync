@@ -31,6 +31,7 @@
 #include <miosix.h>
 #include "drivers/nrf24l01.h"
 #include "drivers/rtc.h"
+#include "drivers/temperature.h"
 #include "protocol_constants.h"
 #include "flopsync2.h"
 #include "low_power_setup.h"
@@ -82,6 +83,9 @@ int main()
         unsigned int start=node*combSpacing;
         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
         {
+            #ifdef SENSE_TEMPERATURE
+            unsigned short temperature=getRawTemperature();
+            #endif //SENSE_TEMPERATURE
             unsigned int wakeupTime=clock.rootFrame2localAbsolute(i)-
                 (jitterAbsorption+receiverTurnOn+longPacketTime+spiPktSend);
             rtc.setAbsoluteWakeupSleep(wakeupTime);
@@ -97,8 +101,13 @@ int main()
                 min<int>(numeric_limits<short>::max(),
                 flopsync.getClockCorrection()));
             packet.w=flopsync.getReceiverWindow();
+            #ifndef SENSE_TEMPERATURE
             packet.miss=flooder.isPacketMissed() ? 1 : 0;
             packet.check=0;
+            #else //SENSE_TEMPERATURE
+            packet.miss=temperature & 0xff;
+            packet.check=(temperature>>8) | 0x10;
+            #endif //SENSE_TEMPERATURE
             {
                 CriticalSection cs;
                 rtc.wait();

@@ -17,8 +17,8 @@ while(<$file>)
 close($file);
 my @configkeys=('experiment_name','experiment_time','sync_period',
 				'relative_clock','interactive_rootnode','event_timestamping',
-				'vht','node0_file','node0_second_hop','node1_file',
-				'node1_second_hop','node2_file','node2_second_hop',
+				'vht','sense_temperature','node0_file','node0_second_hop',
+				'node1_file','node1_second_hop','node2_file','node2_second_hop',
 				'node3_file','node3_second_hop');
 @configkeys=sort(@configkeys);
 my @sortedconfig=sort(keys(%config));
@@ -80,6 +80,9 @@ sub build
 		} elsif(/#define USE_VHT/) {
 			print $outfile '//' unless($config{'vht'});
 			print $outfile "#define USE_VHT\n";
+		} elsif(/#define SENSE_TEMPERATURE/) {
+			print $outfile '//' unless($config{'sense_temperature'});
+			print $outfile "#define SENSE_TEMPERATURE\n";
 		} elsif(/^#define experimentName/) {
 			my $n="#define experimentName \"$config{experiment_name}#$binfile";
 			$n.='#'.localtime();

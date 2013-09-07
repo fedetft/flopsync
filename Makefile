@@ -18,7 +18,8 @@ SUBDIRS := miosix
 SRC := flopsync_rootnode_comb.cpp \
 flopsync2.cpp \
 drivers/rtc.cpp \
-drivers/nrf24l01.cpp
+drivers/nrf24l01.cpp \
+drivers/temperature.cpp
 
 ##
 ## List here additional static libraries with relative path
