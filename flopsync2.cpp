@@ -116,7 +116,13 @@ bool FlooderSyncNode::synchronize()
 {
     if(missPackets>maxMissPackets) return true;
     
+    #ifndef SEND_TIMESTAMPS
     computedFrameStart+=nominalPeriod+clockCorrection;
+    #else //SEND_TIMESTAMPS
+    if(synchronizer.overwritesHardwareClock())
+        computedFrameStart=getRadioTimestamp()+nominalPeriod+clockCorrection;
+    else computedFrameStart+=nominalPeriod+clockCorrection;
+    #endif //SEND_TIMESTAMPS
     unsigned int wakeupTime=computedFrameStart-
         (jitterAbsorption+receiverTurnOn+receiverWindow+smallPacketTime);
     assert(static_cast<int>(rtc.getValue()-wakeupTime)<0);
@@ -473,8 +479,6 @@ DummySynchronizer2::DummySynchronizer2(Timer& timer) : timer(timer) { reset(); }
 
 void DummySynchronizer2::receivedTimestamp(unsigned int timestamp)
 {
-    //unsigned int rtcVal=timer.getValue();
-    //printf("rtc=%d, timestamp=%d\n",rtcVal,timestamp); //FIXME: remove
     timer.setValue(timestamp);
 }
 

@@ -86,8 +86,6 @@ int main()
     {
         if(flooder.synchronize()) flooder.resynchronize();
         
-        //printf("resync done\n");  //FIXME: remove
-        
         unsigned int start=node*combSpacing;
         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
         {
@@ -97,9 +95,7 @@ int main()
             unsigned int wakeupTime=clock->rootFrame2localAbsolute(i)-
                 (jitterAbsorption+receiverTurnOn+longPacketTime+spiPktSend);
             rtc.setAbsoluteWakeupSleep(wakeupTime);
-            //printf("sleeping\n"); //FIXME: remove
             rtc.sleep();
-            //printf("waking up\n"); //FIXME: remove
             blueLed::high();
             rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
             nrf.setMode(Nrf24l01::TX);
