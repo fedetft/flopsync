@@ -599,12 +599,12 @@ public:
     /**
      * Used after a resynchronization to reset the controller state
      */
-    void reset() {}
+    void reset() { e=0; }
     
     /**
      * \return the synchronization error e(k)
      */
-    int getSyncError() const { return 0; }
+    int getSyncError() const { return e; }
     
     /**
      * \return the clock correction u(k)
@@ -615,8 +615,77 @@ public:
      * \return the receiver window (w)
      */
     int getReceiverWindow() const { return w; }
+    
 private:
     Timer& timer;
+    int e;
+};
+
+/**
+ * A linear regression-based clock synchronization scheme
+ */
+class FTSP : public Synchronizer
+{
+public:
+    /**
+     * Constructor
+     */
+    FTSP(Timer& timer);
+
+    /**
+     * Must be called before computeCorrection() if timestamp transmission is
+     * enabled
+     * \param timestamp received timestamp
+     */
+    void receivedTimestamp(unsigned int timestamp);
+
+    /**
+     * \return true of the synchronization scheme alters the node's hardware
+     * clock. In this case, monotonic clocks are impossible to implement.
+     */
+    virtual bool overwritesHardwareClock() const { return true; }
+    
+    /**
+     * Compute clock correction and receiver window given synchronization error
+     * \param e synchronization error
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> computeCorrection(int e);
+    
+    /**
+     * Compute clock correction and receiver window when a packet is lost
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> lostPacket();
+    
+    /**
+     * Used after a resynchronization to reset the controller state
+     */
+    void reset();
+    
+    /**
+     * \return the synchronization error e(k)
+     */
+    int getSyncError() const { return e; }
+    
+    /**
+     * \return the clock correction u(k)
+     */
+    int getClockCorrection() const { return 0; }
+    
+    /**
+     * \return the receiver window (w)
+     */
+    int getReceiverWindow() const { return w; }
+    
+private:
+    static const int numEntries=16;
+    short index;
+    short numFilledEntries;
+    unsigned int times[numEntries];
+    short offsets[numEntries];
+    Timer& timer;
+    int e;
 };
 #endif //SEND_TIMESTAMPS
 

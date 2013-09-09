@@ -111,7 +111,7 @@ FlooderSyncNode::FlooderSyncNode(Timer& rtc, Synchronizer& synchronizer,
         timer(AuxiliaryTimer::instance()), synchronizer(synchronizer),
         measuredFrameStart(0), computedFrameStart(0), clockCorrection(0),
         receiverWindow(w), missPackets(maxMissPackets+1), hop(hop) {}
-
+        
 bool FlooderSyncNode::synchronize()
 {
     if(missPackets>maxMissPackets) return true;
@@ -164,7 +164,7 @@ bool FlooderSyncNode::synchronize()
             #ifndef SEND_TIMESTAMPS
             if(packet[0]==hop) break;
             #else //SEND_TIMESTAMPS
-            synchronizer.receivedTimestamp(getRadioTimestamp());
+            synchronizer.receivedTimestamp(getRadioTimestamp()+overwriteClockTime);
             break;
             #endif //SEND_TIMESTAMPS
             miosix::ledOn();
@@ -470,11 +470,10 @@ void DummySynchronizer::reset()
     uo=0;
 }
 
+#ifdef SEND_TIMESTAMPS
 //
 // class DummySynchronizer2
 //
-#ifdef SEND_TIMESTAMPS
-
 DummySynchronizer2::DummySynchronizer2(Timer& timer) : timer(timer) { reset(); }
 
 void DummySynchronizer2::receivedTimestamp(unsigned int timestamp)
@@ -484,6 +483,7 @@ void DummySynchronizer2::receivedTimestamp(unsigned int timestamp)
 
 pair<int,int> DummySynchronizer2::computeCorrection(int e)
 {
+    this->e=e;
     return make_pair(0,w);
 }
 
@@ -491,6 +491,58 @@ pair<int,int> DummySynchronizer2::lostPacket()
 {
     return make_pair(0,w);
 }
+
+//
+// class FTSP
+//
+
+FTSP::FTSP(Timer& timer) : timer(timer) { reset(); }
+
+void FTSP::receivedTimestamp(unsigned int timestamp)
+{
+    timer.setValue(timestamp);
+    times[index]=timestamp;
+}
+
+pair<int,int> FTSP::computeCorrection(int e)
+{
+    this->e=e;
+    offsets[index]=e;
+    if(++index>=numEntries) index=0;
+    numFilledEntries=min(numFilledEntries+1,numEntries);
+    // x is time, y is offset
+    float sumxy=0;
+    float sumx=0;
+    float sumy=0;
+    float sumx2=0;
+    for(int i=0;i<numFilledEntries;i++)
+    {
+        float x=times[i];
+        float y=offsets[i];
+        sumxy+=x*y;
+        sumx+=x;
+        sumy+=y;
+        sumx2+=x*x;
+    }
+    float n=numFilledEntries;
+    float b=(n*sumxy-sumx*sumy)/(n*sumx2+sumx*sumx);
+    float a=sumy/n+b*sumx/n;
+    printf("b=%f a=%f\n",b,a);
+    return make_pair(0,w);
+}
+
+pair<int,int> FTSP::lostPacket()
+{
+    return make_pair(0,w);
+}
+
+void FTSP::reset()
+{
+    e=0;
+    index=0;
+    numFilledEntries=0;
+}
+
 #endif //SEND_TIMESTAMPS
 
 //
@@ -521,7 +573,12 @@ unsigned int NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
     int signedRoot=root; //Conversion unsigned to signed is *required*
     int period=nominalPeriod;
     long long correction=signedRoot;
+    #ifndef SEND_TIMESTAMPS
     correction*=sync.getClockCorrection()-sync.getSyncError();
+    #else //SEND_TIMESTAMPS
+    if(sync.overwritesHardwareClock()) correction*=sync.getClockCorrection();
+    else correction*=sync.getClockCorrection()-sync.getSyncError();;
+    #endif //SEND_TIMESTAMPS
     int sign=correction>=0 ? 1 : -1; //Round towards closest
     int dividedCorrection=(correction+(sign*period/2))/period;
     #ifndef SEND_TIMESTAMPS
