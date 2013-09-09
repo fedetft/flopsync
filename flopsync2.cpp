@@ -43,6 +43,12 @@ FloodingScheme::~FloodingScheme() {}
 // class Synchronizer
 //
 
+#ifdef SEND_TIMESTAMPS
+void Synchronizer::receivedTimestamp(unsigned int timestamp) {}
+
+bool Synchronizer::overwritesHardwareClock() const { return false; }
+#endif //SEND_TIMESTAMPS
+
 Synchronizer::~Synchronizer() {}
 
 //
@@ -66,16 +72,25 @@ bool FlooderRootNode::synchronize()
     rtc.sleep();
     rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
     nrf.setMode(Nrf24l01::TX);
+    #ifndef SEND_TIMESTAMPS
     nrf.setPacketLength(1);
-    timer.initTimeoutTimer(0);
     const char packet[]={0x00};
+    #else //SEND_TIMESTAMPS
+    nrf.setPacketLength(4);
+    unsigned int timestamp;
+    unsigned int *packet=&timestamp;
+    #endif //SEND_TIMESTAMPS
+    timer.initTimeoutTimer(0);
     // To minimize jitter in the packet transmission time caused by the
     // variable time sleepAndWait() takes to restart the STM32 PLL an
     // additional wait is done here to absorb the jitter.
     {
         CriticalSection cs;
         rtc.wait();
-        miosix::ledOn(); 
+        miosix::ledOn();
+        #ifdef SEND_TIMESTAMPS
+        timestamp=rtc.getPacketTimestamp();
+        #endif //SEND_TIMESTAMPS
         nrf.writePacket(packet);
         timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
         frameStart=rtc.getPacketTimestamp();
@@ -109,7 +124,11 @@ bool FlooderSyncNode::synchronize()
     rtc.sleep();
     rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
     nrf.setMode(Nrf24l01::RX);
+    #ifndef SEND_TIMESTAMPS
     nrf.setPacketLength(1);
+    #else //SEND_TIMESTAMPS
+    nrf.setPacketLength(4);
+    #endif //SEND_TIMESTAMPS
     // To minimize jitter in the packet transmission time caused by the
     // variable time sleepAndWait() takes to restart the STM32 PLL an
     // additional wait is done here to absorb the jitter.
@@ -130,9 +149,18 @@ bool FlooderSyncNode::synchronize()
             // (measured with an oscilloscope)
             miosix::ledOff();
             if(timeout) break;
+            #ifndef SEND_TIMESTAMPS
             char packet[1];
+            #else //SEND_TIMESTAMPS
+            unsigned int *packet=&receivedTimestamp;
+            #endif //SEND_TIMESTAMPS
             nrf.readPacket(packet);
+            #ifndef SEND_TIMESTAMPS
             if(packet[0]==hop) break;
+            #else //SEND_TIMESTAMPS
+            synchronizer.receivedTimestamp(getRadioTimestamp());
+            break;
+            #endif //SEND_TIMESTAMPS
             miosix::ledOn();
         }
         timer.stopTimeoutTimer();
@@ -169,7 +197,11 @@ bool FlooderSyncNode::synchronize()
 
 void FlooderSyncNode::resynchronize()
 { 
+    #ifndef SEND_TIMESTAMPS
     nrf.setPacketLength(1);
+    #else //SEND_TIMESTAMPS
+    nrf.setPacketLength(4);
+    #endif //SEND_TIMESTAMPS
     nrf.setMode(Nrf24l01::RX);
     timer.initTimeoutTimer(0);
     nrf.startReceiving();
@@ -179,9 +211,20 @@ void FlooderSyncNode::resynchronize()
         timer.waitForPacketOrTimeout();
         measuredFrameStart=rtc.getPacketTimestamp();
         computedFrameStart=measuredFrameStart;
+        #ifndef SEND_TIMESTAMPS
         char packet[1];
+        #else //SEND_TIMESTAMPS
+        unsigned int *packet=&receivedTimestamp;
+        #endif //SEND_TIMESTAMPS
         nrf.readPacket(packet);
+        #ifndef SEND_TIMESTAMPS
         if(packet[0]==hop) break;
+        #else //SEND_TIMESTAMPS
+        synchronizer.receivedTimestamp(getRadioTimestamp());
+        if(synchronizer.overwritesHardwareClock())
+            computedFrameStart=getRadioTimestamp();
+        break;
+        #endif //SEND_TIMESTAMPS
     }
     miosix::ledOff();
     nrf.setMode(Nrf24l01::SLEEP);
@@ -422,11 +465,40 @@ void DummySynchronizer::reset()
 }
 
 //
+// class DummySynchronizer2
+//
+#ifdef SEND_TIMESTAMPS
+
+DummySynchronizer2::DummySynchronizer2(Timer& timer) : timer(timer) { reset(); }
+
+void DummySynchronizer2::receivedTimestamp(unsigned int timestamp)
+{
+    //unsigned int rtcVal=timer.getValue();
+    //printf("rtc=%d, timestamp=%d\n",rtcVal,timestamp); //FIXME: remove
+    timer.setValue(timestamp);
+}
+
+pair<int,int> DummySynchronizer2::computeCorrection(int e)
+{
+    return make_pair(0,w);
+}
+
+pair<int,int> DummySynchronizer2::lostPacket()
+{
+    return make_pair(0,w);
+}
+#endif //SEND_TIMESTAMPS
+
+//
 // class MonotonicClock
 //
 
 unsigned int MonotonicClock::rootFrame2localAbsolute(unsigned int root)
 {
+    #ifdef SEND_TIMESTAMPS
+    //Can't have a monotonic clock with a sync scheme that overwrites the RTC
+    assert(sync.overwritesHardwareClock()==false);
+    #endif //SEND_TIMESTAMPS
     int signedRoot=root; //Conversion unsigned to signed is *required*
     int period=nominalPeriod;
     long long correction=signedRoot;
@@ -448,5 +520,11 @@ unsigned int NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
     correction*=sync.getClockCorrection()-sync.getSyncError();
     int sign=correction>=0 ? 1 : -1; //Round towards closest
     int dividedCorrection=(correction+(sign*period/2))/period;
+    #ifndef SEND_TIMESTAMPS
     return flood.getMeasuredFrameStart()+max(0,signedRoot+dividedCorrection);
+    #else //SEND_TIMESTAMPS
+    return (sync.overwritesHardwareClock() ?
+        flood.getRadioTimestamp() : flood.getMeasuredFrameStart()) +
+        max(0,signedRoot+dividedCorrection);
+    #endif //SEND_TIMESTAMPS
 }

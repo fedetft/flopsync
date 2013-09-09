@@ -66,6 +66,13 @@ public:
      */
     virtual unsigned int getComputedFrameStart() const=0;
 
+    #ifdef SEND_TIMESTAMPS
+    /**
+     * \return the timestamp received through the radio
+     */
+    virtual unsigned int getRadioTimestamp() const=0;
+    #endif //SEND_TIMESTAMPS
+
     /**
      * Destructor
      */
@@ -78,6 +85,21 @@ public:
 class Synchronizer
 {
 public:
+    #ifdef SEND_TIMESTAMPS
+    /**
+     * Must be called before computeCorrection() if timestamp transmission is
+     * enabled
+     * \param timestamp received timestamp
+     */
+    virtual void receivedTimestamp(unsigned int timestamp);
+
+    /**
+     * \return true of the synchronization scheme alters the node's hardware
+     * clock. In this case, monotonic clocks are impossible to implement.
+     */
+    virtual bool overwritesHardwareClock() const;
+    #endif //SEND_TIMESTAMPS
+
     /**
      * Compute clock correction and receiver window given synchronization error
      * \param e synchronization error
@@ -171,6 +193,13 @@ public:
      * expected to be received
      */
     unsigned int getComputedFrameStart() const { return frameStart; }
+    
+    #ifdef SEND_TIMESTAMPS
+    /**
+     * \return the timestamp received through the radio
+     */
+    unsigned int getRadioTimestamp() const { return frameStart; }
+    #endif //SEND_TIMESTAMPS
 
 private:
     Timer& rtc;
@@ -226,6 +255,16 @@ public:
         return computedFrameStart-hop*retransmitDelta;
     }
     
+    #ifdef SEND_TIMESTAMPS
+    /**
+     * \return the timestamp received through the radio
+     */
+    unsigned int getRadioTimestamp() const
+    {
+        return receivedTimestamp+packetTime; //Correct for packet lenght
+    }
+    #endif //SEND_TIMESTAMPS
+    
     /**
      * \return true if in this frame the sync packet was not received
      */
@@ -247,6 +286,9 @@ private:
     int receiverWindow; 
     unsigned char missPackets;
     unsigned char hop;
+    #ifdef SEND_TIMESTAMPS
+    unsigned int receivedTimestamp;
+    #endif //SEND_TIMESTAMPS
     
     static const unsigned char maxMissPackets=3;
 };
@@ -464,7 +506,10 @@ private:
 };
 
 /**
- * Dummy synchronizer that does not perform skew/drift compensation
+ * Dummy synchronizer that does not perform skew/drift compensation.
+ * This works using the difference between expected and actual packet
+ * time without needing timestamps in packets, and does not alter the
+ * node's hardware clock.
  */
 class DummySynchronizer : public Synchronizer
 {
@@ -510,6 +555,70 @@ public:
 private:
     int uo;
 };
+
+#ifdef SEND_TIMESTAMPS
+/**
+ * Dummy synchronizer that does not perform skew/drift compensation.
+ * This works using the received timestamp, and alters the node's
+ * hardware clock.
+ */
+class DummySynchronizer2 : public Synchronizer
+{
+public:
+    /**
+     * Constructor
+     */
+    DummySynchronizer2(Timer& timer);
+
+    /**
+     * Must be called before computeCorrection() if timestamp transmission is
+     * enabled
+     * \param timestamp received timestamp
+     */
+    void receivedTimestamp(unsigned int timestamp);
+
+    /**
+     * \return true of the synchronization scheme alters the node's hardware
+     * clock. In this case, monotonic clocks are impossible to implement.
+     */
+    virtual bool overwritesHardwareClock() const { return true; }
+    
+    /**
+     * Compute clock correction and receiver window given synchronization error
+     * \param e synchronization error
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> computeCorrection(int e);
+    
+    /**
+     * Compute clock correction and receiver window when a packet is lost
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> lostPacket();
+    
+    /**
+     * Used after a resynchronization to reset the controller state
+     */
+    void reset() {}
+    
+    /**
+     * \return the synchronization error e(k)
+     */
+    int getSyncError() const { return 0; }
+    
+    /**
+     * \return the clock correction u(k)
+     */
+    int getClockCorrection() const { return 0; }
+    
+    /**
+     * \return the receiver window (w)
+     */
+    int getReceiverWindow() const { return w; }
+private:
+    Timer& timer;
+};
+#endif //SEND_TIMESTAMPS
 
 /**
  * A clock that is guaranteed to be monotonic

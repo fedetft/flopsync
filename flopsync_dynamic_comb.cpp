@@ -63,44 +63,54 @@ int main()
     #else //USE_VHT
     Timer& rtc=VHT::instance();
     #endif //USE_VHT
-    OptimizedRampFlopsync flopsync;
-    //OptimizedFlopsync flopsync;
-    //OptimizedDeadbeatFlopsync flopsync;
+    Synchronizer *sync;
+    bool monotonic=false;
+    switch(node)
+    {
+        case 1: sync=new OptimizedRampFlopsync; monotonic=true; break;
+        case 2: sync=new DummySynchronizer; break;
+        case 3: sync=new DummySynchronizer2(rtc); break;
+    }
     #ifndef MULTI_HOP
-    FlooderSyncNode flooder(rtc,flopsync);
-    #else //SECOND_HOP
-    FlooderSyncNode flooder(rtc,flopsync,node-1);
-    #endif //SECOND_HOP
+    FlooderSyncNode flooder(rtc,*sync);
+    #else //MULTI_HOP
+    FlooderSyncNode flooder(rtc,*sync,node-1);
+    #endif //MULTI_HOP
+
+    Clock *clock;
+    if(monotonic) clock=new MonotonicClock(*sync,flooder);
+    else clock=new NonMonotonicClock(*sync,flooder);
     
     AuxiliaryTimer& timer=AuxiliaryTimer::instance();
-    
     for(;;)
     {
         if(flooder.synchronize()) flooder.resynchronize();
         
-        MonotonicClock clock(flopsync,flooder);
-        //NonMonotonicClock clock(flopsync,flooder);
+        //printf("resync done\n");  //FIXME: remove
+        
         unsigned int start=node*combSpacing;
         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
         {
             #ifdef SENSE_TEMPERATURE
             unsigned short temperature=getRawTemperature();
             #endif //SENSE_TEMPERATURE
-            unsigned int wakeupTime=clock.rootFrame2localAbsolute(i)-
+            unsigned int wakeupTime=clock->rootFrame2localAbsolute(i)-
                 (jitterAbsorption+receiverTurnOn+longPacketTime+spiPktSend);
             rtc.setAbsoluteWakeupSleep(wakeupTime);
+            //printf("sleeping\n"); //FIXME: remove
             rtc.sleep();
+            //printf("waking up\n"); //FIXME: remove
             blueLed::high();
             rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
             nrf.setMode(Nrf24l01::TX);
             nrf.setPacketLength(sizeof(Packet2));
             timer.initTimeoutTimer(0);
             Packet2 packet;
-            packet.e=flopsync.getSyncError();
+            packet.e=sync->getSyncError();
             packet.u=max<int>(numeric_limits<short>::min(),
                 min<int>(numeric_limits<short>::max(),
-                flopsync.getClockCorrection()));
-            packet.w=flopsync.getReceiverWindow();
+                sync->getClockCorrection()));
+            packet.w=sync->getReceiverWindow();
             #ifndef SENSE_TEMPERATURE
             packet.miss=flooder.isPacketMissed() ? 1 : 0;
             packet.check=0;

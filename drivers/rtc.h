@@ -83,6 +83,12 @@ public:
      * \return the timer counter value
      */
     virtual unsigned int getValue() const=0;
+
+    /**
+     * Set the RTC counter value
+     * \param value new RTC value
+     */
+    virtual void setValue(unsigned int value)=0;
     
     /**
      * \return the precise time when the IRQ signal of the nRF24L01 was asserted.
@@ -136,6 +142,12 @@ public:
      * \return the RTC counter value
      */
     unsigned int getValue() const;
+
+    /**
+     * Set the RTC counter value
+     * \param value new RTC value
+     */
+    void setValue(unsigned int value);
     
     /**
      * No input capture used, this is the same as getValue()
@@ -199,6 +211,12 @@ public:
     unsigned int getValue() const;
     
     /**
+     * Set the RTC counter value
+     * \param value new RTC value
+     */
+    void setValue(unsigned int value);
+    
+    /**
      * \return the precise time when the IRQ signal of the nRF24L01 was asserted.
      * This implementation uses an input capture hardware module for additional
      * precision
@@ -250,6 +268,7 @@ private:
     unsigned int vhtBase;
     unsigned int vhtLast;
     unsigned int vhtOverflows;
+    int offset; //Only for setting the RTC value
     mutable unsigned int rtcLast;
     mutable unsigned int rtcOverflows;
 };

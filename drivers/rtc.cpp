@@ -242,7 +242,7 @@ AuxiliaryTimer::AuxiliaryTimer()
 }
 
 //
-// class HardwareTimer
+// class Rtc
 //
 
 Rtc& Rtc::instance()
@@ -259,6 +259,15 @@ unsigned int Rtc::getValue() const
         b=RTC->CNTH;
     } while(a!=RTC->CNTL); //Ensure no updates in the middle
     return a | b<<16;
+}
+
+void Rtc::setValue(unsigned int value)
+{
+    RTC->CRL |= RTC_CRL_CNF;
+    RTC->CNTL=value & 0xffff;
+    RTC->CNTH=value>>16;
+    RTC->CRL &= ~RTC_CRL_CNF;
+    while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
 }
 
 unsigned int Rtc::getPacketTimestamp() const
@@ -444,8 +453,18 @@ unsigned int VHT::getValue() const
         conversion*=1000000;
         conversion+=16384/2; //Round to nearest
         conversion/=16384;
-        return conversion;
-    } else return TIM3->CNT-vhtSyncPointVht+vhtBase;
+        return conversion+offset;
+    } else return TIM3->CNT-vhtSyncPointVht+vhtBase+offset;
+}
+
+void VHT::setValue(unsigned int value)
+{
+    //We don't actually overwrite the RTC in this case, as the VHT
+    //is a bit complicated, so we translate between the two times at
+    //the boundary of this class.
+    int signedNowOld=getValue();
+    int signedNowNew=value;
+    offset+=(signedNowNew-signedNowOld);
 }
 
 unsigned int VHT::getPacketTimestamp() const
@@ -463,13 +482,13 @@ unsigned int VHT::getPacketTimestamp() const
         conversion*=1000000;
         conversion+=16384/2; //Round to nearest
         conversion/=16384;
-        return conversion;
-    } else return TIM3->CCR3-vhtSyncPointVht+vhtBase;
+        return conversion+offset;
+    } else return TIM3->CCR3-vhtSyncPointVht+vhtBase+offset;
 }
 
 void VHT::setAbsoluteWakeupWait(unsigned int value)
 {
-    unsigned int t=value-vhtBase+vhtSyncPointVht;
+    unsigned int t=value-vhtBase+vhtSyncPointVht-offset;
     assert(t<0xffff);
     TIM3->CCR1=t;
 }
@@ -492,6 +511,7 @@ void VHT::wait()
 
 void VHT::setAbsoluteWakeupSleep(unsigned int value)
 {
+    value-=offset;
     if(value<vhtLast) vhtOverflows++;
     vhtLast=value;
     //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
@@ -574,7 +594,7 @@ void VHT::synchronizeWithRtc()
 }
 
 VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), vhtLast(0), vhtOverflows(0),
-        rtcLast(0), rtcOverflows(0)
+        offset(0), rtcLast(0), rtcOverflows(0)
 {
     {
         FastInterruptDisableLock dLock;

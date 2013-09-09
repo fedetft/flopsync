@@ -35,7 +35,7 @@
 //#define RELATIVE_CLOCK //@@ Filled in by mkpackage.pl
 
 // This is to force a node to attach to the second tier in a multihop
-// configuration
+// configuration (legacy, not used)
 //#define SECOND_HOP //@@ Filled in by mkpackage.pl
 
 // Defined if we're in a multi hop environment
@@ -54,8 +54,16 @@
 //Synchronized nodes send temperature to root node
 //#define SENSE_TEMPERATURE //@@ Filled in by mkpackage.pl
 
+//Send timestamps in sync packets, used to make a comparison with existing
+//WSN sync schemes.
+//#define SEND_TIMESTAMPS //@@ Filled in by mkpackage.pl
+
 // Give a name to the experiment being done
 #define experimentName "" //@@ Filled in by mkpackage.pl
+
+#if defined(MULTI_HOP) && defined(SEND_TIMESTAMPS)
+#error "Sending timestamps in sync packets with multihop is unimplemented"
+#endif
 
 #ifndef USE_VHT
 const unsigned int hz=16384;
