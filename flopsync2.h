@@ -29,6 +29,8 @@
 #define	FLOPSYNC2_H
 
 #include <utility>
+#include <cstdio>
+#include <cmath>
 #include "drivers/nrf24l01.h"
 #include "drivers/rtc.h"
 #include "protocol_constants.h"
@@ -89,9 +91,10 @@ public:
     /**
      * Must be called before computeCorrection() if timestamp transmission is
      * enabled
-     * \param timestamp received timestamp
+     * \param globalTime time received in timestamp
+     * \param localTime local time when packet received
      */
-    virtual void receivedTimestamp(unsigned int timestamp);
+    virtual void timestamps(unsigned int globalTime, unsigned int localTime);
 
     /**
      * \return true of the synchronization scheme alters the node's hardware
@@ -573,15 +576,16 @@ public:
     /**
      * Must be called before computeCorrection() if timestamp transmission is
      * enabled
-     * \param timestamp received timestamp
+     * \param globalTime time received in timestamp
+     * \param localTime local time when packet received
      */
-    void receivedTimestamp(unsigned int timestamp);
+    void timestamps(unsigned int globalTime, unsigned int localTime);
 
     /**
      * \return true of the synchronization scheme alters the node's hardware
      * clock. In this case, monotonic clocks are impossible to implement.
      */
-    virtual bool overwritesHardwareClock() const { return true; }
+    bool overwritesHardwareClock() const { return true; }
     
     /**
      * Compute clock correction and receiver window given synchronization error
@@ -630,20 +634,21 @@ public:
     /**
      * Constructor
      */
-    FTSP(Timer& timer);
+    FTSP();
 
     /**
      * Must be called before computeCorrection() if timestamp transmission is
      * enabled
-     * \param timestamp received timestamp
+     * \param globalTime time received in timestamp
+     * \param localTime local time when packet received
      */
-    void receivedTimestamp(unsigned int timestamp);
+    void timestamps(unsigned int globalTime, unsigned int localTime);
 
     /**
      * \return true of the synchronization scheme alters the node's hardware
      * clock. In this case, monotonic clocks are impossible to implement.
      */
-    virtual bool overwritesHardwareClock() const { return true; }
+    bool overwritesHardwareClock() const { return false; }
     
     /**
      * Compute clock correction and receiver window given synchronization error
@@ -678,14 +683,116 @@ public:
      */
     int getReceiverWindow() const { return w; }
     
+    void global2Local(uint32_t *time) const
+    {
+        if(first)
+        {
+            *time-=globalTime;
+            *time+=localTime;
+            return;
+        }
+        printf("timeBefore=%u",(unsigned int)*time);
+        *time=(*time-a)/(1.0+b);
+        printf(" timeAfter=%u\n",(unsigned int)*time);
+    }
+    
 private:
-    static const int numEntries=16;
+    static const int numEntries=8;
+    unsigned int globalTime,localTime;
     short index;
     short numFilledEntries;
     unsigned int times[numEntries];
-    short offsets[numEntries];
-    Timer& timer;
+    int offsets[numEntries];
+    unsigned int smallest;
+    unsigned int sumSmallest;
+    double a,b;
     int e;
+    bool first;
+};
+
+/**
+ * A linear regression-based clock synchronization scheme
+ */
+class FTSP2 : public Synchronizer
+{
+public:
+    /**
+     * Constructor
+     */
+    FTSP2();
+
+    /**
+     * Must be called before computeCorrection() if timestamp transmission is
+     * enabled
+     * \param globalTime time received in timestamp
+     * \param localTime local time when packet received
+     */
+    void timestamps(unsigned int globalTime, unsigned int localTime);
+
+    /**
+     * \return true of the synchronization scheme alters the node's hardware
+     * clock. In this case, monotonic clocks are impossible to implement.
+     */
+    bool overwritesHardwareClock() const { return false; }
+    
+    /**
+     * Compute clock correction and receiver window given synchronization error
+     * \param e synchronization error
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> computeCorrection(int e);
+    
+    /**
+     * Compute clock correction and receiver window when a packet is lost
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> lostPacket();
+    
+    /**
+     * Used after a resynchronization to reset the controller state
+     */
+    void reset();
+    
+    /**
+     * \return the synchronization error e(k)
+     */
+    int getSyncError() const { return e; }
+    
+    /**
+     * \return the clock correction u(k)
+     */
+    int getClockCorrection() const { return 0; }
+    
+    /**
+     * \return the receiver window (w)
+     */
+    int getReceiverWindow() const { return w; }
+    
+    int offset() const
+    {
+        return a+b*(double)((int)localTime-(int)local_rtc_base);
+    }
+    
+    void global2Local(uint32_t *time) const
+    {
+        printf("Arrivato qui\n");
+//         printf("timeBefore=%u",(unsigned int)*time);
+//         *time+=offset();
+//         printf(" timeAfter=%u\n",(unsigned int)*time);
+    }
+    
+private:
+    unsigned int globalTime,localTime;
+    int e;
+    
+    static const int regression_entries=8;
+    int dex;
+    int num_reg_data;
+    bool filling;
+    unsigned int reg_local_rtcs[regression_entries];
+    int reg_rtc_offs[regression_entries];
+    unsigned int local_rtc_base;
+    double a,b;  
 };
 #endif //SEND_TIMESTAMPS
 

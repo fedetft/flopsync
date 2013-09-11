@@ -26,8 +26,8 @@
  ***************************************************************************/
 
 #include "flopsync2.h"
-#include <cstdio>
 #include <cassert>
+#include <cstring>
 
 using namespace std;
 
@@ -44,7 +44,7 @@ FloodingScheme::~FloodingScheme() {}
 //
 
 #ifdef SEND_TIMESTAMPS
-void Synchronizer::receivedTimestamp(unsigned int timestamp) {}
+void Synchronizer::timestamps(unsigned int globalTime, unsigned int localTime) {}
 
 bool Synchronizer::overwritesHardwareClock() const { return false; }
 #endif //SEND_TIMESTAMPS
@@ -164,7 +164,7 @@ bool FlooderSyncNode::synchronize()
             #ifndef SEND_TIMESTAMPS
             if(packet[0]==hop) break;
             #else //SEND_TIMESTAMPS
-            synchronizer.receivedTimestamp(getRadioTimestamp()+overwriteClockTime);
+            synchronizer.timestamps(getRadioTimestamp(),measuredFrameStart);
             break;
             #endif //SEND_TIMESTAMPS
             miosix::ledOn();
@@ -226,7 +226,7 @@ void FlooderSyncNode::resynchronize()
         #ifndef SEND_TIMESTAMPS
         if(packet[0]==hop) break;
         #else //SEND_TIMESTAMPS
-        synchronizer.receivedTimestamp(getRadioTimestamp());
+        synchronizer.timestamps(getRadioTimestamp(),measuredFrameStart);
         if(synchronizer.overwritesHardwareClock())
             computedFrameStart=getRadioTimestamp();
         break;
@@ -474,11 +474,12 @@ void DummySynchronizer::reset()
 //
 // class DummySynchronizer2
 //
+
 DummySynchronizer2::DummySynchronizer2(Timer& timer) : timer(timer) { reset(); }
 
-void DummySynchronizer2::receivedTimestamp(unsigned int timestamp)
+void DummySynchronizer2::timestamps(unsigned int globalTime, unsigned int localTime)
 {
-    timer.setValue(timestamp);
+    timer.setValue(globalTime+overwriteClockTime);
 }
 
 pair<int,int> DummySynchronizer2::computeCorrection(int e)
@@ -496,44 +497,52 @@ pair<int,int> DummySynchronizer2::lostPacket()
 // class FTSP
 //
 
-FTSP::FTSP(Timer& timer) : timer(timer) { reset(); }
+FTSP::FTSP() { reset(); }
 
-void FTSP::receivedTimestamp(unsigned int timestamp)
+void FTSP::timestamps(unsigned int globalTime, unsigned int localTime)
 {
-    timer.setValue(timestamp);
-    times[index]=timestamp;
+    this->globalTime=globalTime;
+    this->localTime=localTime;
+    times[index]=localTime-sumSmallest;
+//     smallest=0xffffffff;
+//     for(int i=0;i<numFilledEntries;i++) smallest=min(smallest,times[i]);
+//     for(int i=0;i<numFilledEntries;i++) times[i]-=smallest;
+//     sumSmallest+=smallest;
+    offsets[index]=(int)globalTime-(int)localTime;
+    if(++index>=numEntries) index=0;
+    numFilledEntries=min(numFilledEntries+1,numEntries);
 }
 
 pair<int,int> FTSP::computeCorrection(int e)
 {
     this->e=e;
-    offsets[index]=e;
-    if(++index>=numEntries) index=0;
-    numFilledEntries=min(numFilledEntries+1,numEntries);
+    
     // x is time, y is offset
-    float sumxy=0;
-    float sumx=0;
-    float sumy=0;
-    float sumx2=0;
+    long long sumxy=0;
+    long long sumx=0;
+    long long sumy=0;
+    long long sumx2=0;
     for(int i=0;i<numFilledEntries;i++)
     {
-        float x=times[i];
-        float y=offsets[i];
+        long long x=times[i];
+        long long y=offsets[i];
         sumxy+=x*y;
         sumx+=x;
         sumy+=y;
         sumx2+=x*x;
     }
-    float n=numFilledEntries;
-    float b=(n*sumxy-sumx*sumy)/(n*sumx2+sumx*sumx);
-    float a=sumy/n+b*sumx/n;
-    printf("b=%f a=%f\n",b,a);
-    return make_pair(0,w);
+    long long n=numFilledEntries;
+    b=(double)(n*sumxy-sumx*sumy)/(double)(n*sumx2-sumx*sumx);
+    a=((double)sumy-b*(double)sumx)/(double)n;
+    printf("b=%e a=%f localTime=%u globalTime=%u\n",b,a,localTime,globalTime);
+    if(!isnan(b)) first=false;
+    
+    return make_pair(e,w);
 }
 
 pair<int,int> FTSP::lostPacket()
 {
-    return make_pair(0,w);
+    return make_pair(e,w);
 }
 
 void FTSP::reset()
@@ -541,6 +550,74 @@ void FTSP::reset()
     e=0;
     index=0;
     numFilledEntries=0;
+    smallest=sumSmallest=0;
+    first=true;
+}
+
+//
+// class FTSP2
+//
+
+FTSP2::FTSP2() { reset(); }
+
+void FTSP2::timestamps(unsigned int globalTime, unsigned int localTime)
+{
+    this->globalTime=globalTime;
+    this->localTime=localTime;
+    
+    unsigned int ovr_local_rtc_base=reg_local_rtcs[dex];
+    reg_local_rtcs[dex]=localTime;
+    reg_rtc_offs[dex]=(int)localTime-(int)globalTime;
+    if(filling && dex==1) local_rtc_base=localTime;
+    if(!filling) local_rtc_base=ovr_local_rtc_base;
+    if(filling) num_reg_data=dex;
+    else num_reg_data=regression_entries;
+    dex++;
+    if(filling && dex>=regression_entries) filling=false;
+    if(dex>=regression_entries) dex=0;
+}
+
+pair<int,int> FTSP2::computeCorrection(int e)
+{
+    this->e=e;
+    
+    if(num_reg_data<2) return make_pair(e,w);
+    
+    long long sum_t=0;
+    long long sum_o=0;
+    long long sum_ot=0;
+    long long sum_t2=0;
+    
+    for(int i=0;i<num_reg_data;i++)
+    {
+        long long t=reg_local_rtcs[i]-local_rtc_base;
+        long long o=reg_rtc_offs[i];
+        sum_t+=t;
+        sum_o+=o;
+        sum_ot+=o*t;
+        sum_t2+=t*t;
+    }
+    long long n=num_reg_data;
+    b=(double)(n*sum_ot-sum_o*sum_t)/(double)(n*sum_t2-sum_t*sum_t);
+    a=((double)sum_o-b*(double)sum_t)/(double)n;
+    printf("b=%e a=%f localTime=%u globalTime=%u\n",b,a,localTime,globalTime);
+    
+    return make_pair(e,w);
+}
+
+pair<int,int> FTSP2::lostPacket()
+{
+    return make_pair(e,w);
+}
+
+void FTSP2::reset()
+{
+    dex=0;
+    filling=true;
+    memset(reg_local_rtcs,0,sizeof(reg_local_rtcs));
+    memset(reg_rtc_offs,0,sizeof(reg_rtc_offs));
+    a=0;
+    b=1;
 }
 
 #endif //SEND_TIMESTAMPS
@@ -577,13 +654,30 @@ unsigned int NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
     correction*=sync.getClockCorrection()-sync.getSyncError();
     #else //SEND_TIMESTAMPS
     if(sync.overwritesHardwareClock()) correction*=sync.getClockCorrection();
-    else correction*=sync.getClockCorrection()-sync.getSyncError();;
+    else correction*=sync.getClockCorrection()-sync.getSyncError();
     #endif //SEND_TIMESTAMPS
     int sign=correction>=0 ? 1 : -1; //Round towards closest
     int dividedCorrection=(correction+(sign*period/2))/period;
     #ifndef SEND_TIMESTAMPS
     return flood.getMeasuredFrameStart()+max(0,signedRoot+dividedCorrection);
     #else //SEND_TIMESTAMPS
+    
+    //FIXME:
+    const FTSP *ftsp=dynamic_cast<const FTSP*>(&sync);
+    if(ftsp)
+    {
+        uint32_t t=flood.getRadioTimestamp()+root;
+        ftsp->global2Local(&t);
+        return t;
+    }
+    const FTSP2 *ftsp2=dynamic_cast<const FTSP2*>(&sync);
+    if(ftsp2)
+    {
+        printf("test sync=%p\n",ftsp2);
+        uint32_t t=flood.getRadioTimestamp()+root;
+        ftsp2->global2Local(&t);
+        return t;
+    }
     return (sync.overwritesHardwareClock() ?
         flood.getRadioTimestamp() : flood.getMeasuredFrameStart()) +
         max(0,signedRoot+dividedCorrection);

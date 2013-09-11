@@ -38,7 +38,7 @@ namespace miosix {
 /// Size of stack for main().
 /// The C standard library is stack-heavy (iprintf requires 1KB) but the
 /// STM32F100RB only has 8KB of RAM so the stack is only 1.5KB.
-const unsigned int MAIN_STACK_SIZE=1024+512;
+const unsigned int MAIN_STACK_SIZE=2*1024;
 
 /// Frequency of tick (in Hz). The frequency of the STM32F100RB timer in the
 /// stm32vldiscovery board can be divided by 1000. This allows to use a 1KHz
