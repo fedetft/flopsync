@@ -203,6 +203,7 @@ bool FlooderSyncNode::synchronize()
 
 void FlooderSyncNode::resynchronize()
 { 
+    synchronizer.reset();
     #ifndef SEND_TIMESTAMPS
     nrf.setPacketLength(1);
     #else //SEND_TIMESTAMPS
@@ -234,7 +235,6 @@ void FlooderSyncNode::resynchronize()
     }
     miosix::ledOff();
     nrf.setMode(Nrf24l01::SLEEP);
-    synchronizer.reset();
     clockCorrection=0;
     receiverWindow=w;
     missPackets=0;
@@ -568,13 +568,20 @@ void FTSP2::timestamps(unsigned int globalTime, unsigned int localTime)
     unsigned int ovr_local_rtc_base=reg_local_rtcs[dex];
     reg_local_rtcs[dex]=localTime;
     reg_rtc_offs[dex]=(int)localTime-(int)globalTime;
-    if(filling && dex==1) local_rtc_base=localTime;
+    if(filling && dex==0) local_rtc_base=localTime;
     if(!filling) local_rtc_base=ovr_local_rtc_base;
-    if(filling) num_reg_data=dex;
+    if(filling) num_reg_data=dex+1;
     else num_reg_data=regression_entries;
     dex++;
     if(filling && dex>=regression_entries) filling=false;
     if(dex>=regression_entries) dex=0;
+    
+    if(num_reg_data<2)
+    {
+        a=(double)localTime-(double)globalTime;
+        b=0;
+        printf("+ b=%e a=%f localTime=%u globalTime=%u\n",b,a,localTime,globalTime);
+    }
 }
 
 pair<int,int> FTSP2::computeCorrection(int e)
@@ -612,12 +619,23 @@ pair<int,int> FTSP2::lostPacket()
 
 void FTSP2::reset()
 {
+    e=0;
+    
     dex=0;
     filling=true;
     memset(reg_local_rtcs,0,sizeof(reg_local_rtcs));
     memset(reg_rtc_offs,0,sizeof(reg_rtc_offs));
-    a=0;
-    b=1;
+}
+
+void FTSP2::global2Local(uint32_t *time) const
+{
+    printf("timeBefore=%u ",(unsigned int)*time);
+    //local=(global+a-b*local_rtc_base)/(1-b)
+    double global=*time;
+    double lr=local_rtc_base;
+    *time=(global+a-b*lr)/(1.0-b);
+    printf(" timeAfter=%u\n",(unsigned int)*time);
+    miosix::Thread::sleep(100); //FIXME: without this some printfs are 'eaten' by the sleep
 }
 
 #endif //SEND_TIMESTAMPS
@@ -673,7 +691,6 @@ unsigned int NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
     const FTSP2 *ftsp2=dynamic_cast<const FTSP2*>(&sync);
     if(ftsp2)
     {
-        printf("test sync=%p\n",ftsp2);
         uint32_t t=flood.getRadioTimestamp()+root;
         ftsp2->global2Local(&t);
         return t;

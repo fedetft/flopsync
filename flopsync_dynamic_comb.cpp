@@ -71,7 +71,6 @@ int main()
         case 2: sync=new DummySynchronizer; break;
         case 3: sync=new FTSP2; break;
     }
-    printf("sync=%p\n",sync);
     #ifndef MULTI_HOP
     FlooderSyncNode flooder(rtc,*sync);
     #else //MULTI_HOP

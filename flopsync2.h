@@ -768,18 +768,7 @@ public:
      */
     int getReceiverWindow() const { return w; }
     
-    int offset() const
-    {
-        return a+b*(double)((int)localTime-(int)local_rtc_base);
-    }
-    
-    void global2Local(uint32_t *time) const
-    {
-        printf("Arrivato qui\n");
-//         printf("timeBefore=%u",(unsigned int)*time);
-//         *time+=offset();
-//         printf(" timeAfter=%u\n",(unsigned int)*time);
-    }
+    void global2Local(uint32_t *time) const;
     
 private:
     unsigned int globalTime,localTime;
