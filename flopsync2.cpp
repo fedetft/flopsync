@@ -89,7 +89,7 @@ bool FlooderRootNode::synchronize()
         rtc.wait();
         miosix::ledOn();
         #ifdef SEND_TIMESTAMPS
-        timestamp=rtc.getPacketTimestamp();
+        timestamp=rtc.getValue();
         #endif //SEND_TIMESTAMPS
         nrf.writePacket(packet);
         timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
