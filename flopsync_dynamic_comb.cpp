@@ -68,8 +68,8 @@ int main()
     switch(node)
     {
         case 1: sync=new OptimizedRampFlopsync; monotonic=true; break;
-        case 2: sync=new DummySynchronizer; break;
-        case 3: sync=new FTSP2; break;
+        case 2: sync=new FBS(rtc); break;
+        case 3: sync=new FTSP; break;
     }
     #ifndef MULTI_HOP
     FlooderSyncNode flooder(rtc,*sync);

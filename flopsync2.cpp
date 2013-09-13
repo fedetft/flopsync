@@ -503,67 +503,15 @@ void FTSP::timestamps(unsigned int globalTime, unsigned int localTime)
 {
     this->globalTime=globalTime;
     this->localTime=localTime;
-    times[index]=localTime-sumSmallest;
-//     smallest=0xffffffff;
-//     for(int i=0;i<numFilledEntries;i++) smallest=min(smallest,times[i]);
-//     for(int i=0;i<numFilledEntries;i++) times[i]-=smallest;
-//     sumSmallest+=smallest;
-    offsets[index]=(int)globalTime-(int)localTime;
-    if(++index>=numEntries) index=0;
-    numFilledEntries=min(numFilledEntries+1,numEntries);
-}
-
-pair<int,int> FTSP::computeCorrection(int e)
-{
-    this->e=e;
     
-    // x is time, y is offset
-    long long sumxy=0;
-    long long sumx=0;
-    long long sumy=0;
-    long long sumx2=0;
-    for(int i=0;i<numFilledEntries;i++)
+    if(!filling || dex>0)
     {
-        long long x=times[i];
-        long long y=offsets[i];
-        sumxy+=x*y;
-        sumx+=x;
-        sumy+=y;
-        sumx2+=x*x;
+        //Can't put it after as global2local uses local_rtc_base,
+        //which is modified by the code below
+        offset=globalTime; //Just to have a measure of e(t(k)-)
+        global2Local((unsigned int*)&offset);
+        offset=(int)localTime-offset;
     }
-    long long n=numFilledEntries;
-    b=(double)(n*sumxy-sumx*sumy)/(double)(n*sumx2-sumx*sumx);
-    a=((double)sumy-b*(double)sumx)/(double)n;
-    printf("b=%e a=%f localTime=%u globalTime=%u\n",b,a,localTime,globalTime);
-    if(!isnan(b)) first=false;
-    
-    return make_pair(e,w);
-}
-
-pair<int,int> FTSP::lostPacket()
-{
-    return make_pair(e,w);
-}
-
-void FTSP::reset()
-{
-    e=0;
-    index=0;
-    numFilledEntries=0;
-    smallest=sumSmallest=0;
-    first=true;
-}
-
-//
-// class FTSP2
-//
-
-FTSP2::FTSP2() { reset(); }
-
-void FTSP2::timestamps(unsigned int globalTime, unsigned int localTime)
-{
-    this->globalTime=globalTime;
-    this->localTime=localTime;
     
     unsigned int ovr_local_rtc_base=reg_local_rtcs[dex];
     reg_local_rtcs[dex]=localTime;
@@ -584,7 +532,7 @@ void FTSP2::timestamps(unsigned int globalTime, unsigned int localTime)
     }
 }
 
-pair<int,int> FTSP2::computeCorrection(int e)
+pair<int,int> FTSP::computeCorrection(int e)
 {
     this->e=e;
     
@@ -612,14 +560,14 @@ pair<int,int> FTSP2::computeCorrection(int e)
     return make_pair(e,w);
 }
 
-pair<int,int> FTSP2::lostPacket()
+pair<int,int> FTSP::lostPacket()
 {
     return make_pair(e,w);
 }
 
-void FTSP2::reset()
+void FTSP::reset()
 {
-    e=0;
+    e=offset=0;
     
     dex=0;
     filling=true;
@@ -627,15 +575,47 @@ void FTSP2::reset()
     memset(reg_rtc_offs,0,sizeof(reg_rtc_offs));
 }
 
-void FTSP2::global2Local(uint32_t *time) const
+void FTSP::global2Local(unsigned int *time) const
 {
-    printf("timeBefore=%u ",(unsigned int)*time);
+    //printf("timeBefore=%u ",(*time);
     //local=(global+a-b*local_rtc_base)/(1-b)
     double global=*time;
     double lr=local_rtc_base;
     *time=(global+a-b*lr)/(1.0-b);
-    printf(" timeAfter=%u\n",(unsigned int)*time);
-    miosix::Thread::sleep(100); //FIXME: without this some printfs are 'eaten' by the sleep
+    //printf(" timeAfter=%u\n",*time);
+}
+
+//
+// class FBS
+//
+
+FBS::FBS(Timer& timer) : timer(timer) { reset(); }
+
+void FBS::timestamps(unsigned int globalTime, unsigned int localTime)
+{
+    timer.setValue(globalTime+overwriteClockTime);
+    if(!first) offset=(int)localTime-(int)globalTime-u;
+    first=false;
+}
+
+std::pair<int,int> FBS::computeCorrection(int e)
+{
+    u=u+kp*(float)offset+(ki-kp)*(float)offseto;
+    offseto=offset;
+    printf("FBS offset=%d u=%d\n",offset,(int)u);
+    return make_pair(u,w);
+}
+
+std::pair<int,int> FBS::lostPacket()
+{
+    return make_pair(u,w);
+}
+
+void FBS::reset()
+{
+    offset=offseto=0;
+    u=0.0f;
+    first=true;
 }
 
 #endif //SEND_TIMESTAMPS
@@ -679,20 +659,12 @@ unsigned int NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
     #ifndef SEND_TIMESTAMPS
     return flood.getMeasuredFrameStart()+max(0,signedRoot+dividedCorrection);
     #else //SEND_TIMESTAMPS
-    
     //FIXME:
     const FTSP *ftsp=dynamic_cast<const FTSP*>(&sync);
     if(ftsp)
     {
-        uint32_t t=flood.getRadioTimestamp()+root;
+        unsigned int t=flood.getRadioTimestamp()+root;
         ftsp->global2Local(&t);
-        return t;
-    }
-    const FTSP2 *ftsp2=dynamic_cast<const FTSP2*>(&sync);
-    if(ftsp2)
-    {
-        uint32_t t=flood.getRadioTimestamp()+root;
-        ftsp2->global2Local(&t);
         return t;
     }
     return (sync.overwritesHardwareClock() ?

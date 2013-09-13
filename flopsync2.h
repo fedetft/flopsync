@@ -671,7 +671,7 @@ public:
     /**
      * \return the synchronization error e(k)
      */
-    int getSyncError() const { return e; }
+    int getSyncError() const { return offset; }
     
     /**
      * \return the clock correction u(k)
@@ -683,43 +683,32 @@ public:
      */
     int getReceiverWindow() const { return w; }
     
-    void global2Local(uint32_t *time) const
-    {
-        if(first)
-        {
-            *time-=globalTime;
-            *time+=localTime;
-            return;
-        }
-        printf("timeBefore=%u",(unsigned int)*time);
-        *time=(*time-a)/(1.0+b);
-        printf(" timeAfter=%u\n",(unsigned int)*time);
-    }
+    void global2Local(unsigned int *time) const;
     
 private:
-    static const int numEntries=8;
     unsigned int globalTime,localTime;
-    short index;
-    short numFilledEntries;
-    unsigned int times[numEntries];
-    int offsets[numEntries];
-    unsigned int smallest;
-    unsigned int sumSmallest;
-    double a,b;
-    int e;
-    bool first;
+    int e,offset;
+    
+    static const int regression_entries=8;
+    int dex;
+    int num_reg_data;
+    bool filling;
+    unsigned int reg_local_rtcs[regression_entries];
+    int reg_rtc_offs[regression_entries];
+    unsigned int local_rtc_base;
+    double a,b;  
 };
 
 /**
- * A linear regression-based clock synchronization scheme
+ * A PI controller feeded with timestamps
  */
-class FTSP2 : public Synchronizer
+class FBS : public Synchronizer
 {
 public:
     /**
      * Constructor
      */
-    FTSP2();
+    FBS(Timer& timer);
 
     /**
      * Must be called before computeCorrection() if timestamp transmission is
@@ -733,7 +722,7 @@ public:
      * \return true of the synchronization scheme alters the node's hardware
      * clock. In this case, monotonic clocks are impossible to implement.
      */
-    bool overwritesHardwareClock() const { return false; }
+    bool overwritesHardwareClock() const { return true; }
     
     /**
      * Compute clock correction and receiver window given synchronization error
@@ -756,32 +745,26 @@ public:
     /**
      * \return the synchronization error e(k)
      */
-    int getSyncError() const { return e; }
+    int getSyncError() const { return offset; }
     
     /**
      * \return the clock correction u(k)
      */
-    int getClockCorrection() const { return 0; }
+    int getClockCorrection() const { return u; }
     
     /**
      * \return the receiver window (w)
      */
     int getReceiverWindow() const { return w; }
     
-    void global2Local(uint32_t *time) const;
-    
 private:
-    unsigned int globalTime,localTime;
-    int e;
+    static const float kp=0.7847f;//0.35f;
+    static const float ki=0.7847f;//0.05f;
     
-    static const int regression_entries=8;
-    int dex;
-    int num_reg_data;
-    bool filling;
-    unsigned int reg_local_rtcs[regression_entries];
-    int reg_rtc_offs[regression_entries];
-    unsigned int local_rtc_base;
-    double a,b;  
+    Timer& timer;
+    int offset,offseto;
+    float u;
+    bool first;
 };
 #endif //SEND_TIMESTAMPS
 
