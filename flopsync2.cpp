@@ -497,10 +497,12 @@ pair<int,int> DummySynchronizer2::lostPacket()
 // class FTSP
 //
 
-FTSP::FTSP() { reset(); }
+FTSP::FTSP() : overflowCounterLocal(0), overflowCounterGlobal(0) { reset(); }
 
 void FTSP::timestamps(unsigned int globalTime, unsigned int localTime)
 {
+    if(this->localTime>localTime) overflowCounterLocal++;
+    if(this->globalTime>globalTime) overflowCounterGlobal++;
     this->globalTime=globalTime;
     this->localTime=localTime;
     
@@ -508,15 +510,17 @@ void FTSP::timestamps(unsigned int globalTime, unsigned int localTime)
     {
         //Can't put it after as global2local uses local_rtc_base,
         //which is modified by the code below
-        offset=globalTime; //Just to have a measure of e(t(k)-)
-        global2Local((unsigned int*)&offset);
+        offset=rootFrame2localAbsolute(0); //Just to have a measure of e(t(k)-)
         offset=(int)localTime-offset;
     }
     
-    unsigned int ovr_local_rtc_base=reg_local_rtcs[dex];
-    reg_local_rtcs[dex]=localTime;
+    unsigned long long ovr_local_rtc_base=reg_local_rtcs[dex];
+    unsigned long long temp=overflowCounterLocal;
+    temp<<=32;
+    temp|=localTime;
+    reg_local_rtcs[dex]=temp;
     reg_rtc_offs[dex]=(int)localTime-(int)globalTime;
-    if(filling && dex==0) local_rtc_base=localTime;
+    if(filling && dex==0) local_rtc_base=temp;
     if(!filling) local_rtc_base=ovr_local_rtc_base;
     if(filling) num_reg_data=dex+1;
     else num_reg_data=regression_entries;
@@ -575,14 +579,19 @@ void FTSP::reset()
     memset(reg_rtc_offs,0,sizeof(reg_rtc_offs));
 }
 
-void FTSP::global2Local(unsigned int *time) const
+unsigned int FTSP::rootFrame2localAbsolute(unsigned int time) const
 {
-    //printf("timeBefore=%u ",(*time);
+    unsigned long long temp=overflowCounterGlobal;
+    temp<<=32;
+    temp|=globalTime;
+    temp+=time;
+    //printf("timeBefore=%u ",temp);
     //local=(global+a-b*local_rtc_base)/(1-b)
-    double global=*time;
+    double global=temp;
     double lr=local_rtc_base;
-    *time=(global+a-b*lr)/(1.0-b);
-    //printf(" timeAfter=%u\n",*time);
+    unsigned long long result=(global+a-b*lr)/(1.0-b);
+    //printf(" timeAfter=%u\n",result);
+    return result & 0xffffffff;
 }
 
 //
@@ -659,14 +668,9 @@ unsigned int NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
     #ifndef SEND_TIMESTAMPS
     return flood.getMeasuredFrameStart()+max(0,signedRoot+dividedCorrection);
     #else //SEND_TIMESTAMPS
-    //FIXME:
     const FTSP *ftsp=dynamic_cast<const FTSP*>(&sync);
-    if(ftsp)
-    {
-        unsigned int t=flood.getRadioTimestamp()+root;
-        ftsp->global2Local(&t);
-        return t;
-    }
+    if(ftsp) return ftsp->rootFrame2localAbsolute(root);
+    
     return (sync.overwritesHardwareClock() ?
         flood.getRadioTimestamp() : flood.getMeasuredFrameStart()) +
         max(0,signedRoot+dividedCorrection);

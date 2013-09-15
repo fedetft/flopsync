@@ -99,8 +99,8 @@ const unsigned int radioBoot=static_cast<int>(0.0016f*hz+0.5f);
 const unsigned int receiverTurnOn=static_cast<int>(0.00013f*hz+0.5f);
 
 //Time required to read the timestamp in the packet and overwrite the node's
-//hardwar clock (28us), measured with an oscilloscope. Used if SEND_TIMESTAMPS
-const unsigned int overwriteClockTime=static_cast<int>(0.000028f*hz+0.5f);
+//hardwar clock (38us), measured with an oscilloscope. Used if SEND_TIMESTAMPS
+const unsigned int overwriteClockTime=static_cast<int>(0.000038f*hz+0.5f);
 
 //Time to send a 1..8 byte packet via SPI @ 6MHz to the nRF (50us)
 //Computed as the missing piece in the difference between frameStart and

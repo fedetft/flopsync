@@ -683,19 +683,20 @@ public:
      */
     int getReceiverWindow() const { return w; }
     
-    void global2Local(unsigned int *time) const;
+    unsigned int rootFrame2localAbsolute(unsigned int time) const;
     
 private:
     unsigned int globalTime,localTime;
+    unsigned int overflowCounterLocal,overflowCounterGlobal; 
     int e,offset;
     
     static const int regression_entries=8;
     int dex;
     int num_reg_data;
     bool filling;
-    unsigned int reg_local_rtcs[regression_entries];
+    unsigned long long reg_local_rtcs[regression_entries];
     int reg_rtc_offs[regression_entries];
-    unsigned int local_rtc_base;
+    unsigned long long local_rtc_base;
     double a,b;  
 };
 
