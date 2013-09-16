@@ -501,18 +501,17 @@ FTSP::FTSP() : overflowCounterLocal(0), overflowCounterGlobal(0) { reset(); }
 
 void FTSP::timestamps(unsigned int globalTime, unsigned int localTime)
 {
+    if(!filling || dex>0)
+    {
+        //Just to have a measure of e(t(k)-)
+        offset=rootFrame2localAbsolute(globalTime-this->globalTime);
+        offset=(int)localTime-offset;
+    }
+    
     if(this->localTime>localTime) overflowCounterLocal++;
     if(this->globalTime>globalTime) overflowCounterGlobal++;
     this->globalTime=globalTime;
     this->localTime=localTime;
-    
-    if(!filling || dex>0)
-    {
-        //Can't put it after as global2local uses local_rtc_base,
-        //which is modified by the code below
-        offset=rootFrame2localAbsolute(0); //Just to have a measure of e(t(k)-)
-        offset=(int)localTime-offset;
-    }
     
     unsigned long long ovr_local_rtc_base=reg_local_rtcs[dex];
     unsigned long long temp=overflowCounterLocal;
@@ -585,11 +584,21 @@ unsigned int FTSP::rootFrame2localAbsolute(unsigned int time) const
     temp<<=32;
     temp|=globalTime;
     temp+=time;
-    //printf("timeBefore=%u ",temp);
-    //local=(global+a-b*local_rtc_base)/(1-b)
     double global=temp;
-    double lr=local_rtc_base;
-    unsigned long long result=(global+a-b*lr)/(1.0-b);
+    //printf("timeBefore=%u ",temp);
+    
+//     // local=(global+a-b*local_rtc_base)/(1-b)
+//     double lr=local_rtc_base;
+//     unsigned long long result=(global+a-b*lr)/(1.0-b);
+    
+    // local=(global+lastOffset-b*lastSyncPoint)/(1.0-b);
+    double lastOffset=(int)localTime-(int)globalTime;
+    unsigned long long temp2=overflowCounterLocal;
+    temp2<<=32;
+    temp2|=localTime;
+    double lastSyncPoint=temp2;
+    unsigned long long result=(global+lastOffset-b*lastSyncPoint)/(1.0-b);
+    
     //printf(" timeAfter=%u\n",result);
     return result & 0xffffffff;
 }
