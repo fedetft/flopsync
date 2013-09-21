@@ -345,6 +345,93 @@ int OptimizedRampFlopsync::getClockCorrection() const
 }
 
 //
+// class OptimizedRampFlopsync2
+//
+
+OptimizedRampFlopsync2::OptimizedRampFlopsync2() { reset(); }
+
+pair<int,int> OptimizedRampFlopsync2::computeCorrection(int e)
+{
+    switch(init)
+    {
+        case 0:
+            init=1;
+            eo=e;
+            uo=2*512*e;
+            uoo=512*e;
+            return make_pair(2*e,w); //One step of a deadbeat controller
+        case 1:
+            init=2;
+            eo=0;
+            uo/=2;
+    }
+    
+    //alpha=3/8
+    //u(k)=2u(k-1)-u(k-2)+1.875e(k)-2.578125e(k-1)+0.947265625e(k-2) with values kept multiplied by 512
+    int u=2*uo-uoo+960*e-1320*eo+485*eoo;
+    uoo=uo;
+    uo=u;
+    eoo=eo;
+    eo=e;
+
+    int sign=u>=0 ? 1 : -1;
+    int uquant=(u+256*sign)/512;
+    
+    //Scale numbers if VHT is enabled to prevent overflows
+    int wMax=w/scaleFactor;
+    int wMin=minw/scaleFactor;
+    e/=scaleFactor;
+    
+    //Update receiver window size
+    sum+=e*fp;
+    squareSum+=e*e*fp;
+    if(++count>=numSamples)
+    {
+        //Variance computed as E[X^2]-E[X]^2
+        int average=sum/numSamples;
+        int var=squareSum/numSamples-average*average/fp;
+        //Using the Babylonian method to approximate square root
+        int stddev=var/7;
+        for(int j=0;j<3;j++) if(stddev>0) stddev=(stddev+var*fp/stddev)/2;
+        //Set the window size to three sigma
+        int winSize=stddev*3/fp;
+        //Clamp between min and max window
+        dw=max<int>(min<int>(winSize,wMax),wMin);
+        sum=squareSum=count=0;
+    }
+
+    return make_pair(uquant,scaleFactor*dw);
+}
+
+pair<int,int> OptimizedRampFlopsync2::lostPacket()
+{
+    if(init==1)
+    {
+        init=2;
+        eo=0;
+        uo/=2;
+    }
+    //Double receiver window on packet loss, still clamped to max value
+    dw=min<int>(2*dw,w/scaleFactor);
+    return make_pair(getClockCorrection(),scaleFactor*dw);
+}
+
+void OptimizedRampFlopsync2::reset()
+{
+    uo=uoo=eo=eoo=sum=squareSum=count=0;
+    dw=w/scaleFactor;
+    init=0;
+}
+
+int OptimizedRampFlopsync2::getClockCorrection() const
+{
+    //Error measure is unavailable if the packet is lost, the best we can
+    //do is to reuse the past correction value
+    int sign=uo>=0 ? 1 : -1;
+    return (uo+256*sign)/512;
+}
+
+//
 // class DummySynchronizer
 //
 

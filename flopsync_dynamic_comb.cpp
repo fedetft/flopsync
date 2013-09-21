@@ -65,12 +65,15 @@ int main()
     #endif //USE_VHT
     Synchronizer *sync;
     bool monotonic=false;
-    switch(node)
-    {
-        case 1: sync=new OptimizedRampFlopsync; monotonic=true; break;
-        case 2: sync=new FBS(rtc); break;
-        case 3: sync=new FTSP; break;
-    }
+    //For multi hop experiments
+    sync=new OptimizedRampFlopsync2; monotonic=true;
+//     //For comparison between sinchronization schemes
+//     switch(node)
+//     {
+//         case 1: sync=new OptimizedRampFlopsync2; monotonic=true; break;
+//         case 2: sync=new FBS(rtc); break;
+//         case 3: sync=new FTSP; break;
+//     }
     #ifndef MULTI_HOP
     FlooderSyncNode flooder(rtc,*sync);
     #else //MULTI_HOP

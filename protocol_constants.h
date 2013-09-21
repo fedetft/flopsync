@@ -49,17 +49,17 @@
 //#define EVENT_TIMESTAMPING //@@ Filled in by mkpackage.pl
 
 // Enables virtual high resolution timer
-#define USE_VHT //@@ Filled in by mkpackage.pl //FIXME!!
+//#define USE_VHT //@@ Filled in by mkpackage.pl
 
 //Synchronized nodes send temperature to root node
-#define SENSE_TEMPERATURE //@@ Filled in by mkpackage.pl //FIXME!!
+//#define SENSE_TEMPERATURE //@@ Filled in by mkpackage.pl
 
 //Send timestamps in sync packets, used to make a comparison with existing
 //WSN sync schemes.
-#define SEND_TIMESTAMPS //@@ Filled in by mkpackage.pl //FIXME!!
+//#define SEND_TIMESTAMPS //@@ Filled in by mkpackage.pl
 
 // Give a name to the experiment being done
-#define experimentName "flopsync_ramp_comparison#node3.bin" //@@ Filled in by mkpackage.pl //FIXME!!
+#define experimentName "" //@@ Filled in by mkpackage.pl
 
 #if defined(MULTI_HOP) && defined(SEND_TIMESTAMPS)
 #error "Sending timestamps in sync packets with multihop is unimplemented"
