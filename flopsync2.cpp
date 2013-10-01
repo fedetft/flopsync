@@ -352,6 +352,7 @@ OptimizedRampFlopsync2::OptimizedRampFlopsync2() { reset(); }
 
 pair<int,int> OptimizedRampFlopsync2::computeCorrection(int e)
 {
+    //Controller preinit, for fast boot convergence
     switch(init)
     {
         case 0:
@@ -366,7 +367,7 @@ pair<int,int> OptimizedRampFlopsync2::computeCorrection(int e)
             uo/=2;
     }
     
-    //alpha=3/8
+    //Flopsync controller, with alpha=3/8
     //u(k)=2u(k-1)-u(k-2)+1.875e(k)-2.578125e(k-1)+0.947265625e(k-2) with values kept multiplied by 512
     int u=2*uo-uoo+960*e-1320*eo+485*eoo;
     uoo=uo;
