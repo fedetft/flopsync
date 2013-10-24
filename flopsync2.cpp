@@ -257,6 +257,77 @@ void FlooderSyncNode::rebroadcast()
     nrf.endWritePacket();
 }
 
+
+//
+// class OldControllerFlopsync
+//
+
+OldControllerFlopsync::OldControllerFlopsync() { reset(); }
+
+pair<int,int> OldControllerFlopsync::computeCorrection(int e)
+{
+    //u(k)=u(k-1)+1.25*e(k)-e(k-1)
+    int u=uo+5*e-4*eo;
+
+    //The controller output needs to be quantized, but instead of simply
+    //doing u/4 which rounds towards the lowest number use a slightly more
+    //advanced algorithm to round towards the closest one, as when the error
+    //is close to +/-1 timer tick this makes a significant difference.
+    int sign=u>=0 ? 1 : -1;
+    int uquant=(u+2*sign)/4;
+
+    //Adaptive state quantization, while the output always needs to be
+    //quantized, the state is only quantized if the error is zero
+    uo= e==0 ? 4*uquant : u;
+    eo=e;
+  
+    //Scale numbers if VHT is enabled to prevent overflows
+    int wMax=w/scaleFactor;
+    int wMin=minw/scaleFactor;
+    e/=scaleFactor;
+    
+    //Update receiver window size
+    sum+=e*fp;
+    squareSum+=e*e*fp;
+    if(++count>=numSamples)
+    {
+        //Variance computed as E[X^2]-E[X]^2
+        int average=sum/numSamples;
+        int var=squareSum/numSamples-average*average/fp;
+        //Using the Babylonian method to approximate square root
+        int stddev=var/7;
+        for(int j=0;j<3;j++) if(stddev>0) stddev=(stddev+var*fp/stddev)/2;
+        //Set the window size to three sigma
+        int winSize=stddev*3/fp;
+        //Clamp between min and max window
+        dw=max<int>(min<int>(winSize,wMax),wMin);
+        sum=squareSum=count=0;
+    }
+
+    return make_pair(uquant,scaleFactor*dw);
+}
+
+pair<int,int> OldControllerFlopsync::lostPacket()
+{
+    //Double receiver window on packet loss, still clamped to max value
+    dw=min<int>(2*dw,w/scaleFactor);
+    return make_pair(getClockCorrection(),scaleFactor*dw);
+}
+
+void OldControllerFlopsync::reset()
+{
+    uo=eo=sum=squareSum=count=0;
+    dw=w/scaleFactor;
+}
+
+int OldControllerFlopsync::getClockCorrection() const
+{
+    //Error measure is unavailable if the packet is lost, the best we can
+    //do is to reuse the past correction value
+    int sign=uo>=0 ? 1 : -1;
+    return (uo+2*sign)/4;
+}
+
 //
 // class OptimizedRampFlopsync
 //

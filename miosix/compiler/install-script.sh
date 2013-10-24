@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Script to build the gcc compiler required for Miosix.
 #
 # Building Miosix is officially supported only through the gcc compiler built

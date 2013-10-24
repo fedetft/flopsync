@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="89">
+<configurationDescriptor version="90">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
-    <df root=".." name="flopsync">
+    <df root=".." name="0">
       <df name="data">
       </df>
       <df name="drivers">
@@ -10,11 +10,17 @@
         <in>nrf24l01_config.h</in>
         <in>rtc.cpp</in>
         <in>rtc.h</in>
+        <in>temperature.cpp</in>
+        <in>temperature.h</in>
+      </df>
+      <df name="flopsync_ramp2_multihop_7days">
       </df>
       <df name="flopsync_v1">
         <df name="clocksync">
           <df name="dataset4">
           </df>
+        </df>
+        <df name="simulator">
         </df>
         <in>clocksync.cpp</in>
         <in>clocksync.h</in>
@@ -351,8 +357,6 @@
           <in>version.h</in>
         </df>
         <in>miosix.h</in>
-      </df>
-      <df name="simulator">
       </df>
       <df name="syncwsn_nb">
       </df>

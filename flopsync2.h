@@ -295,6 +295,73 @@ private:
     
     static const unsigned char maxMissPackets=3;
 };
+/**
+ * Old flopsync controller.
+ */
+class OldControllerFlopsync : public Synchronizer
+{
+public:
+    /**
+     * Constructor
+     */
+    OldControllerFlopsync();
+    
+    /**
+     * Compute clock correction and receiver window given synchronization error
+     * \param e synchronization error
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> computeCorrection(int e);
+    
+    /**
+     * Compute clock correction and receiver window when a packet is lost
+     * \return a pair with the clock correction, and the receiver window
+     */
+    std::pair<int,int> lostPacket();
+    
+    /**
+     * Used after a resynchronization to reset the controller state
+     */
+    void reset();
+    
+    /**
+     * \return the synchronization error e(k)
+     */
+    int getSyncError() const { return eo; }
+    
+    /**
+     * \return the clock correction u(k)
+     */
+    int getClockCorrection() const;
+    
+    /**
+     * \return the receiver window (w)
+     */
+    int getReceiverWindow() const { return scaleFactor*dw; }
+    
+private:
+    int uo;
+    int sum;
+    int squareSum;
+    short eo;
+    unsigned char count;
+    unsigned char dw;
+    
+    static const int numSamples=64; //Number of samples for variance compuation
+    static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
+    #ifndef USE_VHT
+    static const int scaleFactor=1;
+    #else //USE_VHT
+    //The maximum value that can enter the window computation algorithm without
+    //without causing overflows is around 700, resulting in a scaleFactor of
+    //5 when the vht resolution is 1us, and w is 3ms. That however would cause
+    //overflow when writing the result to dw, which is just an unsigned char
+    //(to save RAM). This requires a higher scale factor, of about w/255, or 12.
+    //However, this requires more iterations to approximate the square root,
+    //so we're using a scale factor of 30.
+    static const int scaleFactor=30;
+    #endif //USE_VHT
+};
 
 /**
  * A new flopsync controller that can reach zero steady-state error both
