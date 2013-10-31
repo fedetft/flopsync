@@ -94,7 +94,16 @@ int main()
                     unsigned short temperature=packet.check & 0x0f;
                     temperature<<=8;
                     temperature|=packet.miss;
-                    printf(" t=%d\n",temperature);
+                    
+                    #ifdef SENSE_TEMPERATURE
+                    printf(" t=%d",temperature);
+                    #endif //SENSE_TEMPERATURE
+                    
+                    #ifdef SENSE_CO_TEMPERATURE
+                    printf(" t_co=%d\n",packet.t);
+                    #else
+                    printf("\n");
+                    #endif //SENSE_CO_TEMPERATURE
                 }
             }
         }

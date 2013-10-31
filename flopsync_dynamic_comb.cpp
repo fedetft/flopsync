@@ -35,6 +35,7 @@
 #include "protocol_constants.h"
 #include "flopsync2.h"
 #include "low_power_setup.h"
+#include "arch/arm7_lpc2000/lpc2138_miosix_board/interfaces-impl/gpio_impl.h"
 
 using namespace std;
 
@@ -48,37 +49,11 @@ int identifyNode()
     return 3;
 }
 
-unsigned short getRawTemperature2()
-{
-    {
-        miosix::FastInterruptDisableLock dLock;
-        RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
-    }
-    ADC1->CR1=0;
-    ADC1->SMPR1=ADC_SMPR1_SMP10_2
-              | ADC_SMPR1_SMP10_1
-              | ADC_SMPR1_SMP10_0; //239.5 cycles sample time
-    ADC1->SQR1=0; //Do only one conversion
-    ADC1->SQR2=0;
-    ADC1->SQR3=10; //Convert channel 16 (temperature)
-    ADC1->CR2=ADC_CR2_ADON | ADC_CR2_TSVREFE;
-    ADC1->CR2|=ADC_CR2_CAL;
-    miosix::delayUs(10); //Wait fot tempsensor to stabilize
-    while(ADC1->SR & ADC_CR2_CAL) ;
-    ADC1->CR2|=ADC_CR2_ADON; //Setting ADON twice starts a conversion
-    while((ADC1->SR & ADC_SR_EOC)==0) ;
-    unsigned short result=ADC1->DR;
-    ADC1->CR2=0; //Turn ADC OFF
-    return result;
-}
-
 int main()
 {
     lowPowerSetup();
     
-    miosix::Gpio<GPIOC_BASE,0>::mode(miosix::Mode::INPUT_ANALOG);
-    
-    
+    miosix::Gpio<GPIOC_BASE,0>::mode(miosix::Mode::INPUT_ANALOG);  
     
     blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
@@ -121,10 +96,14 @@ int main()
         
         unsigned int start=node*combSpacing;
         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
-        {
+        {   
             #ifdef SENSE_TEMPERATURE
-            unsigned short temperature=getRawTemperature2();
+            unsigned short temperature=getRawTemperature();
             #endif //SENSE_TEMPERATURE
+            #ifdef SENSE_CO_TEMPERATURE
+            unsigned short co_temperature=((getCOTemperature()*3.3)>>12 )-273;
+            #endif //SENSE_CO_TEMPERATURE
+            
             unsigned int wakeupTime=clock->rootFrame2localAbsolute(i)-
                 (jitterAbsorption+receiverTurnOn+longPacketTime+spiPktSend);
             rtc.setAbsoluteWakeupSleep(wakeupTime);
@@ -140,6 +119,11 @@ int main()
                 min<int>(numeric_limits<short>::max(),
                 sync->getClockCorrection()));
             packet.w=sync->getReceiverWindow();
+           
+            #ifdef SENSE_CO_TEMPERATURE
+            packet.t=co_temperature;
+            #endif //SENSE_CO_TEMPERATURE
+                  
             #ifndef SENSE_TEMPERATURE
             packet.miss=flooder.isPacketMissed() ? 1 : 0;
             packet.check=0;
@@ -147,6 +131,7 @@ int main()
             packet.miss=temperature & 0xff;
             packet.check=(temperature>>8) | 0x10;
             #endif //SENSE_TEMPERATURE
+           
             {
                 CriticalSection cs;
                 rtc.wait();

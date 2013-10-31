@@ -17,7 +17,7 @@ while(<$file>)
 close($file);
 my @configkeys=('experiment_name','experiment_time','sync_period',
 				'relative_clock','interactive_rootnode','event_timestamping',
-				'vht','sense_temperature','send_timestamps','node0_file',
+				'vht','sense_temperature','sense_co_temperature','send_timestamps','node0_file',
 				'node0_second_hop','node1_file','node1_second_hop','node2_file',
 				'node2_second_hop','node3_file','node3_second_hop');
 @configkeys=sort(@configkeys);
@@ -83,6 +83,9 @@ sub build
 		} elsif(/#define SENSE_TEMPERATURE/) {
 			print $outfile '//' unless($config{'sense_temperature'});
 			print $outfile "#define SENSE_TEMPERATURE\n";
+		} elsif(/#define SENSE_CO_TEMPERATURE/) {
+			print $outfile '//' unless($config{'sense_co_temperature'});
+			print $outfile "#define SENSE_CO_TEMPERATURE\n";
 		} elsif(/#define SEND_TIMESTAMPS/) {
 			print $outfile '//' unless($config{'send_timestamps'});
 			print $outfile "#define SEND_TIMESTAMPS\n";
@@ -98,9 +101,9 @@ sub build
 	close($infile);
 	close($outfile);
 	# Uncomment for debugging the substitution code
-	#my $e=$config{'experiment_name'};
-	#copy('Makefile',"$e/$binfile.Makefile");
-	#copy('protocol_constants.h',"$e/$binfile.protocol_constants.h");
+	my $e=$config{'experiment_name'};
+	copy('Makefile',"$e/$binfile.Makefile");
+	copy('protocol_constants.h',"$e/$binfile.protocol_constants.h");
 
 	# Step 3: build the binary
 	system('make 1>/dev/null');

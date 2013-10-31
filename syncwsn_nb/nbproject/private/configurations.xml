@@ -5,6 +5,9 @@
       <df name="data">
       </df>
       <df name="drivers">
+        <in>cc2520.cpp</in>
+        <in>cc2520.h</in>
+        <in>cc2520_config.h</in>
         <in>nrf24l01.cpp</in>
         <in>nrf24l01.h</in>
         <in>nrf24l01_config.h</in>
@@ -12,6 +15,8 @@
         <in>rtc.h</in>
         <in>temperature.cpp</in>
         <in>temperature.h</in>
+      </df>
+      <df name="flopsync_old_temperature">
       </df>
       <df name="flopsync_ramp2_multihop_7days">
       </df>

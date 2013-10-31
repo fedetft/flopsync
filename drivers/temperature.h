@@ -7,9 +7,18 @@
  * | min | avg | max |
  * | 4.0 | 4.3 | 4.6 | mV/°C temperature coefficient is around
  * |1.32 |1.41 |1.50 | V @ 25°C
- * Adc resulution is 12 bit, and reference voltage is ~3V on battery
+ * Adc resolution is 12 bit, and reference voltage is ~3V on battery
  * powered nodes, and 3.3V on USB powered ones
  */
 unsigned short getRawTemperature();
+
+/**
+ * \return the crystal oscillator temperature
+ * 10 mv/k 
+ * 
+ * Adc resolution is 12 bit, and reference voltage is ~3V on battery
+ * powered nodes, and 3.3V on USB powered ones
+ */
+unsigned short getCOTemperature();
 
 #endif //TEMPERATURE_H
