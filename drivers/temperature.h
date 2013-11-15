@@ -14,11 +14,11 @@ unsigned short getRawTemperature();
 
 /**
  * \return the crystal oscillator temperature
- * 10 mv/k 
+ * 10 mv/k LM335
  * 
  * Adc resolution is 12 bit, and reference voltage is ~3V on battery
  * powered nodes, and 3.3V on USB powered ones
  */
-unsigned short getCOTemperature();
+unsigned short getDACTemperature();
 
 #endif //TEMPERATURE_H

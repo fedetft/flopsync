@@ -16,6 +16,12 @@
         <in>temperature.cpp</in>
         <in>temperature.h</in>
       </df>
+      <df name="flopsync2_T_30_alpha_3-8">
+      </df>
+      <df name="flopsync2_T_30_alpha_3-8_second">
+      </df>
+      <df name="flopsync2_tune_alpha_30_3-8">
+      </df>
       <df name="flopsync_old_temperature">
       </df>
       <df name="flopsync_ramp2_multihop_7days">

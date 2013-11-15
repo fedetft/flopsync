@@ -95,15 +95,7 @@ int main()
                     temperature<<=8;
                     temperature|=packet.miss;
                     
-                    #ifdef SENSE_TEMPERATURE
-                    printf(" t=%d",temperature);
-                    #endif //SENSE_TEMPERATURE
-                    
-                    #ifdef SENSE_CO_TEMPERATURE
-                    printf(" t_co=%d\n",packet.t);
-                    #else
-                    printf("\n");
-                    #endif //SENSE_CO_TEMPERATURE
+                    printf(" t=%d\n",temperature);
                 }
             }
         }

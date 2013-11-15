@@ -54,9 +54,6 @@
 //Synchronized nodes send temperature to root node
 //#define SENSE_TEMPERATURE //@@ Filled in by mkpackage.pl
 
-//Synchronized nodes acquire Cristal Osillator temperature and send to root node
-//#define SENSE_CO_TEMPERATURE //@@ Filled in by mkpackage.pl
-
 //Send timestamps in sync packets, used to make a comparison with existing
 //WSN sync schemes.
 //#define SEND_TIMESTAMPS //@@ Filled in by mkpackage.pl
@@ -133,7 +130,7 @@ const unsigned int w=static_cast<int>(0.003f*hz+0.5f);
 
 //Minimum sync window (dynamic window only)
 #ifndef USE_VHT
-const unsigned int minw=static_cast<int>(0.00018f*hz+0.5f);
+const unsigned int minw=static_cast<int>(0.003f*hz+0.5f);
 #else //USE_VHT
 const unsigned int minw=static_cast<int>(0.00006f*hz+0.5f);
 #endif //USE_VHT
@@ -161,7 +158,7 @@ struct Packet2
     //if check & 0xf0==0x00 miss=1 if packet missed
     //if check & 0xf0==0x10 (miss | (check & 0xf)<<8)=raw temperature
     unsigned char check;
-    unsigned short t;
+    //unsigned short t;
 };
 
 //When to send the synchronization quality statistics packet (legacy, not used)

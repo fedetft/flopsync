@@ -35,7 +35,6 @@
 #include "protocol_constants.h"
 #include "flopsync2.h"
 #include "low_power_setup.h"
-#include "arch/arm7_lpc2000/lpc2138_miosix_board/interfaces-impl/gpio_impl.h"
 
 using namespace std;
 
@@ -70,7 +69,7 @@ int main()
     Synchronizer *sync;
     bool monotonic=false;
     //For multi hop experiments
-    sync=new OldControllerFlopsync; 
+    sync=new OptimizedRampFlopsync2; 
     monotonic=true;
 //     //For comparison between sinchronization schemes
 //     switch(node)
@@ -98,11 +97,8 @@ int main()
         for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
         {   
             #ifdef SENSE_TEMPERATURE
-            unsigned short temperature=getRawTemperature();
+            unsigned short temperature=getDACTemperature();
             #endif //SENSE_TEMPERATURE
-            #ifdef SENSE_CO_TEMPERATURE
-            unsigned short co_temperature=((getCOTemperature()*3.3)>>12 )-273;
-            #endif //SENSE_CO_TEMPERATURE
             
             unsigned int wakeupTime=clock->rootFrame2localAbsolute(i)-
                 (jitterAbsorption+receiverTurnOn+longPacketTime+spiPktSend);
@@ -119,10 +115,6 @@ int main()
                 min<int>(numeric_limits<short>::max(),
                 sync->getClockCorrection()));
             packet.w=sync->getReceiverWindow();
-           
-            #ifdef SENSE_CO_TEMPERATURE
-            packet.t=co_temperature;
-            #endif //SENSE_CO_TEMPERATURE
                   
             #ifndef SENSE_TEMPERATURE
             packet.miss=flooder.isPacketMissed() ? 1 : 0;

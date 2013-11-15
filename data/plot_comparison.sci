@@ -60,20 +60,20 @@ ax=get("current_axes");
 ax.font_size=2;
 ax.data_bounds=[0,-20;length(err1),80];
 
-b=fscanfMat('temperature.txt');
-temp=b(settling:$,3);
-temp1=a1(settling:last,4)'; temp1(1)=temp1(2); temp1=(-temp1+1872)/4+25.6;
+//b=fscanfMat('temperature.txt');
+//temp=b(settling:$,3);
+temp1=a1(settling:last,4)'; temp1(1)=temp1(2); temp1=(temp1*300/4096)-273.15;
 temp2=a2(settling:last,4)'; temp2(1)=temp2(2); temp2=(-temp2+1921)/4.5+25.6;
 temp3=a2(settling:last,4)'; temp3(1)=temp3(2); temp3=(-temp3+1922)/4.5+25.6;
 
 subplot(413);
 //plot(temp,'g');
-plot(terr1,temp1,'k'); plot(terr2,temp2,'b'); plot(terr3,temp3,'r');
+plot(terr1,temp1,'k'); //plot(terr2,temp2,'b'); plot(terr3,temp3,'r');
 xlabel("Time (min)","fontsize",2);
 ylabel("Temperature","fontsize",2);
 ax=get("current_axes");
 ax.font_size=2;
-ax.data_bounds=[0,20;length(err1),50];
+//ax.data_bounds=[0,20;length(err1),50];
 f=get("current_figure");
 deltax=f.figure_size(1)-f.axes_size(1);
 deltay=f.figure_size(2)-f.axes_size(2);
