@@ -30,18 +30,12 @@
 #include "rtc.h"
 #include <miosix.h>
 #include <cstring>
-
+#include "../test_cc2520/test_config.h"
 using namespace miosix;
 
 //
 // class Nrf24l01
 //
-
-Nrf24l01& Nrf24l01::instance()
-{
-    static Nrf24l01 singleton;
-    return singleton;
-}
 
 Nrf24l01::Nrf24l01() : frequency(2400), length(16), mode(SLEEP)
 {
@@ -174,7 +168,7 @@ void Nrf24l01::endWritePacket()
 
 void Nrf24l01::startReceiving()
 {
-    if(mode==RX) nrf::ce::high(); //Start receiving right now if RX
+    if(mode==Transceiver::RX) nrf::ce::high(); //Start receiving right now if RX
 }
 
 void Nrf24l01::readPacket(void *packet)
@@ -221,3 +215,5 @@ unsigned char Nrf24l01::readStatus() const
     delayUs(1);
     return result;
 }
+
+Nrf24l01::~Nrf24l01(){}

@@ -15,11 +15,14 @@ SUBDIRS := miosix
 ##
 # Please note that the file containing main() has to be on the same text line
 # as the one with SRC or mkpackage.pl won't work
-SRC := flopsync_dynamic_comb.cpp \
-flopsync2.cpp \
+SRC := test_cc2520/test_cc2520_n0.cpp \
 drivers/rtc.cpp \
+drivers/transceiver.cpp \
 drivers/nrf24l01.cpp \
-drivers/temperature.cpp
+drivers/cc2520.cpp \
+drivers/temperature.cpp \
+drivers/cc2520_mapping.cpp
+#flopsync2.cpp 
 
 ##
 ## List here additional static libraries with relative path
