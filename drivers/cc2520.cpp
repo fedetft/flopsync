@@ -39,8 +39,9 @@
 
 using namespace miosix;
 
-
+//
 // class Cc2520
+//
 
 Cc2520& Cc2520::instance()
 {
@@ -51,7 +52,7 @@ Cc2520& Cc2520::instance()
 Cc2520::Cc2520() : mode(DEEP_SLEEP)
 {
     cc2520GpioInit();
-    setMode(IDLE);
+    setMode(DEEP_SLEEP);  //entry state of FSM
 }
 
 void Cc2520::setMode(Mode mode)
@@ -65,17 +66,16 @@ void Cc2520::setMode(Mode mode)
                 case TX:
                     break;
                 case RX:
-                    commandStrobe(CC2520_INS_SFLUSHTX); //flush TX FIFO
-                    status = commandStrobe(CC2520_INS_STXON); //Transmission mode
+                    status = commandStrobe(CC2520_INS_SRFOFF); //radio in IDLE
+                    isExcRaised(CC2520_EXC_USAGE_ERROR, status);
                     isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
+                    commandStrobe(CC2520_INS_SFLUSHTX); //flush TX FIFO
                     break;
                 case SLEEP:
                     commandStrobe(CC2520_INS_SXOSCON); //turn on crystal oscillator
                     while ((readStatus() & CC2520_STATUS_XOSC) != CC2520_STATUS_XOSC);
 
                     commandStrobe(CC2520_INS_SFLUSHTX); //flush TX FIFO
-                    status = commandStrobe(CC2520_INS_STXON); //Transmission mode
-                    isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
                     break;
                 case DEEP_SLEEP:
                     //reset device whit RESETn that automatically start crystal osc.
@@ -89,13 +89,9 @@ void Cc2520::setMode(Mode mode)
                     initConfigureReg();
 
                     commandStrobe(CC2520_INS_SFLUSHTX); //flush TX FIFO
-                    status = commandStrobe(CC2520_INS_STXON); //Transmission mode
-                    isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
                     break;
                 case IDLE:
                     commandStrobe(CC2520_INS_SFLUSHTX); //flush TX FIFO
-                    status = commandStrobe(CC2520_INS_STXON); //Transmission mode
-                    isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
                     break;
             }
             break;
@@ -306,11 +302,12 @@ short int Cc2520::readFrame(unsigned char& length, unsigned char* pframe)
         for(int i=0; i<currLen; i++) 
             (currLen<=length) ? pframe[i]=cc2520SpiSendRecv() 
                                                 : cc2520SpiSendRecv();
-        result = -1;
+        result = 0;
     }else
     {
         for(int i=0; i<currLen; i++) pframe[i]=cc2520SpiSendRecv();
         length = currLen;
+        result = 1;
     }
     //read the two byte FCS
     unsigned char fcs[2];
@@ -321,17 +318,35 @@ short int Cc2520::readFrame(unsigned char& length, unsigned char* pframe)
     
     if(isExcRaised(CC2520_EXC_RX_UNDERFLOW,status)) return -2;
     if ((fcs[1] & 0x80)==0x80 )  return result; //fcs correct
-    return 1;
+    return -1;  //fcs incorrect
 }
 
 void Cc2520::flushTxFifoBuffer() const
 {
+    //reset RX exception
+    writeReg(CC2520_EXCFLAG0,CC2520_EXC_TX_FRM_DONE |
+                             CC2520_EXC_TX_ACK_DONE |  
+                             CC2520_EXC_TX_UNDERFLOW |
+                             CC2520_EXC_TX_OVERFLOW); 
     commandStrobe(CC2520_INS_SFLUSHTX);
 }
 
 void Cc2520::flushRxFifoBuffer() const
 {
-    isExcRaised(CC2520_EXC_RX_FRM_ABORTED, commandStrobe(CC2520_INS_SFLUSHRX));
+    //reset RX exception
+    writeReg(CC2520_EXCFLAG0,CC2520_EXC_RX_OVERFLOW);
+    writeReg(CC2520_EXCFLAG1,CC2520_EXC_RX_FRM_DONE |
+                             CC2520_EXC_RX_FRM_ACCEPETED |
+                             CC2520_EXC_SR_MATCH_DONE |
+                             CC2520_EXC_SR_MATCH_FOUND |
+                             CC2520_EXC_FIFOP |
+                             CC2520_EXC_SFD);
+    writeReg(CC2520_EXCFLAG2,CC2520_EXC_RX_FRM_ABORTED |
+                             CC2520_EXC_RXBUFMOV_TIMEOUT);
+    
+    commandStrobe(CC2520_INS_SFLUSHRX);
+    
+    
 }
 
 bool Cc2520::sendTxFifoFrame() const
@@ -344,14 +359,53 @@ bool Cc2520::isTxFrameDone() const
     return isExcRaised(CC2520_EXC_TX_FRM_DONE);
 }
 
-bool Cc2520::isRxFrameDone() const
-{
-    return cc2520::rx_irq::value()==1 ? isExcRaised(CC2520_EXC_RX_FRM_DONE) : false;
+bool Cc2520::isRxFrameDone() const {
+    if (cc2520::fifo_irq::value() == 0 && cc2520::fifop_irq::value() == 1) {
+        #ifdef DEBUG_CC2520
+            commandStrobe(CC2520_INS_SFLUSHRX);
+            unsigned char f0;
+            unsigned char f1;
+            unsigned char f2;
+            readReg(CC2520_EXCFLAG0, f0);
+            readReg(CC2520_EXCFLAG1, f1);
+            readReg(CC2520_EXCFLAG2, f2);
+            printf("Buffer overflow!\n    "
+                    "EXCFLAG0: %x\n     "
+                    "EXCFLAG1: %x\n    "
+                    "EXCFLAG2: %x\n",f0,f1,f2);
+            
+        #endif //DEBUG_CC2520
+        flushRxFifoBuffer();
+        return false;
+    }
+    return cc2520::fifop_irq::value() == 1 ? true : false;
 }
 
 bool Cc2520::isRxBufferNotEmpty() const
 {
-    return cc2520::rx_irq::value()==1 ? true : false;
+    if(cc2520::fifo_irq::value()==0 && cc2520::fifop_irq::value()==1)
+    {
+        #ifdef DEBUG_CC2520
+           commandStrobe(CC2520_INS_SFLUSHRX);
+           printf("Buffer overflow!\n");
+           unsigned char f0;
+            unsigned char f1;
+            unsigned char f2;
+            readReg(CC2520_EXCFLAG0, f0);
+            readReg(CC2520_EXCFLAG1, f1);
+            readReg(CC2520_EXCFLAG2, f2);
+            printf("Buffer overflow!\n    "
+                    "EXCFLAG0: %x\n     "
+                    "EXCFLAG1: %x\n    "
+                    "EXCFLAG2: %x\n",f0,f1,f2);
+        #endif //DEBUG_CC2520
+        flushRxFifoBuffer();
+        return false;
+    }else if(cc2520::fifo_irq::value()==1 || cc2520::fifop_irq::value()==1)
+    {
+        return true;
+    }
+    return false;
 }
 Cc2520::Mode Cc2520::getMode() const
 {
@@ -537,10 +591,11 @@ inline void Cc2520::initConfigureReg()
     #ifdef DEBUG_CC2520
     printf("Initialize registers.\n");
     #endif //DEBUG_CC2520
-    writeReg(CC2520_FREQCTRL,this->frequency-2394);
+    writeReg(CC2520_FREQCTRL,this->frequency-2394); //set frequency
     writeReg(CC2520_FRMCTRL0,0x40); //automatically add FCS
     writeReg(CC2520_FRMCTRL1,0x2); //ignore tx underflow exception
     writeReg(CC2520_TXPOWER,0x32); //TX power 0 dBm
+    writeReg(CC2520_FIFOPCTRL,0x7F); //fifop threshold
     
     //No 12 symbol time out after frame reception has ended. (192us)
     writeReg(CC2520_FSMCTRL,0x0);
@@ -555,6 +610,10 @@ inline void Cc2520::initConfigureReg()
     writeReg(CC2520_FRMFILT1,0x00); //disable frame filtering
     writeReg(CC2520_SRCMATCH,0x00); //disable source matching
     
+    //Automatically flush tx buffer when an exception buffer overflow take place
+    //writeReg(CC2520_EXCBINDX0,0x0A);
+    //writeReg(CC2520_EXCBINDX1,0x80 | 0x06 );
+    
     //Setting all exception on channel A
     writeReg(CC2520_EXCMASKA0,0XFF);
     writeReg(CC2520_EXCMASKA1,0XFF);
@@ -563,8 +622,6 @@ inline void Cc2520::initConfigureReg()
     writeReg(CC2520_EXCMASKB0,0X00);
     writeReg(CC2520_EXCMASKB1,0X00);
     writeReg(CC2520_EXCMASKB2,0X00);
-    
-    
     
     //Register that need to update from their default value
     writeReg(CC2520_RXCTRL,0x3f);

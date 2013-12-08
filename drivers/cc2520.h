@@ -105,12 +105,12 @@ public:
      * contain LEN and FCS. 
      * \return integer code status number:
      *       -2 exception in read buffer operation: BUFFER_UNDERFLOW;
-     *       -1 the size of pframe is lower than that of the read frame in 
+     *       -1 FCS doesn't match; the frame contents is still returned;
+     *        0 the size of pframe is lower than that of the read frame in 
      *          the buffer (only lenght bytes are returned, the rest are lost)
-     *        0 the size of pFrame is greater than or equal to that of the read 
+     *        1 the size of pFrame is greater than or equal to that of the read 
      *          frame in the buffer. The length parameter is updated to the 
      *          actual size of pFrame;
-     *        1 FCS doesn't match; the frame contents is still returned;
      */
     short int readFrame(unsigned char& lenght, unsigned char* pframe);
     

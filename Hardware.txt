@@ -45,7 +45,7 @@ PCB | cc2520  | STM32      *       PCB | cc2520  | STM32
 1   | VREG_EN | PA3        *       2   | VSS     | GND 
 3   | GPIO3   |  -         *       4   | GPIO0   |  -            <----CC2520
 5   | CS      | PA2        *       6   | GPIO1   | PB0 
-7   | SCK     | PA5        *       8   | GPIO2   |  - 
+7   | SCK     | PA5        *       8   | GPIO2   | PB2
 9   | SI      | PA7        *       10  | SO      | PA6 
 
 
