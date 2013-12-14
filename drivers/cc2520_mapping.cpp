@@ -44,9 +44,6 @@ using namespace miosix;
 
 Cc2520Mapping::Cc2520Mapping() : cc2520(Cc2520::instance()), length(16)
 {
-    #ifdef DEBUG_CC2520_MAP
-        printf("Costruttore Cc2520Mapping\n");
-    #endif //DEBUG_CC2520_MAP
 }
 
 void Cc2520Mapping::setMode(Mode mode)
@@ -98,7 +95,7 @@ bool Cc2520Mapping::irq() const
 void Cc2520Mapping::writePacket(const void *packet)
 {
     const unsigned char *data=reinterpret_cast<const unsigned char*>(packet);
-    if(cc2520.writeFrame((unsigned char)this->length,data))
+    if(cc2520.writeFrame((unsigned char)this->length,data)==0)
     {
         cc2520.sendTxFifoFrame(); //Send packet
     }

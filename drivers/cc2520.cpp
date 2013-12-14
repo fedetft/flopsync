@@ -30,7 +30,6 @@
 #include "rtc.h"
 #include <miosix.h>
 #include <cstring>
-#include <cstring>
 #include "../test_cc2520/test_config.h"
 
 #ifdef DEBUG_CC2520
@@ -49,7 +48,7 @@ Cc2520& Cc2520::instance()
     return singleton;
 }
 
-Cc2520::Cc2520() : mode(DEEP_SLEEP)
+Cc2520::Cc2520() : mode(DEEP_SLEEP), autoFCS(true)
 {
     cc2520GpioInit();
     setMode(DEEP_SLEEP);  //entry state of FSM
@@ -274,29 +273,46 @@ void Cc2520::setPanId(const unsigned char panId[])
     }
 }
 
-bool Cc2520::writeFrame(unsigned char length, const unsigned char* pframe)
+int Cc2520::writeFrame(unsigned char length, const unsigned char* pframe)
 {
-    if(pframe==NULL) return false;
-    if (length<1 || length>127 ) return false; 
+    if(pframe==NULL) return -2;
+    if (length<1 || length>127 ) return -1; 
     cc2520::cs::low();
     delayUs(1);
     unsigned char status = cc2520SpiSendRecv(CC2520_INS_TXBUF);
-    cc2520SpiSendRecv(length+2); //adding 2 bytes of FCS
+    cc2520SpiSendRecv(length+2*autoFCS); //adding 2 bytes of FCS
     for(int i=0; i<length; i++) cc2520SpiSendRecv(pframe[i]);
     cc2520::cs::high();
     delayUs(1);
-    if(isExcRaised(CC2520_EXC_TX_OVERFLOW,status)) return false;
-    return true;
+    if(isExcRaised(CC2520_EXC_TX_OVERFLOW,status)) return 1;
+    return 0;
 }
 
-short int Cc2520::readFrame(unsigned char& length, unsigned char* pframe)
+int Cc2520::writeFrame(const Frame& frame)
+{
+    if(frame.isNotInit()) return -1; //invalid parameter
+    cc2520::cs::low();
+    delayUs(1);
+    unsigned char status = cc2520SpiSendRecv(CC2520_INS_TXBUF);
+    Frame::ConstIterator i; 
+    Frame::ConstIterator end = frame.begin();
+    for(i=frame.begin(); i<end; i++) cc2520SpiSendRecv(*i);
+    cc2520::cs::high();
+    delayUs(1);
+    if(isExcRaised(CC2520_EXC_TX_OVERFLOW,status)) return 1; //exc tx overflow
+    return 0; //ok
+}
+
+int Cc2520::readFrame(unsigned char& length, unsigned char* pframe) const
 {
     short int result = 0;
+    if(pframe==NULL) return -2;
+    if (length<1 || length>127 ) return -1; 
     unsigned char currLen;
     cc2520::cs::low();
     delayUs(1);
     unsigned char status = cc2520SpiSendRecv(CC2520_INS_RXBUF);
-    currLen = cc2520SpiSendRecv()-2;
+    currLen = cc2520SpiSendRecv()-2*autoFCS;
     if(currLen>length)
     {
         for(int i=0; i<currLen; i++) 
@@ -311,14 +327,36 @@ short int Cc2520::readFrame(unsigned char& length, unsigned char* pframe)
     }
     //read the two byte FCS
     unsigned char fcs[2];
-    fcs[0] = cc2520SpiSendRecv();
-    fcs[1] = cc2520SpiSendRecv();
+    if(autoFCS)
+    {
+        fcs[0] = cc2520SpiSendRecv();
+        fcs[1] = cc2520SpiSendRecv();
+    }
     cc2520::cs::high();
     delayUs(1);
     
-    if(isExcRaised(CC2520_EXC_RX_UNDERFLOW,status)) return -2;
-    if ((fcs[1] & 0x80)==0x80 )  return result; //fcs correct
-    return -1;  //fcs incorrect
+    if(isExcRaised(CC2520_EXC_RX_UNDERFLOW,status)) return -3;
+    if(autoFCS)
+        if (!(fcs[1] & 0x80)==0x80 )  return 2;  //fcs incorrect
+    return result; 
+}
+
+int Cc2520::readFrame(Frame& frame) const
+{
+    if(!frame.isNotInit() || frame.isAutoFCS()!=autoFCS) return -1;
+    cc2520::cs::low();
+    delayUs(1);
+    unsigned char status = cc2520SpiSendRecv(CC2520_INS_RXBUF);
+    frame.initFrame(cc2520SpiSendRecv());
+    Frame::Iterator i;
+    Frame::Iterator end = frame.end();
+    for(i = frame.begin(); i<end; i++) *i = cc2520SpiSendRecv();
+    cc2520::cs::high();
+    delayUs(1);
+    if(isExcRaised(CC2520_EXC_RX_UNDERFLOW,status)) return 1;
+    if(autoFCS)
+        if (!(*(i-1) & 0x80)==0x80 )  return 2;  //fcs incorrect
+    return 0;
 }
 
 void Cc2520::flushTxFifoBuffer() const
@@ -412,91 +450,62 @@ Cc2520::Mode Cc2520::getMode() const
     return this->mode;
 }
 
+void Cc2520::setAutoFCS(bool fcs)
+{
+    autoFCS = fcs;
+    if(this->mode != SLEEP || this->mode != DEEP_SLEEP)
+            writeReg(CC2520_FRMCTRL0,0x40*fcs);
+}
+
+
 bool Cc2520::writeReg(Cc2520FREG reg, unsigned char data) const
 {
-    unsigned char status;
     if(reg>0x3F) return false;
     cc2520::cs::low();
     delayUs(1);
-    status = cc2520SpiSendRecv(CC2520_INS_REGISTER_WRITE | reg);
+    cc2520SpiSendRecv(CC2520_INS_REGISTER_WRITE | reg);
     cc2520SpiSendRecv(data);
     cc2520::cs::high();
     delayUs(1);
-    
     return true;  
 }
 
-bool Cc2520::writeReg(Cc2520FREG reg, const unsigned char* data, int len) const
-{
-    unsigned char status;
-    if(reg>0x3F) return false;
-    cc2520::cs::low();
-    delayUs(1);
-    status =cc2520SpiSendRecv(CC2520_INS_REGISTER_WRITE | reg);
-    for(int i=0;i<len;i++) cc2520SpiSendRecv(*data++);
-    cc2520::cs::high();
-    delayUs(1);
-    return true;
-}
 
 bool Cc2520::writeReg(Cc2520SREG reg, unsigned char data) const
 {
-    unsigned char status;
     if(reg>0x7E) return false;
     cc2520::cs::low();
     delayUs(1);
-    status = cc2520SpiSendRecv(CC2520_INS_MEMORY_WRITE);
+    cc2520SpiSendRecv(CC2520_INS_MEMORY_WRITE);
     cc2520SpiSendRecv(reg);
     cc2520SpiSendRecv(data);
     cc2520::cs::high();
     delayUs(1);
-    
-    return true;
-}
-
-bool Cc2520::writeReg(Cc2520SREG reg, const unsigned char* data, int len) const
-{
-    unsigned char status;
-    if(reg>0x7E) return false;
-    cc2520::cs::low();
-    delayUs(1);
-    status = cc2520SpiSendRecv(CC2520_INS_MEMORY_WRITE);
-    cc2520SpiSendRecv(reg);
-    for(int i=0;i<len;i++) cc2520SpiSendRecv(*data++);
-    cc2520::cs::high();
-    delayUs(1);
-    
     return true;
 }
 
 bool Cc2520::readReg(Cc2520FREG reg, unsigned char& result) const
 {
-    unsigned char status;
     if(reg>0x3F) return false;
     cc2520::cs::low();
     delayUs(1);
-    status = cc2520SpiSendRecv(CC2520_INS_REGISTER_READ | reg);
+    cc2520SpiSendRecv(CC2520_INS_REGISTER_READ | reg);
     result =cc2520SpiSendRecv();
     cc2520::cs::high();
     delayUs(1);
-    
     return true;
-    
-    
 }
 
  bool Cc2520::readReg(Cc2520SREG reg, unsigned char& result) const
 {
-    unsigned char status;
     if(reg>0x7E) return false;
     cc2520::cs::low();
     delayUs(1);
-    status = cc2520SpiSendRecv(CC2520_INS_MEMORY_READ);
+    cc2520SpiSendRecv(CC2520_INS_MEMORY_READ);
     cc2520SpiSendRecv(reg);
     result =cc2520SpiSendRecv();
     cc2520::cs::high();
     delayUs(1);
-    
     return true;
 }
 
@@ -529,16 +538,27 @@ bool Cc2520::isExcRaised(Cc2520Exc0 exc, unsigned char status) const
             ((status & CC2520_STATUS_EXC_B) == CC2520_STATUS_EXC_B))
     {
         unsigned char result;
-        if(readReg(CC2520_EXCFLAG0, result) && 
-                               (result & exc )== exc) 
+        cc2520::cs::low();
+        delayUs(1);
+        cc2520SpiSendRecv(CC2520_INS_REGISTER_READ | CC2520_EXCFLAG0);
+        result =cc2520SpiSendRecv();
+        cc2520::cs::high();
+        delayUs(1);
+        
+        if((result & exc )== exc) 
         {
             #ifdef DEBUG_CC2520
                 printf("Exception EXCFLAG0: %x\n",exc);
             #endif //DEBUG_CC2520
             //clear exception
             //bit to 1 will not result in a register change
-           writeReg(CC2520_EXCFLAG0,~exc);
-           return true; 
+            cc2520::cs::low();
+            delayUs(1);
+            cc2520SpiSendRecv(CC2520_INS_REGISTER_WRITE | CC2520_EXCFLAG0);
+            cc2520SpiSendRecv(~exc);
+            cc2520::cs::high();
+            delayUs(1);
+            return true;
         }
     }
     return false;
@@ -550,15 +570,26 @@ bool Cc2520::isExcRaised(Cc2520Exc1 exc, unsigned char status) const
             ((status & CC2520_STATUS_EXC_B) == CC2520_STATUS_EXC_B))
     {
         unsigned char result;
-        if(readReg(CC2520_EXCFLAG0, result) && 
-                               (result & exc )== exc) 
+        cc2520::cs::low();
+        delayUs(1);
+        cc2520SpiSendRecv(CC2520_INS_REGISTER_READ | CC2520_EXCFLAG1);
+        result =cc2520SpiSendRecv();
+        cc2520::cs::high();
+        delayUs(1);
+        
+        if((result & exc )== exc)  
         {
             #ifdef DEBUG_CC2520
                 printf("Exception EXCFLAG1: %x\n",exc);
             #endif //DEBUG_CC2520
             //clear exception
             //bit to 1 will not result in a register change
-            writeReg(CC2520_EXCFLAG1,~exc);
+            cc2520::cs::low();
+            delayUs(1);
+            cc2520SpiSendRecv(CC2520_INS_REGISTER_WRITE | CC2520_EXCFLAG1);
+            cc2520SpiSendRecv(~exc);
+            cc2520::cs::high();
+            delayUs(1);
             return true;
         }
     }
@@ -571,15 +602,26 @@ bool Cc2520::isExcRaised(Cc2520Exc2 exc, unsigned char status) const
             ((status & CC2520_STATUS_EXC_B) == CC2520_STATUS_EXC_B))
     {
         unsigned char result;
-        if(readReg(CC2520_EXCFLAG0, result) && 
-                               (result & exc )== exc)
+        cc2520::cs::low();
+        delayUs(1);
+        cc2520SpiSendRecv(CC2520_INS_REGISTER_READ | CC2520_EXCFLAG2);
+        result =cc2520SpiSendRecv();
+        cc2520::cs::high();
+        delayUs(1);
+        
+        if((result & exc )== exc) 
         {
             #ifdef DEBUG_CC2520
                 printf("Exception EXCFLAG2: %x\n",exc);
             #endif //DEBUG_CC2520
             //clear exception
             //bit to 1 will not result in a register change
-            writeReg(CC2520_EXCFLAG2,~exc);
+            cc2520::cs::low();
+            delayUs(1);
+            cc2520SpiSendRecv(CC2520_INS_REGISTER_WRITE | CC2520_EXCFLAG2);
+            cc2520SpiSendRecv(~exc);
+            cc2520::cs::high();
+            delayUs(1);
             return true;
         }
     }
@@ -592,7 +634,7 @@ inline void Cc2520::initConfigureReg()
     printf("Initialize registers.\n");
     #endif //DEBUG_CC2520
     writeReg(CC2520_FREQCTRL,this->frequency-2394); //set frequency
-    writeReg(CC2520_FRMCTRL0,0x40); //automatically add FCS
+    writeReg(CC2520_FRMCTRL0,0x40*autoFCS); //automatically add FCS
     writeReg(CC2520_FRMCTRL1,0x2); //ignore tx underflow exception
     writeReg(CC2520_TXPOWER,0x32); //TX power 0 dBm
     writeReg(CC2520_FIFOPCTRL,0x7F); //fifop threshold

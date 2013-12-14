@@ -28,6 +28,7 @@
 #ifndef CC2520_H
 #define	CC2520_H
 
+#include "frame.h"
 /**
  * This class allows to interface with the cc2520
  * Access to this class is not mutex protected to guard concurrent access,
@@ -91,9 +92,24 @@ public:
      * Of the first byte, Frame LEN, uses only the first 7 bits 
      * FCS is automatically written by writeFrame.
      * (frame length up to 127 bytes)
-     * @param frame
+     * \param pframe
+     * \return integer code status number:
+     *          -2 invalid pframe parameter, pframe is null;
+     *          -1 invalid length parameter;
+     *           0 write successful;
+     *           1 exception tx buffer overflow;
      */
-    bool writeFrame(unsigned char length, const unsigned char* pframe);
+    int writeFrame(unsigned char length, const unsigned char* pframe);
+    
+    /**
+     * Write in TX fifo buffer one frame. 
+     * \param frame object Frame not initialized
+     * \return  integer code status number:
+     *          -1 invalid frame parameter, probably frame is Init already;
+     *           0 write successful;
+     *           1 exception tx buffer overflow;
+     */   
+    int writeFrame(const Frame& frame);
     
     /**
      * Reads from Rx FIFO buffer on the first frame received. The maximum length
@@ -104,15 +120,29 @@ public:
      * \param pframe frame pointer to RX FIFO frame. The frame returned not 
      * contain LEN and FCS. 
      * \return integer code status number:
-     *       -2 exception in read buffer operation: BUFFER_UNDERFLOW;
-     *       -1 FCS doesn't match; the frame contents is still returned;
+     *       -3 exception in read buffer operation: BUFFER_UNDERFLOW;
+     *       -2 invalid pframe parameter, pframe is null;
+     *       -1 invalid length parameter;
      *        0 the size of pframe is lower than that of the read frame in 
      *          the buffer (only lenght bytes are returned, the rest are lost)
      *        1 the size of pFrame is greater than or equal to that of the read 
      *          frame in the buffer. The length parameter is updated to the 
      *          actual size of pFrame;
+     *        2 FCS doesn't match; the frame contents is still returned;
      */
-    short int readFrame(unsigned char& lenght, unsigned char* pframe);
+    int readFrame(unsigned char& lenght, unsigned char* pframe)const;
+    
+    /**
+     * Reads from Rx FIFO buffer on the first frame received. The maximum length
+     * of a frame is 128 bytes.
+     * \param frame object Frame not initialized
+     * \return integer code status number:
+     *          -1 invalid frame parameter, probably frame is Init already;
+     *           0 write successful;
+     *           1 exception rx buffer underflow;
+     *           2 FCS doesn't match; the frame contents is still returned;
+     */          
+    int readFrame(Frame& frame) const;
     
     /**
      * Flush TX FIFO buffer
@@ -148,19 +178,22 @@ public:
      * \return the mode of transceiver:
      *          TX,RX,SLEEP,DEEP_SLEEP
      */
-    Cc2520::Mode getMode() const;
+    Mode getMode() const;
     
-
+    /**
+     * 
+     * @param fcs
+     * @return 
+     */
+    void setAutoFCS(bool fcs);
+    
+    
 
 private:
     /**
      * Constructor
      */
     Cc2520();
-
-    Cc2520(const Cc2520&);
-    Cc2520& operator=(const Cc2520&);
-    
     
     /**
      * List of Registers of CC2520
@@ -471,7 +504,8 @@ private:
     unsigned short frequency;
     unsigned char panId[2];
     unsigned char shortAddress[2];
-    Mode mode; ///< Operating mode
+    bool autoFCS;
+    Mode mode; //< Operating mode
 };
 
 #endif //CC2520_H
