@@ -62,7 +62,7 @@ Clock::~Clock() {}
 //
 
 FlooderRootNode::FlooderRootNode(Timer& rtc) : rtc(rtc),
-        nrf(Nrf24l01::instance()), timer(AuxiliaryTimer::instance()),
+        tr(Transceiver::instance()), timer(AuxiliaryTimer::instance()),
         frameStart(0), wakeupTime(rtc.getValue()+nominalPeriod) {}
 
 bool FlooderRootNode::synchronize()
@@ -71,12 +71,12 @@ bool FlooderRootNode::synchronize()
     rtc.setAbsoluteWakeupSleep(wakeupTime);
     rtc.sleep();
     rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
-    nrf.setMode(Nrf24l01::TX);
+    tr.setMode(Transceiver::TX);
     #ifndef SEND_TIMESTAMPS
-    nrf.setPacketLength(1);
+    tr.setPacketLength(1);
     const char packet[]={0x00};
     #else //SEND_TIMESTAMPS
-    nrf.setPacketLength(4);
+    tr.setPacketLength(4);
     unsigned int timestamp;
     unsigned int *packet=&timestamp;
     #endif //SEND_TIMESTAMPS
@@ -91,13 +91,13 @@ bool FlooderRootNode::synchronize()
         #ifdef SEND_TIMESTAMPS
         timestamp=rtc.getValue();
         #endif //SEND_TIMESTAMPS
-        nrf.writePacket(packet);
+        tr.writePacket(packet);
         timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
         frameStart=rtc.getPacketTimestamp();
         miosix::ledOff(); //Falling edge signals synchronization packet sent
     }
-    nrf.endWritePacket();
-    nrf.setMode(Nrf24l01::SLEEP);
+    tr.endWritePacket();
+    tr.setMode(Transceiver::SLEEP);
     wakeupTime+=nominalPeriod;
     return false; //Root node does not desynchronize
 }
@@ -107,7 +107,7 @@ bool FlooderRootNode::synchronize()
 //
 
 FlooderSyncNode::FlooderSyncNode(Timer& rtc, Synchronizer& synchronizer,
-        unsigned char hop) : rtc(rtc), nrf(Nrf24l01::instance()),
+        unsigned char hop) : rtc(rtc), tr(Transceiver::instance()),
         timer(AuxiliaryTimer::instance()), synchronizer(synchronizer),
         measuredFrameStart(0), computedFrameStart(0), clockCorrection(0),
         receiverWindow(w), missPackets(maxMissPackets+1), hop(hop) {}
@@ -129,18 +129,18 @@ bool FlooderSyncNode::synchronize()
     rtc.setAbsoluteWakeupSleep(wakeupTime);
     rtc.sleep();
     rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
-    nrf.setMode(Nrf24l01::RX);
+    tr.setMode(Transceiver::RX);
     #ifndef SEND_TIMESTAMPS
-    nrf.setPacketLength(1);
+    tr.setPacketLength(1);
     #else //SEND_TIMESTAMPS
-    nrf.setPacketLength(4);
+    tr.setPacketLength(4);
     #endif //SEND_TIMESTAMPS
     // To minimize jitter in the packet transmission time caused by the
     // variable time sleepAndWait() takes to restart the STM32 PLL an
     // additional wait is done here to absorb the jitter.
     rtc.wait();
     miosix::ledOn();
-    nrf.startReceiving();
+    tr.startReceiving();
     timer.initTimeoutTimer(toAuxiliaryTimer(
         receiverTurnOn+2*receiverWindow+smallPacketTime));
     bool timeout;
@@ -160,7 +160,7 @@ bool FlooderSyncNode::synchronize()
             #else //SEND_TIMESTAMPS
             unsigned int *packet=&receivedTimestamp;
             #endif //SEND_TIMESTAMPS
-            nrf.readPacket(packet);
+            tr.readPacket(packet);
             #ifndef SEND_TIMESTAMPS
             if(packet[0]==hop) break;
             #else //SEND_TIMESTAMPS
@@ -174,7 +174,7 @@ bool FlooderSyncNode::synchronize()
         if(!timeout) rebroadcast();
         #endif //MULTI_HOP
     }
-    nrf.setMode(Nrf24l01::SLEEP);
+    tr.setMode(Transceiver::SLEEP);
     
     pair<int,int> r;
     if(timeout)
@@ -205,13 +205,13 @@ void FlooderSyncNode::resynchronize()
 { 
     synchronizer.reset();
     #ifndef SEND_TIMESTAMPS
-    nrf.setPacketLength(1);
+    tr.setPacketLength(1);
     #else //SEND_TIMESTAMPS
-    nrf.setPacketLength(4);
+    tr.setPacketLength(4);
     #endif //SEND_TIMESTAMPS
-    nrf.setMode(Nrf24l01::RX);
+    tr.setMode(Transceiver::RX);
     timer.initTimeoutTimer(0);
-    nrf.startReceiving();
+    tr.startReceiving();
     miosix::ledOn();
     for(;;)
     {
@@ -223,7 +223,7 @@ void FlooderSyncNode::resynchronize()
         #else //SEND_TIMESTAMPS
         unsigned int *packet=&receivedTimestamp;
         #endif //SEND_TIMESTAMPS
-        nrf.readPacket(packet);
+        tr.readPacket(packet);
         #ifndef SEND_TIMESTAMPS
         if(packet[0]==hop) break;
         #else //SEND_TIMESTAMPS
@@ -234,7 +234,7 @@ void FlooderSyncNode::resynchronize()
         #endif //SEND_TIMESTAMPS
     }
     miosix::ledOff();
-    nrf.setMode(Nrf24l01::SLEEP);
+    tr.setMode(Transceiver::SLEEP);
     clockCorrection=0;
     receiverWindow=w;
     missPackets=0;
@@ -246,15 +246,15 @@ void FlooderSyncNode::rebroadcast()
 {
 //     rtc.setAbsoluteWakeupWait(measuredFrameStart+retransmitDelta
 //         -(receiverTurnOn+smallPacketTime+spiPktSend));
-    nrf.setMode(Nrf24l01::TX);
+    tr.setMode(Transceiver::TX);
     timer.initTimeoutTimer(0);
     const char packet[]={hop+1};
 //     rtc.wait();
     miosix::ledOn();
-    nrf.writePacket(packet);
+    tr.writePacket(packet);
     timer.waitForPacketOrTimeout(); //Wait for packet sent, sleeping the CPU
     miosix::ledOff(); //Falling edge signals synchronization packet sent
-    nrf.endWritePacket();
+    tr.endWritePacket();
 }
 
 

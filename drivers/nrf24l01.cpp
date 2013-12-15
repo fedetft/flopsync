@@ -30,7 +30,7 @@
 #include "rtc.h"
 #include <miosix.h>
 #include <cstring>
-#include "../test_cc2520/test_config.h"
+
 using namespace miosix;
 
 //

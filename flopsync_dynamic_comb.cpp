@@ -29,7 +29,7 @@
 #include <cstring>
 #include <limits>
 #include <miosix.h>
-#include "drivers/nrf24l01.h"
+#include "drivers/transceiver.h"
 #include "drivers/rtc.h"
 #include "drivers/temperature.h"
 #include "protocol_constants.h"
@@ -57,9 +57,9 @@ int main()
     blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
     const unsigned char address[]={0xab, 0xcd, 0xef};
-    Nrf24l01& nrf=Nrf24l01::instance();
-    nrf.setAddress(address);
-    nrf.setFrequency(2450);
+    Transceiver& tr=Transceiver::instance();
+    tr.setAddress(address);
+    tr.setFrequency(2450);
     const int node=identifyNode();
     #ifndef USE_VHT
     Timer& rtc=Rtc::instance();
@@ -71,7 +71,7 @@ int main()
     //For multi hop experiments
     sync=new OptimizedRampFlopsync2; 
     monotonic=true;
-//     //For comparison between sinchronization schemes
+//     //For comparison between sincnrfhronization schemes
 //     switch(node)
 //     {
 //         case 1: sync=new OptimizedRampFlopsync2; monotonic=true; break;
@@ -106,8 +106,8 @@ int main()
             rtc.sleep();
             blueLed::high();
             rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
-            nrf.setMode(Nrf24l01::TX);
-            nrf.setPacketLength(sizeof(Packet2));
+            tr.setMode(Transceiver::TX);
+            tr.setPacketLength(sizeof(Packet2));
             timer.initTimeoutTimer(0);
             Packet2 packet;
             packet.e=sync->getSyncError();
@@ -127,12 +127,12 @@ int main()
             {
                 CriticalSection cs;
                 rtc.wait();
-                nrf.writePacket(&packet);
+                tr.writePacket(&packet);
             }
             timer.waitForPacketOrTimeout();
             blueLed::low();
-            nrf.endWritePacket();
-            nrf.setMode(Nrf24l01::SLEEP);
+            tr.endWritePacket();
+            tr.setMode(Transceiver::SLEEP);
         }
     }
 }

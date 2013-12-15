@@ -128,7 +128,9 @@ Frame::ConstIterator Frame::end() const
 
 bool Frame::initFrame(int sizeLEN)
 {
-    if(!isNotInit()) return false;
+    if(!isNotInit() || sizeLEN > MAX_SIZE_FRAME ||
+       sizeLEN<ctrlFrame.autoFcs*SIZE_AUTO_FCS+!ctrlFrame.autoFcs*ctrlFrame.fcsLen+ctrlFrame.header*SIZE_HEADER)
+                            return false;
     pframe = new unsigned char[sizeLEN-ctrlFrame.autoFcs*SIZE_AUTO_FCS]();
     pframe[0] = sizeLEN;
     return true;
@@ -137,7 +139,7 @@ bool Frame::initFrame(int sizeLEN)
 int Frame::getFrameSize() const
 {
     if(isNotInit()) return -1;
-    return ctrlFrame.autoFcs==1? pframe[0]-2 : pframe[0]; 
+    return pframe[0]-2*ctrlFrame.autoFcs; 
 }
 
 int Frame::getLEN() const
@@ -264,6 +266,7 @@ bool Frame::setPayload(const unsigned char* payload)
 {
     if(isNotInit() || payload==NULL) return false;
     unsigned char sizePayload = getSizePayload();
+    if(sizePayload<0) return false;
     memcpy(pframe+SIZE_LEN+ctrlFrame.header*SIZE_HEADER,payload,sizePayload);
     return true;
 }
@@ -271,14 +274,15 @@ bool Frame::setPayload(const unsigned char* payload)
 bool Frame::getPayload(unsigned char* payload) const
 {
     if(isNotInit() || payload==NULL) return false;
-    unsigned char sizeHeader = getSizePayload();
-    memcpy(payload,pframe+SIZE_LEN+ctrlFrame.header*SIZE_HEADER,sizeHeader);
+    unsigned char sizePayload = getSizePayload();
+    if(sizePayload<0) return false;
+    memcpy(payload,pframe+SIZE_LEN+ctrlFrame.header*SIZE_HEADER,sizePayload);
     return true;
 }
 
 int Frame::getSizePayload() const
 {
-    if(isNotInit()) return 0;
+    if(isNotInit()) return -1;
     return getLEN()-SIZE_LEN-ctrlFrame.fcsLen-ctrlFrame.header*SIZE_HEADER;  
 }
 

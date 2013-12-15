@@ -94,8 +94,16 @@ bool Cc2520Mapping::irq() const
 
 void Cc2520Mapping::writePacket(const void *packet)
 {
+    
     const unsigned char *data=reinterpret_cast<const unsigned char*>(packet);
+    /**
     if(cc2520.writeFrame((unsigned char)this->length,data)==0)
+    {
+        cc2520.sendTxFifoFrame(); //Send packet
+    }*/
+    Frame f(length,false,true);
+    if (!f.setPayload(data)) return; 
+    if(cc2520.writeFrame(f)==0)
     {
         cc2520.sendTxFifoFrame(); //Send packet
     }
@@ -131,10 +139,19 @@ void Cc2520Mapping::startReceiving()
 void Cc2520Mapping::readPacket(void *packet)
 {
     unsigned char *data=reinterpret_cast<unsigned char*>(packet);
+    /**
     unsigned char length = (unsigned char)this->length;
     short int res = cc2520.readFrame(length, data);
     #ifdef DEBUG_CC2520_MAP
         printf("La lunghezza del frame è:%x \n",length);
+        printf("readFrame return:%d \n",res);
+    #endif //DEBUG_CC2520_MAP
+     */
+    
+    Frame f(false);
+    short int res = cc2520.readFrame(f);
+    if(!f.getPayload(data)) return;
+    #ifdef DEBUG_CC2520_MAP
         printf("readFrame return:%d \n",res);
     #endif //DEBUG_CC2520_MAP
 }

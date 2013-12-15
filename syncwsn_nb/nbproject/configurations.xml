@@ -6,11 +6,17 @@
         <in>cc2520.cpp</in>
         <in>cc2520.h</in>
         <in>cc2520_config.h</in>
+        <in>cc2520_mapping.cpp</in>
+        <in>cc2520_mapping.h</in>
+        <in>frame.cpp</in>
+        <in>frame.h</in>
         <in>nrf24l01.cpp</in>
         <in>nrf24l01.h</in>
         <in>nrf24l01_config.h</in>
         <in>rtc.cpp</in>
         <in>rtc.h</in>
+        <in>transceiver.cpp</in>
+        <in>transceiver.h</in>
       </df>
       <df name="flopsync_v1">
         <in>clocksync.cpp</in>
@@ -347,18 +353,35 @@
         </df>
         <in>miosix.h</in>
       </df>
+      <df name="test_cc2520">
+        <in>test_config.h</in>
+      </df>
       <in>flopsync2.cpp</in>
       <in>flopsync2.h</in>
       <in>flopsync_dynamic_comb.cpp</in>
       <in>flopsync_rootnode_comb.cpp</in>
       <in>low_power_setup.h</in>
       <in>protocol_constants.h</in>
+      <in>test_cc2520_n0.cpp</in>
+      <in>test_cc2520_n1.cpp</in>
     </df>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
                    projectFiles="false">
       <itemPath>../makefile</itemPath>
       <itemPath>miosix_np_2-Makefile.mk</itemPath>
+    </logicalFolder>
+    <logicalFolder name="TestFiles"
+                   displayName="Test Files"
+                   projectFiles="false"
+                   kind="TEST_LOGICAL_FOLDER">
+      <logicalFolder name="f1" displayName="Frame" projectFiles="true" kind="TEST">
+      </logicalFolder>
+      <logicalFolder name="f2"
+                     displayName="New C++ Simple Test"
+                     projectFiles="true"
+                     kind="TEST">
+      </logicalFolder>
     </logicalFolder>
   </logicalFolder>
   <sourceFolderFilter>^(nbproject|build|test|bootloaders|compiler|doc|temp|deploy)$</sourceFolderFilter>
@@ -423,6 +446,14 @@
       </item>
       <item path="../drivers/cc2520_config.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../drivers/cc2520_mapping.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520_mapping.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/frame.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../drivers/nrf24l01.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/nrf24l01.h" ex="false" tool="3" flavor2="0">
@@ -432,6 +463,10 @@
       <item path="../drivers/rtc.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/rtc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -1327,6 +1362,41 @@
       </item>
       <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </cTool>
+        <ccTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>`cppunit-config --libs`</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <folder path="TestFiles/f2">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f2</output>
+        </linkerTool>
+      </folder>
     </conf>
     <conf name="lpc2138_miosix_board" type="0">
       <toolsSet>
@@ -1380,6 +1450,14 @@
       </item>
       <item path="../drivers/cc2520_config.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../drivers/cc2520_mapping.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520_mapping.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/frame.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../drivers/nrf24l01.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/nrf24l01.h" ex="false" tool="3" flavor2="0">
@@ -1389,6 +1467,10 @@
       <item path="../drivers/rtc.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/rtc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -2284,6 +2366,41 @@
       </item>
       <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </cTool>
+        <ccTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>`cppunit-config --libs`</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <folder path="TestFiles/f2">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f2</output>
+        </linkerTool>
+      </folder>
     </conf>
     <conf name="stm32f103ze_stm3210e-eval" type="0">
       <toolsSet>
@@ -2339,6 +2456,14 @@
       </item>
       <item path="../drivers/cc2520_config.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../drivers/cc2520_mapping.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520_mapping.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/frame.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../drivers/nrf24l01.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/nrf24l01.h" ex="false" tool="3" flavor2="0">
@@ -2348,6 +2473,10 @@
       <item path="../drivers/rtc.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/rtc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -3243,6 +3372,41 @@
       </item>
       <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </cTool>
+        <ccTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>`cppunit-config --libs`</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <folder path="TestFiles/f2">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f2</output>
+        </linkerTool>
+      </folder>
     </conf>
     <conf name="stm32f103ve_mp3v2" type="0">
       <toolsSet>
@@ -3298,6 +3462,14 @@
       </item>
       <item path="../drivers/cc2520_config.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../drivers/cc2520_mapping.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520_mapping.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/frame.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../drivers/nrf24l01.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/nrf24l01.h" ex="false" tool="3" flavor2="0">
@@ -3307,6 +3479,10 @@
       <item path="../drivers/rtc.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/rtc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -4202,6 +4378,41 @@
       </item>
       <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </cTool>
+        <ccTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>`cppunit-config --libs`</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <folder path="TestFiles/f2">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f2</output>
+        </linkerTool>
+      </folder>
     </conf>
     <conf name="stm32f100rb_stm32vldiscovery" type="0">
       <toolsSet>
@@ -4257,6 +4468,14 @@
       </item>
       <item path="../drivers/cc2520_config.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../drivers/cc2520_mapping.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520_mapping.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/frame.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../drivers/nrf24l01.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/nrf24l01.h" ex="false" tool="3" flavor2="0">
@@ -4266,6 +4485,10 @@
       <item path="../drivers/rtc.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/rtc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -5161,6 +5384,41 @@
       </item>
       <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </cTool>
+        <ccTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>`cppunit-config --libs`</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <folder path="TestFiles/f2">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f2</output>
+        </linkerTool>
+      </folder>
     </conf>
     <conf name="stm32f103ve_strive_mini" type="0">
       <toolsSet>
@@ -5216,6 +5474,14 @@
       </item>
       <item path="../drivers/cc2520_config.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../drivers/cc2520_mapping.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520_mapping.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/frame.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../drivers/nrf24l01.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/nrf24l01.h" ex="false" tool="3" flavor2="0">
@@ -5225,6 +5491,10 @@
       <item path="../drivers/rtc.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/rtc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -6120,6 +6390,41 @@
       </item>
       <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </cTool>
+        <ccTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>`cppunit-config --libs`</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <folder path="TestFiles/f2">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f2</output>
+        </linkerTool>
+      </folder>
     </conf>
     <conf name="stm32f103ze_redbull_v2" type="0">
       <toolsSet>
@@ -6175,6 +6480,14 @@
       </item>
       <item path="../drivers/cc2520_config.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../drivers/cc2520_mapping.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520_mapping.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/frame.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../drivers/nrf24l01.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/nrf24l01.h" ex="false" tool="3" flavor2="0">
@@ -6184,6 +6497,10 @@
       <item path="../drivers/rtc.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/rtc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -7079,6 +7396,41 @@
       </item>
       <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </cTool>
+        <ccTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>`cppunit-config --libs`</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <folder path="TestFiles/f2">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f2</output>
+        </linkerTool>
+      </folder>
     </conf>
     <conf name="stm32f407vg_stm32f4discovery" type="0">
       <toolsSet>
@@ -7132,6 +7484,14 @@
       </item>
       <item path="../drivers/cc2520_config.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../drivers/cc2520_mapping.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520_mapping.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/frame.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../drivers/nrf24l01.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/nrf24l01.h" ex="false" tool="3" flavor2="0">
@@ -7141,6 +7501,10 @@
       <item path="../drivers/rtc.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/rtc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -8036,6 +8400,41 @@
       </item>
       <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </cTool>
+        <ccTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>`cppunit-config --libs`</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <folder path="TestFiles/f2">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f2</output>
+        </linkerTool>
+      </folder>
     </conf>
     <conf name="stm32f207ig_stm3220g-eval" type="0">
       <toolsSet>
@@ -8089,6 +8488,14 @@
       </item>
       <item path="../drivers/cc2520_config.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../drivers/cc2520_mapping.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520_mapping.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/frame.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../drivers/nrf24l01.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/nrf24l01.h" ex="false" tool="3" flavor2="0">
@@ -8098,6 +8505,10 @@
       <item path="../drivers/rtc.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/rtc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -8993,6 +9404,41 @@
       </item>
       <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </cTool>
+        <ccTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>`cppunit-config --libs`</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <folder path="TestFiles/f2">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f2</output>
+        </linkerTool>
+      </folder>
     </conf>
     <conf name="stm32f207zg_ethboard_v2" type="0">
       <toolsSet>
@@ -9046,6 +9492,14 @@
       </item>
       <item path="../drivers/cc2520_config.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../drivers/cc2520_mapping.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520_mapping.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/frame.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../drivers/nrf24l01.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/nrf24l01.h" ex="false" tool="3" flavor2="0">
@@ -9055,6 +9509,10 @@
       <item path="../drivers/rtc.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/rtc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -9950,6 +10408,41 @@
       </item>
       <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </cTool>
+        <ccTool>
+          <commandLine>`cppunit-config --cflags`</commandLine>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>`cppunit-config --libs`</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <folder path="TestFiles/f2">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f2</output>
+        </linkerTool>
+      </folder>
     </conf>
   </confs>
 </configurationDescriptor>

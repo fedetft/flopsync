@@ -8,6 +8,10 @@
         <in>cc2520.cpp</in>
         <in>cc2520.h</in>
         <in>cc2520_config.h</in>
+        <in>cc2520_mapping.cpp</in>
+        <in>cc2520_mapping.h</in>
+        <in>frame.cpp</in>
+        <in>frame.h</in>
         <in>nrf24l01.cpp</in>
         <in>nrf24l01.h</in>
         <in>nrf24l01_config.h</in>
@@ -15,12 +19,12 @@
         <in>rtc.h</in>
         <in>temperature.cpp</in>
         <in>temperature.h</in>
+        <in>transceiver.cpp</in>
+        <in>transceiver.h</in>
       </df>
       <df name="flopsync2_T_30_alpha_3-8">
       </df>
       <df name="flopsync2_T_30_alpha_3-8_second">
-      </df>
-      <df name="flopsync2_tune_alpha_30_3-8">
       </df>
       <df name="flopsync_old_temperature">
       </df>
@@ -371,12 +375,24 @@
       </df>
       <df name="syncwsn_nb">
       </df>
+      <df name="test_cc2520">
+        <df name="testFrame">
+          <in>testFrame.cpp</in>
+          <in>testFrame.h</in>
+          <in>testFrameRunner.cpp</in>
+        </df>
+        <in>test_cc2520_n0.cpp</in>
+        <in>test_cc2520_n1.cpp</in>
+        <in>test_config.h</in>
+      </df>
       <in>flopsync2.cpp</in>
       <in>flopsync2.h</in>
       <in>flopsync_dynamic_comb.cpp</in>
       <in>flopsync_rootnode_comb.cpp</in>
       <in>low_power_setup.h</in>
       <in>protocol_constants.h</in>
+      <in>test_cc2520_n0.cpp</in>
+      <in>test_cc2520_n1.cpp</in>
     </df>
   </logicalFolder>
   <projectmakefile>miosix_np_2-Makefile.mk</projectmakefile>

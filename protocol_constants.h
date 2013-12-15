@@ -58,6 +58,10 @@
 //WSN sync schemes.
 //#define SEND_TIMESTAMPS //@@ Filled in by mkpackage.pl
 
+//Used for instantiate cc2520 transceiver. If not present default nrf transceiver
+//will be instantiate.
+//#define USE_TRANSCEIVER_CC2520 //@@ Filled in by mkpackage.pl
+
 // Give a name to the experiment being done
 #define experimentName "" //@@ Filled in by mkpackage.pl
 

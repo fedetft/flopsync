@@ -31,7 +31,9 @@
 #include <utility>
 #include <cstdio>
 #include <cmath>
+#include "drivers/transceiver.h"
 #include "drivers/nrf24l01.h"
+#include "drivers/cc2520.h"
 #include "drivers/rtc.h"
 #include "protocol_constants.h"
 #include <miosix.h>
@@ -206,7 +208,7 @@ public:
 
 private:
     Timer& rtc;
-    Nrf24l01& nrf;
+    Transceiver& tr;
     AuxiliaryTimer& timer;
     unsigned int frameStart;
     unsigned int wakeupTime;
@@ -280,7 +282,7 @@ private:
     void rebroadcast();
     
     Timer& rtc;
-    Nrf24l01& nrf;
+    Transceiver& tr;
     AuxiliaryTimer& timer;
     Synchronizer& synchronizer;
     unsigned int measuredFrameStart;

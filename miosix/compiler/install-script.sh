@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Script to build the gcc compiler required for Miosix.
 #
 # Building Miosix is officially supported only through the gcc compiler built
@@ -11,6 +12,16 @@
 # binaries in /usr/bin.
 # It should be run without root privileges, but it will ask for the root
 # password when installing files to /opt and /usr/bin
+
+
+#Argument for compile with make -j $n
+if [ "$#" = "0" ]; then
+    n=1
+else
+    n=$1
+fi
+
+echo "You have chosen to compile $n jobs at once!"
 
 # Uncomment if installing globally on the system
 INSTALL_DIR=/opt
@@ -66,9 +77,9 @@ cd $BINUTILS
 	--with-float=soft \
 	--disable-werror 2>../log/a.txt || quit ":: Error configuring binutils"
 
-make all 2>../log/b.txt					|| quit ":: Error compiling binutils"
+make -j$n all 2>../log/b.txt					|| quit ":: Error compiling binutils"
 
-$SUDO make install 2>../log/c.txt		|| quit ":: Error installing binutils"
+$SUDO make -j$n install 2>../log/c.txt		|| quit ":: Error installing binutils"
 
 cd ..
 
@@ -81,6 +92,7 @@ cd objdir
 # Note: despite --enable-lto, lto does not yet work. We'll wait for 4.6.x 
 $SUDO ../$GCC/configure \
 	--target=arm-eabi \
+	MAKEINFO=missing \
 	--prefix=$INSTALL_DIR/arm-miosix-eabi \
 	--program-prefix=arm-miosix-eabi- \
 	--disable-shared \
@@ -98,9 +110,10 @@ $SUDO ../$GCC/configure \
 	--with-headers=../$NEWLIB/newlib/libc/include \
 	2>../log/d.txt || quit ":: Error configuring gcc-start"
 
-$SUDO make all-gcc 2>../log/e.txt			|| quit ":: Error compiling gcc-start"
+#echo "MAKEINFO = :" >> Makefile
+$SUDO make -j$n all-gcc 2>../log/e.txt			|| quit ":: Error compiling gcc-start"
 
-$SUDO make install-gcc 2>../log/f.txt		|| quit ":: Error installing gcc-start"
+$SUDO make -j$n install-gcc 2>../log/f.txt		|| quit ":: Error installing gcc-start"
 
 # Remove the sys-include directory
 # There are two reasons why to remove it: first because it is unnecessary,
@@ -157,9 +170,9 @@ cd newlib-obj
 	RANLIB_FOR_TARGET=arm-miosix-eabi-ranlib \
 	2>../log/g.txt || quit ":: Error configuring newlib"
 
-make 2>../log/h.txt							|| quit ":: Error compiling newlib"
+make -j$n 2>../log/h.txt							|| quit ":: Error compiling newlib"
 
-$SUDO make install 2>../log/i.txt			|| quit ":: Error installing newlib"
+$SUDO make -j$n install 2>../log/i.txt			|| quit ":: Error installing newlib"
 
 cd ..
 
@@ -169,9 +182,9 @@ cd ..
 
 cd objdir
 
-$SUDO make all 2>../log/j.txt				|| quit ":: Error compiling gcc-end"
+$SUDO make -j$n all 2>../log/j.txt				|| quit ":: Error compiling gcc-end"
 
-$SUDO make install 2>../log/k.txt			|| quit ":: Error installing gcc-end"
+$SUDO make -j$n install 2>../log/k.txt			|| quit ":: Error installing gcc-end"
 
 cd ..
 
@@ -224,15 +237,16 @@ cd $GDB
 
 ./configure \
 	--target=arm-eabi \
+	--with-expat \
 	--prefix=$INSTALL_DIR/arm-miosix-eabi \
 	--program-prefix=arm-miosix-eabi- \
 	--enable-interwork \
 	--enable-multilib \
 	--disable-werror 2>../log/l.txt || quit ":: Error configuring gdb"
 
-make all 2>../log/m.txt						|| quit ":: Error compiling gdb"
+make -j$n all 2>../log/m.txt						|| quit ":: Error compiling gdb"
 
-$SUDO make install 2>../log/n.txt			|| quit ":: Error installing gdb"
+$SUDO make -j$n install 2>../log/n.txt			|| quit ":: Error installing gdb"
 
 cd ..
 

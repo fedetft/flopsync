@@ -21,8 +21,9 @@ drivers/transceiver.cpp \
 drivers/nrf24l01.cpp \
 drivers/cc2520.cpp \
 drivers/temperature.cpp \
-drivers/cc2520_mapping.cpp
-#flopsync2.cpp 
+drivers/cc2520_mapping.cpp \
+drivers/frame.cpp \
+flopsync2.cpp 
 
 ##
 ## List here additional static libraries with relative path

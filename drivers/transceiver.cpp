@@ -25,9 +25,10 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
 #include "transceiver.h"
-#include "cc2520_mapping.h"
 #include "nrf24l01.h"
+#include "cc2520_mapping.h"
 #include "../protocol_constants.h"
+#include "../test_cc2520/test_config.h"
 
 Transceiver& Transceiver::instance()
 {

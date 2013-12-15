@@ -27,7 +27,9 @@
 
 #ifndef NRF24L01_H
 #define	NRF24L01_H
+
 #include "transceiver.h"
+
 /**
  * This class allows to interface with the nRF24L01+
  * Access to this class is not mutex protected to guard concurrent access,

@@ -26,7 +26,7 @@
  ***************************************************************************/
 
 #include <cstdio>
-#include "drivers/nrf24l01.h"
+#include "drivers/transceiver.h"
 #include "drivers/rtc.h"
 #include "protocol_constants.h"
 #include "flopsync2.h"
@@ -42,9 +42,9 @@ int main()
     blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
     const unsigned char address[]={0xab, 0xcd, 0xef};
-    Nrf24l01& nrf=Nrf24l01::instance();
-    nrf.setAddress(address);
-    nrf.setFrequency(2450);
+    Transceiver& tr=Transceiver::instance();
+    tr.setAddress(address);
+    tr.setFrequency(2450);
     #ifndef USE_VHT
     Timer& rtc=Rtc::instance();
     #else //USE_VHT
@@ -66,10 +66,10 @@ int main()
             rtc.setAbsoluteWakeupSleep(wakeupTime);
             rtc.sleep();
             rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
-            nrf.setMode(Nrf24l01::RX);
-            nrf.setPacketLength(sizeof(Packet2));
+            tr.setMode(Transceiver::RX);
+            tr.setPacketLength(sizeof(Packet2));
             rtc.wait();
-            nrf.startReceiving();
+            tr.startReceiving();
             timer.initTimeoutTimer(toAuxiliaryTimer(receiverTurnOn+2*w+longPacketTime));
             bool timeout;
             unsigned int measuredTime;
@@ -79,11 +79,11 @@ int main()
                 timeout=timer.waitForPacketOrTimeout();
                 measuredTime=rtc.getPacketTimestamp();
                 if(timeout) break;
-                nrf.readPacket(&packet);
+                tr.readPacket(&packet);
                 if(packet.check==0 || (packet.check & 0xf0)==0x10) break;
             }
             timer.stopTimeoutTimer();
-            nrf.setMode(Nrf24l01::SLEEP);
+            tr.setMode(Transceiver::SLEEP);
             if(timeout) printf("node%d timeout\n",(j % 3)+1);
             else {
                 if(j<3) printf("e=%d u=%d w=%d%s\n",packet.e,packet.u,packet.w,

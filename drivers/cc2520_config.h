@@ -28,7 +28,6 @@
 #ifndef CC2520_CONFIG_H
 #define	CC2520_CONFIG_H
 
-
 #include <miosix.h>
 
 #ifdef _BOARD_ALS_MAINBOARD
