@@ -275,12 +275,13 @@ void Cc2520::setPanId(const unsigned char panId[])
 
 int Cc2520::writeFrame(unsigned char length, const unsigned char* pframe)
 {
+    if(this->mode != TX) return -3;
     if(pframe==NULL) return -2;
     if (length<1 || length>127 ) return -1; 
     cc2520::cs::low();
     delayUs(1);
     unsigned char status = cc2520SpiSendRecv(CC2520_INS_TXBUF);
-    cc2520SpiSendRecv(length+2*autoFCS); //adding 2 bytes of FCS
+    cc2520SpiSendRecv(length+autoFCS*SIZE_AUTO_FCS); //adding 2 bytes of FCS
     for(int i=0; i<length; i++) cc2520SpiSendRecv(pframe[i]);
     cc2520::cs::high();
     delayUs(1);
@@ -290,6 +291,7 @@ int Cc2520::writeFrame(unsigned char length, const unsigned char* pframe)
 
 int Cc2520::writeFrame(const Frame& frame)
 {
+    if(this->mode != TX) return -3;
     if(frame.isNotInit()) return -1; //invalid parameter
     cc2520::cs::low();
     delayUs(1);
@@ -314,6 +316,7 @@ int Cc2520::writeFrame(const Frame& frame)
 
 int Cc2520::readFrame(unsigned char& length, unsigned char* pframe) const
 {
+    if(this->mode != RX) return -3;
     short int result = 0;
     if(pframe==NULL) return -2;
     if (length<1 || length>127 ) return -1; 
@@ -340,27 +343,30 @@ int Cc2520::readFrame(unsigned char& length, unsigned char* pframe) const
     {
         fcs=cc2520SpiSendRecv();
          #ifdef DEBUG_CC2520
-            printf("First byte fcs: %x\n",fcs);
+            printf("Second byte RSSI: %ddBm\n",((char)fcs)-76);
         #endif //DEBUG_CC2520
         fcs=cc2520SpiSendRecv();
         #ifdef DEBUG_CC2520
-            printf("Second byte fcs: %x\n",fcs);
+            printf("Second byte CRC+Correlation value: %x\n",fcs);
         #endif //DEBUG_CC2520
     }
     cc2520::cs::high();
     delayUs(1);
     
-    if(isExcRaised(CC2520_EXC_RX_UNDERFLOW,status)) return -3;
+    if(isExcRaised(CC2520_EXC_RX_UNDERFLOW,status)) return 2;
     if(autoFCS)
-        if ((fcs & 0x80)==0x00)  return 2;  //fcs incorrect
+        if ((fcs & 0x80)==0x00)  return 3;  //fcs incorrect
     return result; 
 }
 
 int Cc2520::readFrame(Frame& frame) const
 {
+    if(this->mode != RX) return -3;
     if(!frame.isNotInit() || frame.isAutoFCS()!=autoFCS) return -1;
+    
     cc2520::cs::low();
     delayUs(1);
+    
     unsigned char status = cc2520SpiSendRecv(CC2520_INS_RXBUF);
     if(!frame.initFrame(cc2520SpiSendRecv())) 
     {
@@ -386,16 +392,12 @@ int Cc2520::readFrame(Frame& frame) const
     if(autoFCS)
     {
         fcs=cc2520SpiSendRecv();
-         #ifdef DEBUG_CC2520
-            printf("First byte fcs: %x\n",fcs);
+        #ifdef DEBUG_CC2520
+            printf("First byte RSSI: %ddBm\n",((char)fcs)-76);
         #endif //DEBUG_CC2520
         fcs=cc2520SpiSendRecv();
         #ifdef DEBUG_CC2520
             printf("Second byte fcs: %x\n",fcs);
-        #endif //DEBUG_CC2520
-        fcs=cc2520SpiSendRecv();
-        #ifdef DEBUG_CC2520
-            printf("Third byte fcs: %x\n",fcs);
         #endif //DEBUG_CC2520
     }
     cc2520::cs::high();
@@ -408,8 +410,9 @@ int Cc2520::readFrame(Frame& frame) const
     return 0;
 }
 
-void Cc2520::flushTxFifoBuffer() const
+int Cc2520::flushTxFifoBuffer() const
 {
+    if(this->mode == SLEEP || this->mode == DEEP_SLEEP ) return -1;
     //reset RX exception
     #ifdef DEBUG_CC2520
         printf("Flush TX FIFO buffer\n");   
@@ -419,10 +422,12 @@ void Cc2520::flushTxFifoBuffer() const
                              CC2520_EXC_TX_UNDERFLOW |
                              CC2520_EXC_TX_OVERFLOW); 
     commandStrobe(CC2520_INS_SFLUSHTX);
+    return true;
 }
 
-void Cc2520::flushRxFifoBuffer() const
+int Cc2520::flushRxFifoBuffer() const
 {
+    if(this->mode == SLEEP || this->mode == DEEP_SLEEP ) return -1;
     //reset RX exception
     #ifdef DEBUG_CC2520
         printf("Flush RX FIFO buffer\n");   
@@ -438,21 +443,23 @@ void Cc2520::flushRxFifoBuffer() const
                              CC2520_EXC_RXBUFMOV_TIMEOUT);
     
     commandStrobe(CC2520_INS_SFLUSHRX);
-    
-    
+    return true;
 }
 
-bool Cc2520::sendTxFifoFrame() const
+int Cc2520::sendTxFifoFrame() const
 {
+    if(this->mode != TX) return -1;
     return !isExcRaised(CC2520_EXC_RX_FRM_ABORTED, commandStrobe(CC2520_INS_STXON));
 }
 
-bool Cc2520::isTxFrameDone() const
+int Cc2520::isTxFrameDone() const
 {
+    if(this->mode != TX) return -1;
     return isExcRaised(CC2520_EXC_TX_FRM_DONE);
 }
 
-bool Cc2520::isRxFrameDone() const {
+int Cc2520::isRxFrameDone() const {
+    if(this->mode != RX) return -1;
     if (cc2520::fifo_irq::value() == 0 && cc2520::fifop_irq::value() == 1) {
         #ifdef DEBUG_CC2520
             commandStrobe(CC2520_INS_SFLUSHRX);
@@ -474,8 +481,9 @@ bool Cc2520::isRxFrameDone() const {
     return cc2520::fifop_irq::value() == 1 ? true : false;
 }
 
-bool Cc2520::isRxBufferNotEmpty() const
+int Cc2520::isRxBufferNotEmpty() const
 {
+    if(this->mode != RX) return -1;
     if(cc2520::fifo_irq::value()==0 && cc2520::fifop_irq::value()==1)
     {
         #ifdef DEBUG_CC2520

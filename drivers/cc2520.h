@@ -94,6 +94,7 @@ public:
      * (frame length up to 127 bytes)
      * \param pframe
      * \return integer code status number:
+     *          -3 error not in TX state
      *          -2 invalid pframe parameter, pframe is null;
      *          -1 invalid length parameter;
      *           0 write successful;
@@ -105,6 +106,7 @@ public:
      * Write in TX fifo buffer one frame. 
      * \param frame object Frame not initialized
      * \return  integer code status number:
+     *          -3 error: not in TX state
      *          -1 invalid frame parameter, probably frame is Init already;
      *           0 write successful;
      *           1 exception tx buffer overflow;
@@ -120,7 +122,7 @@ public:
      * \param pframe frame pointer to RX FIFO frame. The frame returned not 
      * contain LEN and FCS. 
      * \return integer code status number:
-     *       -3 exception in read buffer operation: BUFFER_UNDERFLOW;
+     *       -3 error: not in RX state
      *       -2 invalid pframe parameter, pframe is null;
      *       -1 invalid length parameter;
      *        0 the size of pframe is lower than that of the read frame in 
@@ -128,7 +130,8 @@ public:
      *        1 the size of pFrame is greater than or equal to that of the read 
      *          frame in the buffer. The length parameter is updated to the 
      *          actual size of pFrame;
-     *        2 FCS doesn't match; the frame contents is still returned;
+     *        2 exception in read buffer operation: BUFFER_UNDERFLOW;
+     *        3 FCS doesn't match; the frame contents is still returned;
      */
     int readFrame(unsigned char& lenght, unsigned char* pframe)const;
     
@@ -137,6 +140,7 @@ public:
      * of a frame is 128 bytes.
      * \param frame object Frame not initialized
      * \return integer code status number:
+     *          -3 error not in RX state
      *          -1 invalid frame parameter, probably frame is Init already;
      *           0 write successful;
      *           1 exception rx buffer underflow;
@@ -146,33 +150,52 @@ public:
     
     /**
      * Flush TX FIFO buffer
+     * \return integer code status number:
+     *          -1 error not in TX state
+     *           1 buffer flushed
      */
-    void flushTxFifoBuffer() const;
+    int flushTxFifoBuffer() const;
     
     /**
      * Flush RX FIFO buffer
+     * \return integer code status number:
+     *          -1 error not in RX state 
+     *           1 buffer flushed
      */
-    void flushRxFifoBuffer() const;
+    int flushRxFifoBuffer() const;
     
     /**
      * Send the frame contents in TX FIFO buffer
+     * \return integer code status number:
+     *          -1 error not in TX state 
+     *           0 exception raised frame aborted
+     *           1 frame send
      */
-    bool sendTxFifoFrame() const;
+    int sendTxFifoFrame() const;
     
     /**
-     * \return true if a frame transmission is completed
+     * \return integer code status number:
+     *          -1 error not in TX state 
+     *           0 frame transmission not completed
+     *           1 frame transmission completed
      */
-    bool isTxFrameDone() const;
+    int isTxFrameDone() const;
     
     /**
-     * \return true if a frame is available to be read from the RX FIFO
+     * \return integer code status number:
+     *          -1 error not in RX state 
+     *           0 no frame available
+     *           1 frame is available to be read from the RX FIFO
      */
-    bool isRxFrameDone() const;   
+    int isRxFrameDone() const;   
     
     /**
-     * \return  true if at least one byte is stored in RX FIFO buffer
+     * \return integer code status number:
+     *          -1 error not in RX state 
+     *           0 RX FIFO buffer is empty
+     *           1 at least one byte is stored in RX FIFO buffer
      */
-    bool isRxBufferNotEmpty() const;
+    int isRxBufferNotEmpty() const;
     
     /**
      * \return the mode of transceiver:

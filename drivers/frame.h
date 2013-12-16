@@ -38,7 +38,7 @@
 
 #define SIZE_LEN 1
 #define SIZE_HEADER 11
-#define MAX_SIZE_FRAME 128
+#define MAX_SIZE_FRAME 127
 #define SIZE_AUTO_FCS 2
 #define MAX_SIZE_FCS 7
 #define FCF 1

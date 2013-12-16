@@ -41,9 +41,9 @@ Frame::Frame(bool header, bool autoFCS, int sizeFCS) : pframe(NULL)
 
 Frame::Frame(int sizePayload, bool header, bool autoFCS, int sizeFCS) : pframe(NULL)
 {
-    int len = SIZE_LEN+sizePayload+header*SIZE_HEADER+!autoFCS*sizeFCS+autoFCS*SIZE_AUTO_FCS;
+    int len = sizePayload+header*SIZE_HEADER+!autoFCS*sizeFCS+autoFCS*SIZE_AUTO_FCS;
     if(sizeFCS*!autoFCS > MAX_SIZE_FCS || len > MAX_SIZE_FRAME) return;
-    pframe = new unsigned char[len-autoFCS*SIZE_AUTO_FCS]();
+    pframe = new unsigned char[SIZE_LEN+len-autoFCS*SIZE_AUTO_FCS]();
     pframe[0] = len;
     ctrlFrame.autoFcs = autoFCS;
     ctrlFrame.fcsLen = autoFCS? SIZE_AUTO_FCS : sizeFCS;
@@ -52,9 +52,9 @@ Frame::Frame(int sizePayload, bool header, bool autoFCS, int sizeFCS) : pframe(N
 
 Frame::Frame(int sizePayload, const unsigned char* ppayload) : pframe(NULL) 
 {
-    if(sizePayload > MAX_SIZE_FRAME - SIZE_LEN - SIZE_AUTO_FCS) return;
+    if(sizePayload + SIZE_AUTO_FCS > MAX_SIZE_FRAME) return;
     pframe = new unsigned char[SIZE_LEN + sizePayload]();
-    pframe[0] = sizePayload + SIZE_LEN + SIZE_AUTO_FCS;
+    pframe[0] = sizePayload + SIZE_AUTO_FCS;
     ctrlFrame.autoFcs = 1;
     ctrlFrame.fcsLen = SIZE_AUTO_FCS;
     ctrlFrame.header = 0; 
@@ -131,7 +131,7 @@ bool Frame::initFrame(int sizeLEN)
     if(!isNotInit() || sizeLEN > MAX_SIZE_FRAME ||
        sizeLEN<ctrlFrame.autoFcs*SIZE_AUTO_FCS+!ctrlFrame.autoFcs*ctrlFrame.fcsLen+ctrlFrame.header*SIZE_HEADER)
                             return false;
-    pframe = new unsigned char[sizeLEN-ctrlFrame.autoFcs*SIZE_AUTO_FCS]();
+    pframe = new unsigned char[SIZE_LEN+sizeLEN-ctrlFrame.autoFcs*SIZE_AUTO_FCS]();
     pframe[0] = sizeLEN;
     return true;
 }
@@ -139,7 +139,7 @@ bool Frame::initFrame(int sizeLEN)
 int Frame::getFrameSize() const
 {
     if(isNotInit()) return -1;
-    return pframe[0]-2*ctrlFrame.autoFcs; 
+    return pframe[0]-2*ctrlFrame.autoFcs + SIZE_LEN; 
 }
 
 int Frame::getLEN() const
@@ -283,7 +283,7 @@ bool Frame::getPayload(unsigned char* payload) const
 int Frame::getSizePayload() const
 {
     if(isNotInit()) return -1;
-    return getLEN()-SIZE_LEN-ctrlFrame.fcsLen-ctrlFrame.header*SIZE_HEADER;  
+    return getLEN()-ctrlFrame.fcsLen-ctrlFrame.header*SIZE_HEADER;  
 }
 
 

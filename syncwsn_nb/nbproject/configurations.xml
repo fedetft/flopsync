@@ -4427,7 +4427,7 @@
           <buildCommandWorkingDir>..</buildCommandWorkingDir>
           <buildCommand>${MAKE} -f Makefile</buildCommand>
           <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
-          <executablePath></executablePath>
+          <executablePath>../main.elf</executablePath>
           <cTool>
             <incDir>
               <pElem>..</pElem>
