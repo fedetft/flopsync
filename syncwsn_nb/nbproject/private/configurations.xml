@@ -414,6 +414,8 @@
         </df>
         <in>miosix.h</in>
       </df>
+      <df name="prova">
+      </df>
       <df name="syncwsn_nb">
       </df>
       <df name="test_cc2520">
