@@ -11,19 +11,17 @@ include miosix/config/Makefile.inc
 SUBDIRS := miosix
 
 ##
+## List here subdirectories which contains source files
+##
+SRC_DIR := drivers flopsync_v2
+
+##
 ## List here your source files (both .s, .c and .cpp)
 ##
 # Please note that the file containing main() has to be on the same text line
 # as the one with SRC or mkpackage.pl won't work
-SRC := test_cc2520/test_cc2520_n0.cpp \
-drivers/rtc.cpp \
-drivers/transceiver.cpp \
-drivers/nrf24l01.cpp \
-drivers/cc2520.cpp \
-drivers/temperature.cpp \
-drivers/cc2520_mapping.cpp \
-drivers/frame.cpp \
-flopsync2.cpp 
+SRC := test_cc2520/test_cc2520_n0.cpp 
+## flopsync2.cpp 
 
 ##
 ## List here additional static libraries with relative path
@@ -39,8 +37,11 @@ INCLUDE_DIRS :=
 ## You should not need to modify anything below                             ##
 ##############################################################################
 
+## Adding ather source files.
+ALL_SRC := $(SRC) $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c*))
 ## Replaces both "foo.cpp"-->"foo.o" and "foo.c"-->"foo.o"
-OBJ := $(addsuffix .o, $(basename $(SRC)))
+OBJ := $(addsuffix .o, $(basename $(ALL_SRC)))
+
 
 ## Includes the miosix base directory for C/C++
 CXXFLAGS  := $(CXXFLAGS_BASE) -I. -Imiosix -Imiosix/arch/common \
@@ -81,6 +82,7 @@ main: main.elf
 main.elf: $(OBJ) miosix/libmiosix.a
 	@ echo "linking"
 	$(CXX) $(LFLAGS) -o main.elf $(OBJ) miosix/$(BOOT_FILE) $(LINK_LIBS)
+	
 
 %.o: %.s
 	$(AS) $(AFLAGS) $< -o $@

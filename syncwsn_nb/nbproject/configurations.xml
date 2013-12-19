@@ -36,6 +36,39 @@
         <in>protocol_constants.h</in>
         <in>variance_estimator.h</in>
       </df>
+      <df name="flopsync_v2">
+        <in>clock.cpp</in>
+        <in>clock.h</in>
+        <in>controller_flopsync.cpp</in>
+        <in>controller_flopsync.h</in>
+        <in>critical_section.cpp</in>
+        <in>critical_section.h</in>
+        <in>dummy_synchronizer.cpp</in>
+        <in>dummy_synchronizer.h</in>
+        <in>dummy_synchronizer2.cpp</in>
+        <in>dummy_synchronizer2.h</in>
+        <in>fbs.cpp</in>
+        <in>fbs.h</in>
+        <in>flooder_root_node.cpp</in>
+        <in>flooder_root_node.h</in>
+        <in>flooder_sync_node.cpp</in>
+        <in>flooder_sync_node.h</in>
+        <in>flooding_scheme.cpp</in>
+        <in>flooding_scheme.h</in>
+        <in>ftsp.cpp</in>
+        <in>ftsp.h</in>
+        <in>monotonic_clock.cpp</in>
+        <in>monotonic_clock.h</in>
+        <in>non_monotonic_clock.cpp</in>
+        <in>non_monotonic_clock.h</in>
+        <in>optimized_ramp_flopsync.cpp</in>
+        <in>optimized_ramp_flopsync.h</in>
+        <in>optimized_ramp_flopsync2.cpp</in>
+        <in>optimized_ramp_flopsync2.h</in>
+        <in>protocol_constants.h</in>
+        <in>synchronizer.cpp</in>
+        <in>synchronizer.h</in>
+      </df>
       <df name="miosix">
         <df name="arch">
           <df name="arm7_lpc2000">
@@ -356,14 +389,9 @@
       <df name="test_cc2520">
         <in>test_config.h</in>
       </df>
-      <in>flopsync2.cpp</in>
-      <in>flopsync2.h</in>
       <in>flopsync_dynamic_comb.cpp</in>
       <in>flopsync_rootnode_comb.cpp</in>
       <in>low_power_setup.h</in>
-      <in>protocol_constants.h</in>
-      <in>test_cc2520_n0.cpp</in>
-      <in>test_cc2520_n1.cpp</in>
     </df>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -468,10 +496,6 @@
       </item>
       <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../flopsync2.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../flopsync_dynamic_comb.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../flopsync_rootnode_comb.cpp" ex="false" tool="1" flavor2="0">
@@ -546,6 +570,116 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/protocol_constants.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../low_power_setup.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -1360,13 +1494,7 @@
       </item>
       <item path="../miosix/util/version.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
@@ -1472,10 +1600,6 @@
       </item>
       <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../flopsync2.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../flopsync_dynamic_comb.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../flopsync_rootnode_comb.cpp" ex="false" tool="1" flavor2="0">
@@ -1550,6 +1674,116 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/protocol_constants.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../low_power_setup.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -2364,13 +2598,7 @@
       </item>
       <item path="../miosix/util/version.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
@@ -2478,10 +2706,6 @@
       </item>
       <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../flopsync2.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../flopsync_dynamic_comb.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../flopsync_rootnode_comb.cpp" ex="false" tool="1" flavor2="0">
@@ -2556,6 +2780,116 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/protocol_constants.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../low_power_setup.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -3370,13 +3704,7 @@
       </item>
       <item path="../miosix/util/version.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
@@ -3484,10 +3812,6 @@
       </item>
       <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../flopsync2.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../flopsync_dynamic_comb.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../flopsync_rootnode_comb.cpp" ex="false" tool="1" flavor2="0">
@@ -3562,6 +3886,116 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/protocol_constants.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../low_power_setup.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -4376,13 +4810,7 @@
       </item>
       <item path="../miosix/util/version.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
@@ -4490,10 +4918,6 @@
       </item>
       <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../flopsync2.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../flopsync_dynamic_comb.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../flopsync_rootnode_comb.cpp" ex="false" tool="1" flavor2="0">
@@ -4568,6 +4992,116 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/protocol_constants.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../low_power_setup.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -5382,13 +5916,7 @@
       </item>
       <item path="../miosix/util/version.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
@@ -5496,10 +6024,6 @@
       </item>
       <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../flopsync2.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../flopsync_dynamic_comb.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../flopsync_rootnode_comb.cpp" ex="false" tool="1" flavor2="0">
@@ -5574,6 +6098,116 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/protocol_constants.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../low_power_setup.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -6388,13 +7022,7 @@
       </item>
       <item path="../miosix/util/version.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
@@ -6502,10 +7130,6 @@
       </item>
       <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../flopsync2.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../flopsync_dynamic_comb.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../flopsync_rootnode_comb.cpp" ex="false" tool="1" flavor2="0">
@@ -6580,6 +7204,116 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/protocol_constants.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../low_power_setup.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -7394,13 +8128,7 @@
       </item>
       <item path="../miosix/util/version.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
@@ -7506,10 +8234,6 @@
       </item>
       <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../flopsync2.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../flopsync_dynamic_comb.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../flopsync_rootnode_comb.cpp" ex="false" tool="1" flavor2="0">
@@ -7584,6 +8308,116 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/protocol_constants.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../low_power_setup.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -8398,13 +9232,7 @@
       </item>
       <item path="../miosix/util/version.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
@@ -8510,10 +9338,6 @@
       </item>
       <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../flopsync2.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../flopsync_dynamic_comb.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../flopsync_rootnode_comb.cpp" ex="false" tool="1" flavor2="0">
@@ -8588,6 +9412,116 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/protocol_constants.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../low_power_setup.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -9402,13 +10336,7 @@
       </item>
       <item path="../miosix/util/version.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
@@ -9514,10 +10442,6 @@
       </item>
       <item path="../drivers/transceiver.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../flopsync2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../flopsync2.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../flopsync_dynamic_comb.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../flopsync_rootnode_comb.cpp" ex="false" tool="1" flavor2="0">
@@ -9592,6 +10516,116 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/controller_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/critical_section.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/dummy_synchronizer2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/fbs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_root_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooder_sync_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/flooding_scheme.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/ftsp.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/monotonic_clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/non_monotonic_clock.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/optimized_ramp_flopsync2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/protocol_constants.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v2/synchronizer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../low_power_setup.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -10406,13 +11440,7 @@
       </item>
       <item path="../miosix/util/version.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../protocol_constants.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../test_cc2520/test_config.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n0.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../test_cc2520_n1.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>

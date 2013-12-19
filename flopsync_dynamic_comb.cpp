@@ -32,8 +32,14 @@
 #include "drivers/transceiver.h"
 #include "drivers/rtc.h"
 #include "drivers/temperature.h"
-#include "protocol_constants.h"
-#include "flopsync2.h"
+#include "flopsync_v2/protocol_constants.h"
+#include "flopsync_v2/flooder_sync_node.h"
+#include "flopsync_v2/synchronizer.h"
+#include "flopsync_v2/optimized_ramp_flopsync2.h"
+#include "flopsync_v2/clock.h"
+#include "flopsync_v2/monotonic_clock.h"
+#include "flopsync_v2/non_monotonic_clock.h"
+#include "flopsync_v2/critical_section.h"
 #include "low_power_setup.h"
 
 using namespace std;

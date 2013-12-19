@@ -34,7 +34,7 @@ mkdir $config{'experiment_name'} or die 'experiment_name: directory exists';
 # secondhop=wheter or not the program needs #define SECOND_HOP
 sub build
 {
-	my ($srcfile, $binfile, $secondhop)=@_;
+	my ($srcfile, $binfile, $elffile, $secondhop)=@_;
 
 	# Step 1: create a Makefile with 'SRC := $srcfile \'
 	# Note that all the lines but 'SRC :=' are not modified, so there
@@ -55,9 +55,9 @@ sub build
 	close($outfile);
 
 	# Step 2: create a protocol_constants.h correctly configured
-	move('protocol_constants.h','protocol_constants.h.orig');
-	open($infile, '<', 'protocol_constants.h.orig');
-	open($outfile, '>', 'protocol_constants.h');
+	move('flopsync_v2/protocol_constants.h','flopsync_v2/protocol_constants.h.orig');
+	open($infile, '<', 'flopsync_v2/protocol_constants.h.orig');
+	open($outfile, '>', 'flopsync_v2/protocol_constants.h');
 	while(<$infile>)
 	{
 		if(/#define RELATIVE_CLOCK/)
@@ -103,27 +103,29 @@ sub build
 	# Uncomment for debugging the substitution code
 	my $e=$config{'experiment_name'};
 	#copy('Makefile',"$e/$binfile.Makefile");
-	#copy('protocol_constants.h',"$e/$binfile.protocol_constants.h");
+	#copy('flopsync_v2/protocol_constants.h',"$e/$binfile.flopsync_v2/protocol_constants.h");
 
 	# Step 3: build the binary
 	system('make 1>/dev/null');
 	copy('main.bin',"$config{'experiment_name'}/$binfile")
 		or print "perl: cannot find main.bin\n";
+	copy('main.elf',"$config{'experiment_name'}/$elffile")
+		or print "perl: cannot find main.elf\n";
 	system('make clean 1>/dev/null');
 
 	# Step 4: restore original Makefile and protocol_constants.h
 	unlink('Makefile');
-	unlink('protocol_constants.h');
+	unlink('flopsync_v2/protocol_constants.h');
 	move('Makefile.orig','Makefile');
-	move('protocol_constants.h.orig','protocol_constants.h');
+	move('flopsync_v2/protocol_constants.h.orig','flopsync_v2/protocol_constants.h');
 }
 
 # Build files for all three nodes
 `make clean 1>/dev/null 2>/dev/null`; # Make sure the build directory is clean
-build($config{'node0_file'},'node0.bin',$config{'node0_second_hop'});
-build($config{'node1_file'},'node1.bin',$config{'node1_second_hop'});
-build($config{'node2_file'},'node2.bin',$config{'node2_second_hop'});
-build($config{'node3_file'},'node3.bin',$config{'node3_second_hop'});
+build($config{'node0_file'},'node0.bin','node0.elf',$config{'node0_second_hop'});
+build($config{'node1_file'},'node1.bin','node1.elf',$config{'node1_second_hop'});
+build($config{'node2_file'},'node2.bin','node2.elf',$config{'node2_second_hop'});
+build($config{'node3_file'},'node3.bin','node3.elf',$config{'node3_second_hop'});
 
 # Fixup runexp.sh to set the experimen duration
 open(my $infile, '<', 'deploy/runexp.sh');
@@ -148,5 +150,6 @@ close($outfile);
 copy('experiment.conf',"$config{'experiment_name'}/experiment.conf");
 
 # Lastly, pack everything in a tarball ready to be copied to the server
-`tar czfv \"$config{'experiment_name'}.tar.gz\" \"$config{'experiment_name'}\"`;
-`rm -rf \"$config{'experiment_name'}\"`;
+#`tar czfv \"$config{'experiment_name'}.tar.gz\" \"$config{'experiment_name'}\"`;
+#`rm -rf \"$config{'experiment_name'}\"`;
+

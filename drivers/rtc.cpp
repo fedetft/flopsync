@@ -27,7 +27,7 @@
 
 #include <cassert>
 #include <miosix.h>
-#include <miosix/kernel/scheduler/scheduler.h>
+#include <../miosix/kernel/scheduler/scheduler.h>
 #include "rtc.h"
 
 using namespace miosix;

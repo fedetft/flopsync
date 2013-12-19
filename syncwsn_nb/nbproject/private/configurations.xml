@@ -22,13 +22,17 @@
         <in>transceiver.cpp</in>
         <in>transceiver.h</in>
       </df>
-      <df name="flopsync2_T_30_alpha_3-8">
-      </df>
-      <df name="flopsync2_T_30_alpha_3-8_second">
-      </df>
-      <df name="flopsync_old_temperature">
-      </df>
-      <df name="flopsync_ramp2_multihop_7days">
+      <df name="experiment">
+        <df name="flopsync2_T_30_alpha_3-8">
+        </df>
+        <df name="flopsync2_T_30_alpha_3-8_second">
+        </df>
+        <df name="flopsync_old_temperature">
+        </df>
+        <df name="flopsync_ramp2_multihop_7days">
+        </df>
+        <df name="prova">
+        </df>
       </df>
       <df name="flopsync_v1">
         <df name="clocksync">
@@ -53,6 +57,43 @@
         <in>flopsync_rootnode_stepresponse.cpp</in>
         <in>protocol_constants.h</in>
         <in>variance_estimator.h</in>
+      </df>
+      <df name="flopsync_v2">
+        <in>clock.cpp</in>
+        <in>clock.h</in>
+        <in>controller_flopsync.cpp</in>
+        <in>controller_flopsync.h</in>
+        <in>critical_section.cpp</in>
+        <in>critical_section.h</in>
+        <in>dummy_synchronizer.cpp</in>
+        <in>dummy_synchronizer.h</in>
+        <in>dummy_synchronizer2.cpp</in>
+        <in>dummy_synchronizer2.h</in>
+        <in>fbs.cpp</in>
+        <in>fbs.h</in>
+        <in>flooder_root_node.cpp</in>
+        <in>flooder_root_node.h</in>
+        <in>flooder_sync_node.cpp</in>
+        <in>flooder_sync_node.h</in>
+        <in>flooding_scheme.cpp</in>
+        <in>flooding_scheme.h</in>
+        <in>ftsp.cpp</in>
+        <in>ftsp.h</in>
+        <in>monotonic_clock.cpp</in>
+        <in>monotonic_clock.h</in>
+        <in>non_monotonic_clock.cpp</in>
+        <in>non_monotonic_clock.h</in>
+        <in>optimized_ramp_flopsync.cpp</in>
+        <in>optimized_ramp_flopsync.h</in>
+        <in>optimized_ramp_flopsync2.cpp</in>
+        <in>optimized_ramp_flopsync2.h</in>
+        <in>protocol_constants.h</in>
+        <in>synchronizer.cpp</in>
+        <in>synchronizer.h</in>
+      </df>
+      <df name="legacy">
+        <in>flopsync2.cpp</in>
+        <in>flopsync2.h</in>
       </df>
       <df name="miosix">
         <df name="arch">
@@ -385,14 +426,9 @@
         <in>test_cc2520_n1.cpp</in>
         <in>test_config.h</in>
       </df>
-      <in>flopsync2.cpp</in>
-      <in>flopsync2.h</in>
       <in>flopsync_dynamic_comb.cpp</in>
       <in>flopsync_rootnode_comb.cpp</in>
       <in>low_power_setup.h</in>
-      <in>protocol_constants.h</in>
-      <in>test_cc2520_n0.cpp</in>
-      <in>test_cc2520_n1.cpp</in>
     </df>
   </logicalFolder>
   <projectmakefile>miosix_np_2-Makefile.mk</projectmakefile>
