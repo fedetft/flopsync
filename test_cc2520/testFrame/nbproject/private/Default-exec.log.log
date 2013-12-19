@@ -1,0 +1,18 @@
+called: g++
+	/home/gigi/Documents/Universita/Magistrale/Tesi/miosix/test_cc2520/testFrame
+	g++
+	-c
+	-Wall
+	testFrameRunner.cpp
+	-o
+	testFrameRunner.o
+
+called: g++
+	/home/gigi/Documents/Universita/Magistrale/Tesi/miosix/test_cc2520/testFrame
+	g++
+	-c
+	-Wall
+	testFrame.cpp
+	-o
+	testFrame.o
+

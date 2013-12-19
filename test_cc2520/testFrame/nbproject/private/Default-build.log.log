@@ -1,0 +1,7 @@
+g++  -c -Wall testFrameRunner.cpp -o testFrameRunner.o
+g++  -c -Wall testFrame.cpp -o testFrame.o
+testFrame.cpp:8:23: fatal error: TestFrame.h: No such file or directory
+ #include "TestFrame.h"
+                       ^
+compilation terminated.
+make: *** [testFrame.o] Error 1
