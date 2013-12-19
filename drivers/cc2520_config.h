@@ -45,9 +45,9 @@
  */
 namespace cc2520 {
     typedef miosix::Gpio<GPIOA_BASE, 2> cs;
-    typedef miosix::Gpio<GPIOB_BASE, 0> fifo_irq; //GPIO1
+    typedef miosix::Gpio<GPIOC_BASE, 4> fifo_irq; //GPIO1
     typedef miosix::Gpio<GPIOB_BASE, 2> fifop_irq; //GPIO2
-    typedef miosix::Gpio<GPIOB_BASE, 1> sfd; //GPIO4
+    typedef miosix::Gpio<GPIOC_BASE, 5> sfd; //GPIO4
     typedef miosix::Gpio<GPIOA_BASE, 5> sck;
     typedef miosix::Gpio<GPIOA_BASE, 6> miso;
     typedef miosix::Gpio<GPIOA_BASE, 7> mosi;

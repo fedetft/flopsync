@@ -393,7 +393,7 @@ private:
      */
     enum Cc2520Exc0
     {
-        CC2520_EXC_RF_IDLE           = 0x00,  
+        CC2520_EXC_RF_IDLE           = 0x01,  
         CC2520_EXC_TX_FRM_DONE       = 0x02,  
         CC2520_EXC_TX_ACK_DONE       = 0x04,  
         CC2520_EXC_TX_UNDERFLOW      = 0x08,  
@@ -407,7 +407,7 @@ private:
      */
     enum Cc2520Exc1
     {
-        CC2520_EXC_RX_FRM_DONE       = 0x00,
+        CC2520_EXC_RX_FRM_DONE       = 0x01,
         CC2520_EXC_RX_FRM_ACCEPETED  = 0x02,  
         CC2520_EXC_SR_MATCH_DONE     = 0x04,  
         CC2520_EXC_SR_MATCH_FOUND    = 0x08, 
@@ -421,7 +421,7 @@ private:
      */
     enum Cc2520Exc2
     {
-        CC2520_EXC_MEMADDR_ERROR     = 0x00, 
+        CC2520_EXC_MEMADDR_ERROR     = 0x01, 
         CC2520_EXC_USAGE_ERROR       = 0x02,
         CC2520_EXC_OPERAND_ERROR     = 0x04, 
         CC2520_EXC_SPI_ERROR         = 0x08, 

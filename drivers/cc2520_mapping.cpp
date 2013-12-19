@@ -30,7 +30,6 @@
 #include "rtc.h"
 #include <miosix.h>
 #include <cstring>
-#include "../test_cc2520/test_config.h"
 
 #ifdef DEBUG_CC2520_MAP
     #include <cstdio>
@@ -87,7 +86,7 @@ bool Cc2520Mapping::irq() const
         return cc2520.isTxFrameDone();
     }else if(cc2520.getMode() == Cc2520::RX)
     {
-        return cc2520.isRxBufferNotEmpty();
+        return cc2520.isRxFrameDone();
     }
     return false;
 }
@@ -145,8 +144,8 @@ void Cc2520Mapping::readPacket(void *packet)
     unsigned char length = this->length;
     short int res = cc2520.readFrame(length, data);
     #ifdef DEBUG_CC2520_MAP
-        printf("The length of frame is: %x\n",length);
-        printf("readFrame return:%d \n",res);
+        printf("--DEBUG_CC2520_MAPPING-- The length of frame is: %x\n",length);
+        printf("--DEBUG_CC2520_MAPPING-- readFrame return:%d \n",res);
     #endif //DEBUG_CC2520_MAP
      
     /**
@@ -154,7 +153,7 @@ void Cc2520Mapping::readPacket(void *packet)
     short int res = cc2520.readFrame(f);
     if(!f->getPayload(data)) return;
     #ifdef DEBUG_CC2520_MAP
-        printf("readFrame return:%d \n",res);
+        printf("--DEBUG_CC2520_MAPPING-- readFrame return:%d \n",res);
     #endif //DEBUG_CC2520_MAP
      */
 }

@@ -30,7 +30,7 @@
 
 #include "transceiver.h"
 #include "cc2520.h"
-#include "../test_cc2520/test_config.h"
+//#include "../test_cc2520/test_config.h"
 
 /**
  * This class allows to interface with the cc2520
@@ -72,7 +72,7 @@ public:
     /**
      * \return true if:
      *           CC2520 is in TX mode and one packet has been transmitted
-     *           CC2520 is in RX mode and one byte is in RX buffer
+     *           CC2520 is in RX mode and one packet is in RX buffer
      *         false otherwise.
      */
     bool irq() const;
