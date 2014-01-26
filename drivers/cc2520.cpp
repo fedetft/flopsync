@@ -27,7 +27,7 @@
 
 #include "cc2520.h"
 #include "cc2520_config.h"
-#include "rtc.h"
+#include "timer.h"
 #include <miosix.h>
 #include <cstring>
 //#include "../test_cc2520/test_config.h"
@@ -752,4 +752,7 @@ inline void Cc2520::initConfigureReg()
     writeReg(CC2520_ADCTEST0,0x10);
     writeReg(CC2520_ADCTEST1,0x0E);
     writeReg(CC2520_ADCTEST2,0x03);
+    
+    //Setting gpio5 as input on rising edge send command strobe STXON
+    writeReg(CC2520_GPIOCTRL5,0x80|0x08);
 }
