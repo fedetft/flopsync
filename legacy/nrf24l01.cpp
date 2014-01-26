@@ -27,7 +27,7 @@
 
 #include "nrf24l01.h"
 #include "nrf24l01_config.h"
-#include "rtc.h"
+#include "timer.h"
 #include <miosix.h>
 #include <cstring>
 
