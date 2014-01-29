@@ -27,8 +27,8 @@
 
 #ifndef FRAME_H
 #define	FRAME_H
-
-//    _________________________________________________________________________
+//          _____________________________________________ 
+//    ______|________________HEADER______________________|_______________________
 //   |      |     |     | SOURCE | SOURCE | DEST | DEST  |               |     |
 //   | LEN  | FCF | SEQ | PAN    | SHORT  | PAN  | SHORT | ...PAYLOAD... | FCS |
 //   |      |     |     | ID     | ADDR   | ID   | ADDR  |               |     |
@@ -156,9 +156,9 @@ public:
      * Create an empty frame object not initialized with length.
      * On the other hand are initialized parameters subsequently defined.
      * If sizeFCS > 7, will instantiate frame with default parameter.
-     * \param header
-     * \param autoFCS
-     * \param sizeFCS
+     * \param header if header is present or not;
+     * \param autoFCS if true no FCS field is reserved;
+     * \param sizeFCS size of FCS field < 8;
      */
     Frame(bool header = true, bool autoFCS = true, int sizeFCS = 2);
      
@@ -172,7 +172,7 @@ public:
      * \param sizePayload dimension of payload;
      * \param header if header is present or not;
      * \param autoFCS if true no FCS field is reserved;
-     * \param sizeFCS size of FCS field < 8
+     * \param sizeFCS size of FCS field < 8;
      */
     Frame(int sizePayload, bool header = true, bool autoFCS = true, int sizeFCS = 2);
     
@@ -181,8 +181,8 @@ public:
      * Create a filled frame object whit LEN field, payload field.
      * FCS field is not present because automatically added by transceiver.
      * Dimension of FCS is included in LEN (2 byte).
-     * \param sizePayload
-     * \param ppaylod
+     * \param sizePayload dimension of payload;
+     * \param ppaylod content to transmit;
      */
     Frame(int sizePayload, const unsigned char* ppayload);
     
