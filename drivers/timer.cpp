@@ -278,6 +278,7 @@ unsigned long long Rtc::getExtEventTimestamp() const
 
 void Rtc::setAbsoluteWakeupWait(unsigned long long value)
 {
+    RTC->CRH |= RTC_CRH_ALRIE;
     RTC->CRL |= RTC_CRL_CNF;
     RTC->ALRL=value & 0xffff;
     RTC->ALRH=value>>16;
@@ -392,14 +393,11 @@ Rtc::Rtc()
                | RCC_BDCR_RTCEN     //Enable RTC
                | RCC_BDCR_RTCSEL_0; //Connect the two together
     while((RCC->BDCR & RCC_BDCR_LSERDY)==0) ; //Wait
-    RTC->CRH |= RTC_CRH_ALRIE;
     RTC->CRL |= RTC_CRL_CNF;
     RTC->PRLH=(rtcPrescaler>>16) & 0xf;
     RTC->PRLL=rtcPrescaler; //Divide by 2, clock is 16384Hz
     RTC->CNTL=0;
     RTC->CNTH=0;
-    RTC->ALRL=0xffff;
-    RTC->ALRH=0xffff;
     RTC->CRL &= ~RTC_CRL_CNF;
     while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
     EXTI->IMR |= EXTI_IMR_MR17;
