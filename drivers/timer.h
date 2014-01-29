@@ -61,18 +61,27 @@ public:
     virtual void setAbsoluteWakeupWait(unsigned long long value)=0;
     
     /**
-     * Return when either an external event arrived or the wait value setted by
-     * setAbsoluteWakeupWait expired.
-     * You must have called setAbsoluteWakeupWait() before this.
-     * \return true if timeout occurred, false if packet arrived
-     */
-    virtual bool waitForExtEventOrTimeout()=0;
-    
-    /**
      * Wait for the interrupt.
      *  You must have called setAbsoluteWakeupWait() before this.
      */
     virtual void wait()=0;
+    
+    /**
+     * Set the timer interrupt to occur at an absolute timeout if no external 
+     * event arrived before.
+     * \param value absolute value when the interrupt will occur. If zero, 
+     * the timeout is disabled, and this function waits indefinitely till the 
+     * external event will be asserts.
+     */
+    virtual void setAbsoluteTimeout(unsigned long long value)=0;
+    
+    /**
+     * Return when either an external event arrived or the timeout value set by
+     * setAbsoluteWakeupWait expired.
+     * You must have called setAbsoluteTimeout() before this.
+     * \return true if timeout occurred, false if packet arrived
+     */
+    virtual bool waitForExtEventOrTimeout()=0;
     
     /**
      * Set the timer timer interrupt to occur at an absolute value
@@ -131,17 +140,26 @@ public:
     void setRelativeWakeup(unsigned int value);
     
     /**
-     * Return when either an external event arrived or the wait value setted by
-     * setAbsoluteWakeupWait expired.
-     * You must have called setAbsoluteWakeupWait() before this.
-     * \return true if timeout occurred, false if packet arrived
-     */
-    bool waitForExtEventOrTimeout();
-    
-    /**
      * Wait for the interrupt
      */
     void wait();
+    
+        /**
+     * Set the timer interrupt to occur at an absolute timeout if no external 
+     * event arrived before.
+     * \param value absolute value when the interrupt will occur. If zero, 
+     * the timeout is disabled, and this function waits indefinitely till the 
+     * external event will be asserts.
+     */
+    void setAbsoluteTimeout(unsigned long long value);
+    
+    /**
+     * Return when either an external event arrived or the timeout value set by
+     * setAbsoluteWakeupWait expired.
+     * You must have called setAbsoluteTimeout() before this.
+     * \return true if timeout occurred, false if packet arrived
+     */
+    bool waitForExtEventOrTimeout();
     
     /**
      * Set the timer interrupt to occur at an absolute value
@@ -176,6 +194,10 @@ private:
 class VHT : public Timer
 {
 public:
+    
+    static volatile unsigned short counter;
+    static volatile unsigned long long ovh;
+    
     /**
      * \return an instance to the VHT (singleton)
      */
@@ -206,18 +228,27 @@ public:
     void setAbsoluteWakeupWait(unsigned long long value);
     
     /**
-     * Return when either an external event arrived or the wait value setted by
-     * setAbsoluteWakeupWait expired.
-     * You must have called setAbsoluteWakeupWait() before this.
-     * \return true if timeout occurred, false if packet arrived
-     */
-    bool waitForExtEventOrTimeout();
-    
-    /**
      * Wait for the interrupt.
      *  You must have called setAbsoluteWakeupWait() before this.
      */
     void wait();
+    
+    /**
+     * Set the timer interrupt to occur at an absolute timeout if no external 
+     * event arrived before.
+     * \param value absolute value when the interrupt will occur. If zero, 
+     * the timeout is disabled, and this function waits indefinitely till the 
+     * external event will be asserts.
+     */
+    void setAbsoluteTimeout(unsigned long long value);
+    
+    /**
+     * Return when either an external event arrived or the timeout value set by
+     * setAbsoluteWakeupWait expired.
+     * You must have called setAbsoluteTimeout() before this.
+     * \return true if timeout occurred, false if packet arrived
+     */
+    bool waitForExtEventOrTimeout();
     
     /**
      * Set the timer timer interrupt to occur at an absolute value

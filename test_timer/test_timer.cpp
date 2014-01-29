@@ -4,8 +4,8 @@
  *
  * Created on January 20, 2014, 10:40 AM
  */
-
 #include <cstdlib>
+#include <cassert>
 #include <cstdio>
 #include "../drivers/timer.h"
 #include "test_config.h"
@@ -49,7 +49,7 @@ static void inline testRtcWaitExtEventOrTimeout()
     for(;;)
     {        
         blueLed::low(); 
-        rtc.setAbsoluteWakeupWait((0xFFFFFFFFll-5*16384/2) + (16384*i)); //un secondo
+        rtc.setAbsoluteTimeout((0xFFFFFFFFll-5*16384/2) + (16384*i)); //un secondo
         timeout=rtc.waitForExtEventOrTimeout();
         blueLed::high(); 
         timeout?
@@ -127,13 +127,82 @@ static void inline testVhtWaitExtEventOrTimeout()
     for(;;)
     {        
         blueLed::low(); 
-        vht.setAbsoluteWakeupWait(0x16E3600ll*i); //un secondo
+        vht.setAbsoluteTimeout(0x16E3600ll*i); //un secondo
         timeout=vht.waitForExtEventOrTimeout();
         blueLed::high(); 
         timeout?
             printf("Timestamp:  %016llX\n",vht.getValue()):
             printf("Packet   :  %016llX\n",vht.getExtEventTimestamp());
         i++;
+    }
+}
+
+static void inline testVhtWaitExtEvent()
+{
+    greenLed::high();
+    blueLed::high();
+    Timer& vht=VHT::instance();
+    
+    vht.setValue(0x1600000); //circa un secondo 
+    printf("Timestamp:  %016llX\n",vht.getValue());
+    bool timeout;
+    for(;;)
+    {        
+        blueLed::low(); 
+        vht.setAbsoluteTimeout(0); 
+        timeout=vht.waitForExtEventOrTimeout();
+        blueLed::high(); 
+        timeout?
+            printf("Timestamp:  %016llX\n",vht.getValue()):
+            printf("Packet   :  %016llX\n",vht.getExtEventTimestamp());
+    }
+}
+
+static void inline testVhtMonotonic()
+{
+    unsigned long long prec=0;
+    unsigned long long last=0;
+    unsigned long long precOvh=0;
+    unsigned long long lastOvh=0;
+    unsigned short precCont=0;
+    unsigned short lastCont=0;
+    greenLed::high();
+    blueLed::high();
+    Timer& vht=VHT::instance();
+    printf("Clock monotonic....\n");
+    
+    for(;;)
+    {        
+        blueLed::low(); 
+        prec = last;
+        precOvh = lastOvh;
+        precCont = lastCont;
+        vht.setAbsoluteTimeout(0); 
+        vht.waitForExtEventOrTimeout();
+        blueLed::high(); 
+        last = vht.getExtEventTimestamp();
+        lastOvh = VHT::ovh;
+        lastCont = VHT::counter;
+        
+        if(last<=prec)
+            printf("No monotonic clock: prec=%016llX  ovh=%016llX  cnt=%X\n"
+                   "                    last=%016llX  ovh=%016llX  cnt=%X\n"
+                    ,prec,precOvh,precCont,last,lastOvh,lastCont);
+    }
+}
+
+static void inline testVhtEvent()
+{
+    greenLed::high();
+    for(;;)
+    {
+        blueLed::low();
+        userButton::low();
+        unsigned int delay = rand() % 3000 + 1;
+        miosix::delayUs(delay);
+        blueLed::high();
+        userButton::high();
+        miosix::delayUs(10);
     }
 }
 
@@ -148,10 +217,13 @@ int main(int argc, char** argv) {
     greenLed::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
  
-    testRtc();
+    //testRtc();
     //testRtcWaitExtEventOrTimeout();
     //testVhtSleep();
     //testVhtGetPacketTimestamp();
     //testVhtWait();
     //testVhtWaitExtEventOrTimeout();
+    testVhtWaitExtEvent();
+    //testVhtMonotonic();
+    //testVhtEvent();
 }
