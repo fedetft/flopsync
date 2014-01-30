@@ -162,32 +162,31 @@ static void inline testVhtMonotonic()
 {
     unsigned long long prec=0;
     unsigned long long last=0;
-    unsigned long long precOvh=0;
-    unsigned long long lastOvh=0;
-    unsigned short precCont=0;
-    unsigned short lastCont=0;
+//    typeTimer precInfo;
+//    typeTimer lastInfo;
     greenLed::high();
     blueLed::high();
-    Timer& vht=VHT::instance();
+    VHT& vht=VHT::instance();
     printf("Clock monotonic....\n");
+    
     
     for(;;)
     {        
         blueLed::low(); 
         prec = last;
-        precOvh = lastOvh;
-        precCont = lastCont;
+        //precInfo = lastInfo;
         vht.setAbsoluteTimeout(0); 
         vht.waitForExtEventOrTimeout();
         blueLed::high(); 
         last = vht.getExtEventTimestamp();
-        lastOvh = VHT::ovh;
-        lastCont = VHT::counter;
-        
-        if(last<=prec)
-            printf("No monotonic clock: prec=%016llX  ovh=%016llX  cnt=%X\n"
-                   "                    last=%016llX  ovh=%016llX  cnt=%X\n"
-                    ,prec,precOvh,precCont,last,lastOvh,lastCont);
+        assert(last>prec);
+//      lastInfo = vht.getInfo();
+//        if(last<=prec)
+//            printf("No monotonic clock:\n" ""
+//                   "prec=%016llX  ts=%016llX  ovh=%016llX  cnt=%X  sr=%X cnt=%X  sr=%X\n"
+//                   "last=%016llX  ts=%016llX  ovh=%016llX  cnt=%X  sr=%X cnt=%X  sr=%X\n",
+//                    prec,precInfo.ts,precInfo.ovf,precInfo.cnt,precInfo.sr,precInfo.cntFirstUIF, precInfo.srFirstUIF,
+//                    last,lastInfo.ts,lastInfo.ovf,lastInfo.cnt,lastInfo.sr,lastInfo.cntFirstUIF, lastInfo.srFirstUIF );
     }
 }
 

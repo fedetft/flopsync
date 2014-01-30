@@ -27,6 +27,21 @@
 
 #ifndef TIMER_H
 #define	TIMER_H
+//#define TIMER_DEBUG  //uncomment only for testing
+
+
+#ifdef TIMER_DEBUG
+struct typeTimer
+{
+    volatile unsigned long long ovf;
+    volatile unsigned short cnt;
+    volatile unsigned short sr;
+    volatile unsigned long long ts;
+    volatile unsigned short cntFirstUIF;
+    volatile unsigned short srFirstUIF;
+};
+
+#endif //TIMER_DEUB
 
 class Timer
 {
@@ -194,10 +209,6 @@ private:
 class VHT : public Timer
 {
 public:
-    
-    static volatile unsigned short counter;
-    static volatile unsigned long long ovh;
-    
     /**
      * \return an instance to the VHT (singleton)
      */
@@ -266,6 +277,12 @@ public:
      * Synchronize the VHT timer with the low frequency RTC
      */
     void synchronizeWithRtc();
+    
+    #ifdef TIMER_DEBUG
+    typeTimer getInfo()const;
+    #endif //TIMER_DEBUG
+    
+    
     
     // Ratio between timers 24MHz / 16384Hz. Note that the division is
     // not exact, and this introduces a clock skew by itself, even if

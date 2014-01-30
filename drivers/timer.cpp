@@ -37,7 +37,7 @@ using namespace miosix;
 #define ccoRtc 32768
 #define ccoVht 24000000
 #define rtcPrescaler 1    //rtcFreq = ccoRtc/(rtcPrescaler+1) must start from 1 to 2^20
-#define vhtPrescaler 0    //vhtFreq = ccoVht/(vhtPrescaler+1) can start from 0 to 2^16 
+#define vhtPrescaler 0   //vhtFreq = ccoVht/(vhtPrescaler+1) can start from 0 to 2^16 
 #define rtcFreq ccoRtc/(rtcPrescaler+1)
 #define vhtFreq ccoVht/(vhtPrescaler+1)
 
@@ -53,7 +53,7 @@ static volatile bool eventRecived=false; ///< A packet was received
 static void (*eventHandler)(unsigned int)=0; ///< Called when event received
 static unsigned long long vhtSyncPointRtc=0;     ///< Rtc time corresponding to vht time
 static volatile unsigned long long vhtSyncPointVht=0;     ///< Vht time corresponding to rtc time
-static volatile unsigned long long vhtOverflows=0;  //< counter VHT
+static volatile unsigned long long vhtOverflows=0;  //< counter VHT overflows
 static volatile unsigned long long timestampEvent=0; ///< input capture timestamp
 static unsigned int rtcOverflows=0;        ///< counter RTC overflows
 static unsigned int rtcLast=0;             ///< variable for evaluate overflow
@@ -61,6 +61,10 @@ static unsigned long long vhtWakeupWait=0;
 
 typedef Gpio<GPIOC_BASE,13> clockout;
 typedef Gpio<GPIOB_BASE,1> clockin;
+
+#ifdef TIMER_DEBUG
+typeTimer info;
+#endif //TIMER_DEBUG
 
 static unsigned long long inline getRTC64bit(unsigned int rtcCounter)
 {
@@ -70,11 +74,6 @@ static unsigned long long inline getRTC64bit(unsigned int rtcCounter)
     result <<= 32;
     result |= rtcCounter;
     return result;
-}
-
-static unsigned long long inline getVHT64bit(unsigned short vhtCounter)
-{
-    return (vhtOverflows << 16) | vhtCounter;
 }
 
 
@@ -93,7 +92,7 @@ void __attribute__((naked)) RTC_IRQHandler()
  */
 void __attribute__((used)) RTChandlerImpl()
 {
-    RTC->CRL &= ~RTC_CRL_ALRF;
+    RTC->CRL =~RTC_CRL_ALRF;
     EXTI->PR=EXTI_PR_PR17;
     rtcInterrupt=true;
     if(!rtcWaiting) return;
@@ -164,7 +163,7 @@ void __attribute__((used)) tim3handlerImpl()
     //VHT wait output compare channel 1 
     if((TIM3->SR & TIM_SR_CC1IF) && (TIM3->DIER & TIM_DIER_CC1IE))
     {
-        TIM3->SR &=~TIM_SR_CC1IF;
+        TIM3->SR =~TIM_SR_CC1IF;
         unsigned short timeCapture=TIM3->CCR1;
         unsigned long long ovf=vhtOverflows;
         //IRQ overflow
@@ -173,7 +172,7 @@ void __attribute__((used)) tim3handlerImpl()
             ovf++;
         }
         //<= is necessary for allow wakeup missed
-        if(vhtWakeupWait>>16 <= ovf)    
+        if((vhtWakeupWait & 0xFFFFFFFFFFFF0000) <= ovf)    
         {
             vhtIntWait=true;
             wakeup=true;
@@ -188,51 +187,57 @@ void __attribute__((used)) tim3handlerImpl()
     //IRQ input capture channel 3
     if((TIM3->SR & TIM_SR_CC3IF) && (TIM3->DIER & TIM_DIER_CC3IE))
     {
-        TIM3->SR &=~TIM_SR_CC3IF;
+        #ifdef TIMER_DEBUG
+        info.ts=vhtOverflows|TIM3->CCR3;
+        info.ovf= vhtOverflows;
+        info.sr = TIM3->SR;
+        #endif //TIMER_DEBUG
+        TIM3->SR =~TIM_SR_CC3IF;
         vhtIntEvent=true;
         unsigned short timeCapture=TIM3->CCR3;
-        VHT::ovh=vhtOverflows;
-        timestampEvent=getVHT64bit(timeCapture);
-        VHT::counter= TIM3->CNT;
-        
+        timestampEvent=vhtOverflows|timeCapture;
+      
+        #ifdef TIMER_DEBUG
+        info.cnt=TIM3->CNT;
+        #endif //TIMER_DEBUG
         //IRQ overflow
         if((TIM3->SR & TIM_SR_UIF) && (timeCapture <= TIM3->CNT))
-            timestampEvent+=0xFFFF;
+            timestampEvent+=1<<16;
         wakeup=true;
+        
+        #ifdef TIMER_DEBUG
+        info.cntFirstUIF=TIM3->CNT;
+        info.srFirstUIF=TIM3->SR;
+        #endif //TIMER_DEBUG
      }
     
     //vhtSyncvht input capture channel 4
     if((TIM3->SR & TIM_SR_CC4IF) && (TIM3->DIER & TIM_DIER_CC4IE))
     {
-        TIM3->SR &=~TIM_SR_CC4IF;
+        TIM3->SR =~TIM_SR_CC4IF;
         vhtIntSync = true;
         unsigned short timeCapture=TIM3->CCR4;
-        vhtSyncPointVht = getVHT64bit(timeCapture);
+        vhtSyncPointVht=vhtOverflows|timeCapture;
         //IRQ overflow
         if((TIM3->SR & TIM_SR_UIF) && (timeCapture <= TIM3->CNT))
-            vhtSyncPointVht+=0xFFFF;
+            vhtSyncPointVht+=1<<16;
         wakeup=true;  
     }
+    
     
     //IRQ overflow
     if(TIM3->SR & TIM_SR_UIF)
     {
-        TIM3->SR &=~TIM_SR_UIF;
-        vhtOverflows++;
+        TIM3->SR =~TIM_SR_UIF;
+        vhtOverflows+=1<<16;
     }
-   
-    //disalbe overcapture interrupt flag
-    TIM3->SR &=~(TIM_SR_CC1OF |TIM_SR_CC2OF | TIM_SR_CC3OF | TIM_SR_CC4OF );
+    
     if(!wakeup || !vhtWaiting) return;
     vhtWaiting->IRQwakeup();
     if(vhtWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
         Scheduler::IRQfindNextThread();
     vhtWaiting=0;
 }
-
-
-volatile unsigned short VHT::counter=0;
-volatile unsigned long long VHT::ovh=0;
 
 //
 // class Rtc
@@ -432,6 +437,13 @@ void setEventHandler(void (*handler)(unsigned int))
 // class VHT
 //
 
+#ifdef TIMER_DEBUG
+typeTimer VHT::getInfo() const
+{
+    return info;
+}
+#endif //TIMER_DEBUG
+
 VHT& VHT::instance()
 {
     static VHT timer;
@@ -446,7 +458,7 @@ unsigned long long VHT::getValue() const
         a=vhtOverflows;
         vhtCnt=TIM3->CNT;
     } while(a!=vhtOverflows); //Ensure no updates in the middle
-    return getVHT64bit(vhtCnt)-vhtSyncPointVht+vhtBase+offset;
+    return (vhtOverflows|vhtCnt)-vhtSyncPointVht+vhtBase+offset;
 }
 
 void VHT::setValue(unsigned long long value)
@@ -468,7 +480,7 @@ void VHT::setAbsoluteWakeupWait(unsigned long long value)
 {
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
     vhtIntWait = false;
-    TIM3->SR &=~TIM_SR_CC1IF;           //reset interrupt flag channel 1
+    TIM3->SR =~TIM_SR_CC1IF;           //reset interrupt flag channel 1
     TIM3->CCR1=vhtWakeupWait & 0xFFFF;  //set match register channel 1
     TIM3->DIER |= TIM_DIER_CC1IE;       //enable interrupt channel 1
     //Check that wakeup is not in the past.
@@ -477,7 +489,7 @@ void VHT::setAbsoluteWakeupWait(unsigned long long value)
     //In this mode if the 48 MSB of vhtWakeupWait are equal to vhtOverflow 
     //but the 16 LSB are less than the vht counter, I will wait for more time,
     //at most for one turn of vht counter.
-    if(vhtWakeupWait >>16 < vhtOverflows)
+    if((vhtWakeupWait & 0xFFFFFFFFFFFF0000) < vhtOverflows)
         vhtIntWait=true;
 }
 
@@ -503,7 +515,7 @@ void VHT::setAbsoluteTimeout(unsigned long long value)
     if(value!=0)
     {
         vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
-        TIM3->SR &=~(TIM_SR_CC1IF |         //reset interrupt flag channel 1
+        TIM3->SR =~(TIM_SR_CC1IF |         //reset interrupt flag channel 1
                      TIM_SR_CC3IF);         //reset interrupt flag channel 3
         TIM3->CCR1=vhtWakeupWait & 0xFFFF;  //set match register channel 1
         TIM3->DIER |= TIM_DIER_CC1IE        //Enable interrupt channel 1
@@ -514,13 +526,12 @@ void VHT::setAbsoluteTimeout(unsigned long long value)
         //In this mode if the 48 MSB of vhtWakeupWait are equal to vhtOverflow 
         //but the 16 LSB are less than the vht counter, I will wait for more time,
         //at most for one turn of vht counter.
-        if(vhtWakeupWait >>16 < vhtOverflows)
+        if((vhtWakeupWait & 0xFFFFFFFFFFFF0000) < vhtOverflows)
             vhtIntWait=true;
     }else
     {
-        TIM3->SR &=~TIM_SR_CC3IF;           //reset interrupt flag channel 3
-        TIM3->DIER |=TIM_DIER_CC3IE;        //Enable interrupt channel 3
-        
+        TIM3->SR =~TIM_SR_CC3IF;           //reset interrupt flag channel 3
+        TIM3->DIER |=TIM_DIER_CC3IE;       //Enable interrupt channel 3
     }
     
 }
@@ -589,7 +600,7 @@ void VHT::synchronizeWithRtc()
         b=RTC->CNTH;
         
         vhtIntSync=false;
-        TIM3->SR &=~TIM_SR_CC4IF;     //Disable interrupt flag on channel 4
+        TIM3->SR =~TIM_SR_CC4IF;     //Disable interrupt flag on channel 4
         TIM3->DIER |= TIM_DIER_CC4IE; //Enable interrupt on channel 4
         
         vhtSyncPointRtc=getRTC64bit(a | b<<16);
@@ -646,7 +657,7 @@ VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), offset(0)
     TIM3->CCER=TIM_CCER_CC2E | TIM_CCER_CC3E | TIM_CCER_CC4E; //enable channel
     TIM3->DIER=TIM_DIER_UIE;  //Enable interrupt event @ end of time to set flag
     TIM3->CR1=TIM_CR1_CEN;
-    NVIC_SetPriority(TIM3_IRQn,10); //Low priority
+    NVIC_SetPriority(TIM3_IRQn,5); //Low priority
     NVIC_ClearPendingIRQ(TIM3_IRQn);
     NVIC_EnableIRQ(TIM3_IRQn);
     
