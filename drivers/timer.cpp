@@ -48,6 +48,7 @@ static Thread *timeoutWaiting=0;    ///< Thread waiting on timeout
 static volatile bool vhtIntWait=false;
 static volatile bool vhtIntSync=false;
 static volatile bool vhtIntEvent=false;
+static volatile bool vhtTriggerEnable=false;
 static volatile bool rtcInterrupt=false; ///< The RTC interrupt has fired
 static volatile bool eventRecived=false; ///< A packet was received
 static void (*eventHandler)(unsigned int)=0; ///< Called when event received
@@ -164,25 +165,29 @@ void __attribute__((used)) tim3handlerImpl()
     if((TIM3->SR & TIM_SR_CC1IF) && (TIM3->DIER & TIM_DIER_CC1IE))
     {
         TIM3->SR =~TIM_SR_CC1IF;
-        unsigned short timeCapture=TIM3->CCR1;
-        unsigned long long ovf=vhtOverflows;
+        bool ovf=false;
         //IRQ overflow
-        if((TIM3->SR & TIM_SR_UIF) && (timeCapture <= TIM3->CNT))
-        {
-            ovf++;
-        }
+        if((TIM3->SR & TIM_SR_UIF) && (TIM3->CCR1 <= TIM3->CNT))
+            ovf=true;
         //<= is necessary for allow wakeup missed
-        if((vhtWakeupWait & 0xFFFFFFFFFFFF0000) <= ovf)    
+        if((vhtWakeupWait & 0xFFFFFFFFFFFF0000) <= (vhtOverflows+(ovf<<16)))    
         {
             vhtIntWait=true;
             wakeup=true;
+        }else
+        {
+            if(((vhtWakeupWait^ovf)==1<<16) && vhtTriggerEnable)
+                TIM3->DIER |= TIM_DIER_CC2IE;
         }
     }
     
-//    //Send packet output compare channel 2 
-//    if((TIM3->SR & TIM_SR_CC2IF) && (TIM3->DIER & TIM_DIER_CC2IE))
-//    {
-//    }
+    //Send packet output compare channel 2 
+    if((TIM3->SR & TIM_SR_CC2IF) && (TIM3->DIER & TIM_DIER_CC2IE))
+    {
+        TIM3->SR =~TIM_SR_CC2IF;
+        TIM3->DIER &=~TIM_DIER_CC2IE;
+        wakeup=true;
+    }
     
     //IRQ input capture channel 3
     if((TIM3->SR & TIM_SR_CC3IF) && (TIM3->DIER & TIM_DIER_CC3IE))
@@ -325,6 +330,11 @@ bool Rtc::waitForExtEventOrTimeout()
         }
     }
     return !eventRecived;
+}
+
+void Rtc::setAbsoluteTriggerEvent(unsigned long long value)
+{
+    
 }
 
 void Rtc::wait()
@@ -479,18 +489,41 @@ unsigned long long VHT::getExtEventTimestamp() const
 void VHT::setAbsoluteWakeupWait(unsigned long long value)
 {
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
-    vhtIntWait = false;
+    
     TIM3->SR =~TIM_SR_CC1IF;           //reset interrupt flag channel 1
     TIM3->CCR1=vhtWakeupWait & 0xFFFF;  //set match register channel 1
+    vhtIntWait = false;
+    vhtTriggerEnable=false;
     TIM3->DIER |= TIM_DIER_CC1IE;       //enable interrupt channel 1
     //Check that wakeup is not in the past.
     //To be strict. I​should check that the vhtWakeupWait> getValue (),
-    //but do not do it to avoid missing wakeup too small.
-    //In this mode if the 48 MSB of vhtWakeupWait are equal to vhtOverflow 
-    //but the 16 LSB are less than the vht counter, I will wait for more time,
-    //at most for one turn of vht counter.
-    if((vhtWakeupWait & 0xFFFFFFFFFFFF0000) < vhtOverflows)
+    //but do not do it to avoid call function overhead.
+    //This method is not rigorous because there may be updates in the middle.
+    if(vhtWakeupWait < (vhtOverflows | TIM3->CNT))
         vhtIntWait=true;
+}
+
+void VHT::setAbsoluteTriggerEvent(unsigned long long value)
+{
+    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
+    TIM3->SR =~(TIM_SR_CC2IF | TIM_SR_CC1IF);  //reset interrupt flag channel 1,2
+    TIM3->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
+    vhtIntWait=false; 
+    vhtTriggerEnable=true;
+    TIM3->CCR1=vhtWakeupWait & 0xFFFF;  //set match register channel 1
+    TIM3->DIER |= TIM_DIER_CC1IE;       //enable interrupt channel 1
+    //first case: Check that wakeup is in this turn
+    if(((vhtWakeupWait & 0xFFFFFFFFFFFF0000)==vhtOverflows) && !(TIM3->SR & TIM_SR_CC2IF)) 
+    {
+        TIM3->DIER |= TIM_DIER_CC2IE;
+    }
+    //second case: Check that wakeup is not in the past.
+    if(vhtWakeupWait < (vhtOverflows | TIM3->CNT))
+    {
+        TIM3->DIER &=~(TIM_DIER_CC1IE | TIM_DIER_CC2IE);
+        vhtIntWait=true;
+        vhtTriggerEnable=false;
+    }
 }
 
 void VHT::wait()

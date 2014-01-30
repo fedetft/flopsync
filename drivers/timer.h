@@ -70,14 +70,29 @@ public:
     virtual unsigned long long getExtEventTimestamp() const=0;
     
     /**
-     * Set the timer interrupt to occur at an absolute value
-     * \param value absolute value when the interrupt will occur
+     * Set the timer interrupt to occur at an absolute value.
+     * \param value absolute value when the interrupt will occur.
+     * If value of wakeup is in the past no interrupt will be set
+     * and wait function will do nothing.
      */
     virtual void setAbsoluteWakeupWait(unsigned long long value)=0;
     
+      /**
+     * Set the timer interrupt to occur at an absolute value.
+     * when the timer interrupt will occur, the associated GPIO passes 
+     * from a low logic level to a high logic level.
+     * If wait() is call before this, we will have the same behavior of the 
+     * setAboluteWakeupWait whit more hardware event.
+     * \param value absolute value when the interrupt will occur.
+     * If value of wakeup is in the past no interrupt will be set
+     * and wait function will do nothing.
+     */
+    virtual void setAbsoluteTriggerEvent(unsigned long long value)=0;
+    
     /**
      * Wait for the interrupt.
-     *  You must have called setAbsoluteWakeupWait() before this.
+     * You must have called setAbsoluteWakeupWait() before this 
+     * or setAbsoluteTriggerEvent().
      */
     virtual void wait()=0;
     
@@ -87,6 +102,7 @@ public:
      * \param value absolute value when the interrupt will occur. If zero, 
      * the timeout is disabled, and this function waits indefinitely till the 
      * external event will be asserts.
+     * If value of wakeup is in the past no interrupt will be set.
      */
     virtual void setAbsoluteTimeout(unsigned long long value)=0;
     
@@ -100,7 +116,9 @@ public:
     
     /**
      * Set the timer timer interrupt to occur at an absolute value
-     * \param value absolute value when the interrupt will occur
+     * \param value absolute value when the interrupt will occur.
+     * If value of wakeup is in the past no interrupt will be set
+     * and sleep function will do nothing.
      */
     virtual void setAbsoluteWakeupSleep(unsigned long long value)=0;
     
@@ -139,8 +157,10 @@ public:
     unsigned long long getExtEventTimestamp() const;
     
     /**
-     * Set the RTC timer interrupt to occur at an absolute value
-     * \param value absolute value when the interrupt will occur
+     * Set the timer interrupt to occur at an absolute value.
+     * \param value absolute value when the interrupt will occur.
+     * If value of wakeup is in the past no interrupt will be set
+     * and wait function will do nothing.
      */
     void setAbsoluteWakeupWait(unsigned long long value);
     
@@ -154,17 +174,32 @@ public:
      */
     void setRelativeWakeup(unsigned int value);
     
+      /**
+     * Set the timer interrupt to occur at an absolute value.
+     * when the timer interrupt will occur, the associated GPIO passes 
+     * from a low logic level to a high logic level.
+     * If wait() is call before this, we will have the same behavior of the 
+     * setAboluteWakeupWait whit more hardware event.
+     * \param value absolute value when the interrupt will occur.
+     * If value of wakeup is in the past no interrupt will be set
+     * and wait function will do nothing.
+     */
+    virtual void setAbsoluteTriggerEvent(unsigned long long value);
+    
     /**
-     * Wait for the interrupt
+     * Wait for the interrupt.
+     * You must have called setAbsoluteWakeupWait() before this 
+     * or setAbsoluteTriggerEvent().
      */
     void wait();
     
-        /**
+     /**
      * Set the timer interrupt to occur at an absolute timeout if no external 
      * event arrived before.
      * \param value absolute value when the interrupt will occur. If zero, 
      * the timeout is disabled, and this function waits indefinitely till the 
      * external event will be asserts.
+     * If value of wakeup is in the past no interrupt will be set.
      */
     void setAbsoluteTimeout(unsigned long long value);
     
@@ -177,10 +212,10 @@ public:
     bool waitForExtEventOrTimeout();
     
     /**
-     * Set the timer interrupt to occur at an absolute value
-     * \param value absolute value when the interrupt will occur
-     * value must be less than 0xFFFFFFFF + getValue()
-     * \param value absolute value when the interrupt will occur
+     * Set the timer timer interrupt to occur at an absolute value
+     * \param value absolute value when the interrupt will occur.
+     * If value of wakeup is in the past no interrupt will be set
+     * and sleep function will do nothing.
      */
     void setAbsoluteWakeupSleep(unsigned long long value);
     
@@ -233,14 +268,29 @@ public:
     unsigned long long getExtEventTimestamp() const;
     
     /**
-     * Set the timer interrupt to occur at an absolute value
-     * \param value absolute value when the interrupt will occur
+     * Set the timer interrupt to occur at an absolute value.
+     * \param value absolute value when the interrupt will occur.
+     * If value of wakeup is in the past no interrupt will be set
+     * and wait function will do nothing.
      */
     void setAbsoluteWakeupWait(unsigned long long value);
     
     /**
+     * Set the timer interrupt to occur at an absolute value.
+     * when the timer interrupt will occur, the associated GPIO passes 
+     * from a low logic level to a high logic level.
+     * If wait() is call before this, we will have the same behavior of the 
+     * setAboluteWakeupWait whit more hardware event.
+     * \param value absolute value when the interrupt will occur.
+     * If value of wakeup is in the past no interrupt will be set
+     * and wait function will do nothing.
+     */
+    virtual void setAbsoluteTriggerEvent(unsigned long long value);
+    
+    /**
      * Wait for the interrupt.
-     *  You must have called setAbsoluteWakeupWait() before this.
+     * You must have called setAbsoluteWakeupWait() before this 
+     * or setAbsoluteTriggerEvent().
      */
     void wait();
     
@@ -250,6 +300,7 @@ public:
      * \param value absolute value when the interrupt will occur. If zero, 
      * the timeout is disabled, and this function waits indefinitely till the 
      * external event will be asserts.
+     * If value of wakeup is in the past no interrupt will be set.
      */
     void setAbsoluteTimeout(unsigned long long value);
     
@@ -263,7 +314,9 @@ public:
     
     /**
      * Set the timer timer interrupt to occur at an absolute value
-     * \param value absolute value when the interrupt will occur
+     * \param value absolute value when the interrupt will occur.
+     * If value of wakeup is in the past no interrupt will be set
+     * and sleep function will do nothing.
      */
     void setAbsoluteWakeupSleep(unsigned long long value);
     
