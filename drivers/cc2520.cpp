@@ -92,9 +92,7 @@ void Cc2520::setMode(Mode mode)
                 case IDLE:
                     commandStrobe(CC2520_INS_SFLUSHTX); //flush TX FIFO
                     break;
-            }
-            writeReg(CC2520_GPIOPOLARITY,0x37); //FIXME
-            writeReg(CC2520_GPIOCTRL3,0x02); //FIXME
+            }            
             break;
         case RX: 
             switch(this->mode)
@@ -139,8 +137,6 @@ void Cc2520::setMode(Mode mode)
                     isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
                     break;
             }
-            writeReg(CC2520_GPIOPOLARITY,0x37); //FIXME
-            writeReg(CC2520_GPIOCTRL3,0x09); //FIXME
             break;
         case SLEEP: 
             switch(this->mode)
