@@ -23,12 +23,12 @@ static void inline testRtc()
     Timer& rtc=Rtc::instance();
     
     int i=1;
-    rtc.setValue(0xFFFFFFFFll - 5 * 16384/2);
+    rtc.setValue(0xFFFFFFFFll - 5/2*rtcFreq); 
     printf("Timestamp:  %016llX\n",rtc.getValue());
     for(;;)
     {        
         blueLed::low(); 
-        rtc.setAbsoluteWakeupSleep((0xFFFFFFFFll-5*16384/2) + (16384*i)); //1 secondo
+        rtc.setAbsoluteWakeupSleep((0xFFFFFFFFll-5/2*rtcFreq) + (1*rtcFreq)); //1 secondo
         rtc.sleep();
         blueLed::high();  
         printf("Timestamp:  %016llX\n",rtc.getValue());
@@ -42,14 +42,14 @@ static void inline testRtcWaitExtEventOrTimeout()
     blueLed::high();
     Timer& rtc=Rtc::instance();
     
-    rtc.setValue(0xFFFFFFFFll - 5 * 16384/2);
+    rtc.setValue(0xFFFFFFFFll - 5/2*rtcFreq);
     printf("Timestamp:  %016llX\n",rtc.getValue());
     int i=1;
     bool timeout;
     for(;;)
     {        
         blueLed::low(); 
-        rtc.setAbsoluteTimeout((0xFFFFFFFFll-5*16384/2) + (16384*i)); //un secondo
+        rtc.setAbsoluteTimeout((0xFFFFFFFFll-5/2*rtcFreq) + (rtcFreq*i)); //un secondo
         timeout=rtc.waitForExtEventOrTimeout();
         blueLed::high(); 
         timeout?
@@ -66,14 +66,12 @@ static void inline testVhtSleep()
     Timer& vht=VHT::instance();
     
     int i=1;
-    unsigned long long timeWakeup;
-    vht.setValue(0x1600000); //circa un secondo 
+    vht.setValue(vhtFreq*1/20*0x1ll); //mezzo secondo 
     printf("Timestamp:  %016llX\n",vht.getValue());
     for(;;)
-    {     
-        timeWakeup = 0x16E3600ll*i;
+    {    
         blueLed::low(); 
-        vht.setAbsoluteWakeupSleep(timeWakeup); //un secondo
+        vht.setAbsoluteWakeupSleep(vhtFreq*1/2+vhtFreq*i*0x1ll); //un secondo
         vht.sleep();
         blueLed::high(); 
         printf("Timestamp:  %016llX\n",vht.getValue());
@@ -100,13 +98,13 @@ static void inline testVhtWait()
     blueLed::high();
     Timer& vht=VHT::instance();
     
-    vht.setValue(0x1600000); //circa un secondo 
+    vht.setValue(vhtFreq*1/20*0x1ll); //mezzo secondo 
     printf("Timestamp:  %016llX\n",vht.getValue());
     int i=1;
     for(;;)
     {        
         blueLed::low();
-        vht.setAbsoluteWakeupWait(0x16E3600ll*i); //un secondo
+        vht.setAbsoluteWakeupWait(vhtFreq*1/2+vhtFreq*i*0x1ll); //un secondo
         vht.wait();
         blueLed::high();
         printf("Timestamp:  %016llX\n",vht.getValue());
@@ -120,14 +118,14 @@ static void inline testVhtWaitExtEventOrTimeout()
     blueLed::high();
     Timer& vht=VHT::instance();
     
-    vht.setValue(0x1600000); //circa un secondo 
+    vht.setValue(vhtFreq*1/2*0x1ll); //mezzo secondo 
     printf("Timestamp:  %016llX\n",vht.getValue());
     int i=1;
     bool timeout;
     for(;;)
     {        
         blueLed::low(); 
-        vht.setAbsoluteTimeout(0x16E3600ll*i); //un secondo
+        vht.setAbsoluteTimeout(vhtFreq*1/2+vhtFreq*i*0x1ll); //un secondo
         timeout=vht.waitForExtEventOrTimeout();
         blueLed::high(); 
         timeout?
@@ -143,7 +141,7 @@ static void inline testVhtWaitExtEvent()
     blueLed::high();
     Timer& vht=VHT::instance();
     
-    vht.setValue(0x1600000); //circa un secondo 
+    vht.setValue(vhtFreq*1/2*0x1ll); //mezzo secondo
     printf("Timestamp:  %016llX\n",vht.getValue());
     bool timeout;
     for(;;)
@@ -162,31 +160,37 @@ static void inline testVhtMonotonic()
 {
     unsigned long long prec=0;
     unsigned long long last=0;
-//    typeTimer precInfo;
-//    typeTimer lastInfo;
+
+    #ifdef TIMER_DEBUG
+    typeTimer precInfo;
+    typeTimer lastInfo;
+    #endif//TIMER_DEBUG
     greenLed::high();
     blueLed::high();
     VHT& vht=VHT::instance();
     printf("Clock monotonic....\n");
-    
-    
     for(;;)
     {        
         blueLed::low(); 
         prec = last;
+        #ifdef TIMER_DEBUG
         //precInfo = lastInfo;
+        #endif//TIMER_DEBUG
         vht.setAbsoluteTimeout(0); 
         vht.waitForExtEventOrTimeout();
         blueLed::high(); 
         last = vht.getExtEventTimestamp();
+        #ifndef TIMER_DEBUG
         assert(last>prec);
-//      lastInfo = vht.getInfo();
-//        if(last<=prec)
-//            printf("No monotonic clock:\n" ""
-//                   "prec=%016llX  ts=%016llX  ovh=%016llX  cnt=%X  sr=%X cnt=%X  sr=%X\n"
-//                   "last=%016llX  ts=%016llX  ovh=%016llX  cnt=%X  sr=%X cnt=%X  sr=%X\n",
-//                    prec,precInfo.ts,precInfo.ovf,precInfo.cnt,precInfo.sr,precInfo.cntFirstUIF, precInfo.srFirstUIF,
-//                    last,lastInfo.ts,lastInfo.ovf,lastInfo.cnt,lastInfo.sr,lastInfo.cntFirstUIF, lastInfo.srFirstUIF );
+        #else//TIMER_DEBUG
+        lastInfo = vht.getInfo();
+        if(last<=prec)
+            printf("No monotonic clock:\n" ""
+                   "prec=%016llX  ts=%016llX  ovh=%016llX  cnt=%X  sr=%X cnt=%X  sr=%X\n"
+                   "last=%016llX  ts=%016llX  ovh=%016llX  cnt=%X  sr=%X cnt=%X  sr=%X\n",
+                    prec,precInfo.ts,precInfo.ovf,precInfo.cnt,precInfo.sr,precInfo.cntFirstUIF, precInfo.srFirstUIF,
+                    last,lastInfo.ts,lastInfo.ovf,lastInfo.cnt,lastInfo.sr,lastInfo.cntFirstUIF, lastInfo.srFirstUIF );
+        #endif//TIMER DEBUG
     }
 }
 
@@ -202,6 +206,24 @@ static void inline testVhtEvent()
         blueLed::high();
         userButton::high();
         miosix::delayUs(10);
+    }
+}
+
+static void inline testVhtTriggerEvent()
+{
+    greenLed::high();
+    Timer& vht=VHT::instance();
+    vht.setValue(0); //mezzo secondo 
+    printf("Timestamp:  %016llX\n",vht.getValue());
+    int i=1;
+    for(;;)
+    {        
+        vht.setAbsoluteTriggerEvent(vhtFreq*i); //un secondo
+        vht.wait();
+       
+        printf("Timestamp:  %016llX\n",vht.getValue());
+        //blueLed::low();
+        i++;
     }
 }
 
@@ -222,7 +244,8 @@ int main(int argc, char** argv) {
     //testVhtGetPacketTimestamp();
     //testVhtWait();
     //testVhtWaitExtEventOrTimeout();
-    testVhtWaitExtEvent();
+    //testVhtWaitExtEvent();
     //testVhtMonotonic();
     //testVhtEvent();
+    //testVhtTriggerEvent();
 }

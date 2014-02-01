@@ -27,8 +27,15 @@
 
 #ifndef TIMER_H
 #define	TIMER_H
-//#define TIMER_DEBUG  //uncomment only for testing
+#include <miosix.h>
+#define TIMER_DEBUG  //uncomment only for testing
 
+#define ccoRtc 32768
+#define ccoVht 24000000
+#define rtcPrescaler 1    //rtcFreq = ccoRtc/(rtcPrescaler+1) go from 1 to 2^20
+#define vhtPrescaler 1-1   //vhtFreq = ccoVht/(vhtPrescaler+1) go from 0 to 2^16 
+#define rtcFreq ccoRtc/(rtcPrescaler+1)
+#define vhtFreq ccoVht/(vhtPrescaler+1)
 
 #ifdef TIMER_DEBUG
 struct typeTimer
@@ -352,6 +359,7 @@ private:
     Rtc& rtc; //The underlying rtc
     unsigned long long vhtBase;
     long long offset; //Only for setting the RTC value
+    typedef miosix::Gpio<GPIOB_BASE,4> trigger;
 };
 
 /**

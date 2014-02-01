@@ -29,17 +29,14 @@
 #include <miosix.h>
 #include <../miosix/kernel/scheduler/scheduler.h>
 #include "timer.h"
+#ifdef TIMER_DEBUG
+#include <cstdio>
+#endif//TIMER_DEBUG
 
 using namespace miosix;
 
 #ifdef _BOARD_STM32VLDISCOVERY
 
-#define ccoRtc 32768
-#define ccoVht 24000000
-#define rtcPrescaler 1    //rtcFreq = ccoRtc/(rtcPrescaler+1) must start from 1 to 2^20
-#define vhtPrescaler 0   //vhtFreq = ccoVht/(vhtPrescaler+1) can start from 0 to 2^16 
-#define rtcFreq ccoRtc/(rtcPrescaler+1)
-#define vhtFreq ccoVht/(vhtPrescaler+1)
 
 static Thread *rtcWaiting=0;        ///< Thread waiting for the RTC interrupt
 static Thread *vhtWaiting=0;        ///< Thread waiting on VHT
@@ -161,32 +158,36 @@ void __attribute__((naked)) TIM3_IRQHandler()
 void __attribute__((used)) tim3handlerImpl()
 { 
     bool wakeup=false;
-    //VHT wait output compare channel 1 
+    
+    //Send packet output compare channel 1
     if((TIM3->SR & TIM_SR_CC1IF) && (TIM3->DIER & TIM_DIER_CC1IE))
     {
-        TIM3->SR =~TIM_SR_CC1IF;
+//        TIM3->SR =~TIM_SR_CC1IF;
+//        TIM3->DIER &=~TIM_DIER_CC1IE;
+//        //TIM3->CCMR1=TIM_CCMR1_OC1M_2; //force inactive level
+//        wakeup=true;
+//        //miosix::Gpio<GPIOC_BASE,8>::high();
+    }
+    
+    //VHT wait output compare channel 2
+    if((TIM3->SR & TIM_SR_CC2IF) && (TIM3->DIER & TIM_DIER_CC2IE))
+    {
+        TIM3->SR =~TIM_SR_CC2IF;
         bool ovf=false;
         //IRQ overflow
-        if((TIM3->SR & TIM_SR_UIF) && (TIM3->CCR1 <= TIM3->CNT))
+        if((TIM3->SR & TIM_SR_UIF) && (TIM3->CCR2 <= TIM3->CNT))
             ovf=true;
         //<= is necessary for allow wakeup missed
-        if((vhtWakeupWait & 0xFFFFFFFFFFFF0000) <= (vhtOverflows+(ovf<<16)))    
+        if((vhtWakeupWait & 0xFFFFFFFFFFFF0000) == (vhtOverflows+(ovf?1<<16:0)))    
         {
             vhtIntWait=true;
             wakeup=true;
         }else
         {
-            if(((vhtWakeupWait^ovf)==1<<16) && vhtTriggerEnable)
-                TIM3->DIER |= TIM_DIER_CC2IE;
+            if((((vhtWakeupWait & 0xFFFFFFFFFFFF0000)-(vhtOverflows+(ovf?1<<16:0)))==0x10000ll) 
+                    && vhtTriggerEnable)
+                TIM3->DIER |= TIM_DIER_CC1IE;
         }
-    }
-    
-    //Send packet output compare channel 2 
-    if((TIM3->SR & TIM_SR_CC2IF) && (TIM3->DIER & TIM_DIER_CC2IE))
-    {
-        TIM3->SR =~TIM_SR_CC2IF;
-        TIM3->DIER &=~TIM_DIER_CC2IE;
-        wakeup=true;
     }
     
     //IRQ input capture channel 3
@@ -488,42 +489,48 @@ unsigned long long VHT::getExtEventTimestamp() const
 
 void VHT::setAbsoluteWakeupWait(unsigned long long value)
 {
+    FastInterruptDisableLock dLock;
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
     
-    TIM3->SR =~TIM_SR_CC1IF;           //reset interrupt flag channel 1
-    TIM3->CCR1=vhtWakeupWait & 0xFFFF;  //set match register channel 1
+    TIM3->SR =~TIM_SR_CC2IF;           //reset interrupt flag channel 2
+    TIM3->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
     vhtIntWait = false;
     vhtTriggerEnable=false;
-    TIM3->DIER |= TIM_DIER_CC1IE;       //enable interrupt channel 1
+    TIM3->DIER |= TIM_DIER_CC2IE;       //enable interrupt channel 2
     //Check that wakeup is not in the past.
-    //To be strict. I​should check that the vhtWakeupWait> getValue (),
-    //but do not do it to avoid call function overhead.
-    //This method is not rigorous because there may be updates in the middle.
-    if(vhtWakeupWait < (vhtOverflows | TIM3->CNT))
+    if(vhtWakeupWait <= 
+            ((vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0)) | TIM3->CNT))
         vhtIntWait=true;
+    FastInterruptEnableLock eLock(dLock);
 }
 
 void VHT::setAbsoluteTriggerEvent(unsigned long long value)
 {
+    FastInterruptDisableLock dLock;
+    vhtTriggerEnable=true;
+    vhtIntWait=false; 
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
     TIM3->SR =~(TIM_SR_CC2IF | TIM_SR_CC1IF);  //reset interrupt flag channel 1,2
-    TIM3->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
-    vhtIntWait=false; 
-    vhtTriggerEnable=true;
     TIM3->CCR1=vhtWakeupWait & 0xFFFF;  //set match register channel 1
-    TIM3->DIER |= TIM_DIER_CC1IE;       //enable interrupt channel 1
-    //first case: Check that wakeup is in this turn
-    if(((vhtWakeupWait & 0xFFFFFFFFFFFF0000)==vhtOverflows) && !(TIM3->SR & TIM_SR_CC2IF)) 
+    TIM3->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
+    TIM3->DIER |= TIM_DIER_CC2IE;       //enable interrupt channel 2
+    //first case: heck if wakeup is in this turn
+    // -overflow not pending: high part of time wakeup and overflow counter is equal
+    // -overflow pending: high part of time wakeup and overflow counter is equal to less than 1 bit
+    if((vhtWakeupWait & 0xFFFFFFFFFFFF0000)==(vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0))) 
     {
-        TIM3->DIER |= TIM_DIER_CC2IE;
+        TIM3->DIER |= TIM_DIER_CC1IE;
+        //TIM3->CCMR1=TIM_CCMR1_OC1M_0;
     }
-    //second case: Check that wakeup is not in the past.
-    if(vhtWakeupWait < (vhtOverflows | TIM3->CNT))
+     //second case: check if wakeup is in the past
+    if(vhtWakeupWait <= 
+            ((vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0)) | TIM3->CNT))
     {
         TIM3->DIER &=~(TIM_DIER_CC1IE | TIM_DIER_CC2IE);
-        vhtIntWait=true;
-        vhtTriggerEnable=false;
+        vhtTriggerEnable = false;
+        vhtIntWait = true;
     }
+    FastInterruptEnableLock eLock(dLock);  
 }
 
 void VHT::wait()
@@ -538,35 +545,33 @@ void VHT::wait()
             Thread::yield();
         }
     }
-    TIM3->DIER &=~ TIM_DIER_CC1IE;      //disable interrupt
+    TIM3->DIER &=~ TIM_DIER_CC2IE;      //disable interrupt
 }
 
 void VHT::setAbsoluteTimeout(unsigned long long value)
 {
+    FastInterruptDisableLock dLock;
     vhtIntEvent = false;
     vhtIntWait = false;
     if(value!=0)
     {
         vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
-        TIM3->SR =~(TIM_SR_CC1IF |         //reset interrupt flag channel 1
+        TIM3->SR =~(TIM_SR_CC2IF |         //reset interrupt flag channel 2
                      TIM_SR_CC3IF);         //reset interrupt flag channel 3
-        TIM3->CCR1=vhtWakeupWait & 0xFFFF;  //set match register channel 1
-        TIM3->DIER |= TIM_DIER_CC1IE        //Enable interrupt channel 1
+        TIM3->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
+        TIM3->DIER |= TIM_DIER_CC2IE        //Enable interrupt channel 2
                    |  TIM_DIER_CC3IE;       //Enable interrupt channel 3
         //Check that wakeup is not in the past.
-        //To be strict. I​should check that the vhtWakeupWait> getValue (),
-        //but do not do it to avoid missing wakeup too small.
-        //In this mode if the 48 MSB of vhtWakeupWait are equal to vhtOverflow 
-        //but the 16 LSB are less than the vht counter, I will wait for more time,
-        //at most for one turn of vht counter.
-        if((vhtWakeupWait & 0xFFFFFFFFFFFF0000) < vhtOverflows)
-            vhtIntWait=true;
-    }else
+        if(vhtWakeupWait <= 
+            ((vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0)) | TIM3->CNT))
+            vhtIntWait = true;
+    }
+    else
     {
         TIM3->SR =~TIM_SR_CC3IF;           //reset interrupt flag channel 3
         TIM3->DIER |=TIM_DIER_CC3IE;       //Enable interrupt channel 3
     }
-    
+    FastInterruptEnableLock eLock(dLock);
 }
 
 bool VHT::waitForExtEventOrTimeout()
@@ -581,7 +586,7 @@ bool VHT::waitForExtEventOrTimeout()
             Thread::yield();
         }
     }
-    TIM3->DIER &=~(TIM_DIER_CC1IE | TIM_DIER_CC3IE); //disable interrupt
+    TIM3->DIER &=~(TIM_DIER_CC2IE | TIM_DIER_CC3IE); //disable interrupt
     return !vhtIntEvent;
 }
 
@@ -666,11 +671,16 @@ void VHT::synchronizeWithRtc()
 
 VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), offset(0)
 {
+    trigger::mode(Mode::OUTPUT);
     //enable TIM3
     {
         FastInterruptDisableLock dLock;
         RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+        RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
     }
+    
+    //TIM3 PARTIAL REMAP (CH1/PB4, CH2/PB5, CH3/PB0, CH4/PB1)
+    AFIO->MAPR = AFIO_MAPR_TIM3_REMAP_1;
     
     TIM3->CNT=0;
     TIM3->PSC=vhtPrescaler;  //  24000000/24000000-1; //High frequency timer runs @24MHz
@@ -679,15 +689,14 @@ VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), offset(0)
     //TIM3->CR1 = TIM_CR1_ARPE; //enable auto reload preload enabled
     
     //setting output compare register1 for channel 1 and 2
-    TIM3->CCMR1=TIM_CCMR1_OC2M_0;
-    
+    TIM3->CCMR1=TIM_CCMR1_OC1M_0 | TIM_CCMR1_OC1M_1;
     //setting input capture register2 for channel 3 and 4
     TIM3->CCMR2=TIM_CCMR2_CC3S_0  //CC3 connected to input 3 (cc2520 SFD)
               | TIM_CCMR2_IC3F_0 //Sample at 24MHz, resynchronize with 2 samples
               | TIM_CCMR2_CC4S_0  //CC4 connected as input (rtc freq for resync)
               | TIM_CCMR2_IC4F_0; //Sample at 24MHz, resynchronize with 2 samples
-              
-    TIM3->CCER=TIM_CCER_CC2E | TIM_CCER_CC3E | TIM_CCER_CC4E; //enable channel
+               
+    TIM3->CCER= TIM_CCER_CC1E | TIM_CCER_CC3E | TIM_CCER_CC4E; //enable channel
     TIM3->DIER=TIM_DIER_UIE;  //Enable interrupt event @ end of time to set flag
     TIM3->CR1=TIM_CR1_CEN;
     NVIC_SetPriority(TIM3_IRQn,5); //Low priority
