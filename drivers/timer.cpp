@@ -162,11 +162,28 @@ void __attribute__((used)) tim3handlerImpl()
     //Send packet output compare channel 1
     if((TIM3->SR & TIM_SR_CC1IF) && (TIM3->DIER & TIM_DIER_CC1IE))
     {
-//        TIM3->SR =~TIM_SR_CC1IF;
-//        TIM3->DIER &=~TIM_DIER_CC1IE;
-//        //TIM3->CCMR1=TIM_CCMR1_OC1M_2; //force inactive level
-//        wakeup=true;
-//        //miosix::Gpio<GPIOC_BASE,8>::high();
+        TIM3->SR =~TIM_SR_CC1IF;
+        if(vhtTriggerEnable)
+        {
+            wakeup=true;
+            miosix::Gpio<GPIOC_BASE,8>::high();
+            TIM3->DIER &=~TIM_DIER_CC1IE;
+            vhtIntWait=true;
+             //TIM3->CCMR1=TIM_CCMR1_OC1M_2; //force inactive level
+        }
+        else
+        {
+            if(((vhtWakeupWait & 0xFFFFFFFFFFFF0000)-
+                    (vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0)))==0x10000ll)
+            {
+                    vhtTriggerEnable=true;
+                    TIM3->CCMR1|=TIM_CCMR1_OC1PE; //preload enable
+                    TIM3->CCR2=vhtWakeupWait & 0xFFFF;
+                    //TIM3->CCMR1=TIM_CCMR1_OC1M_2; //enable output ref
+                    TIM3->CCER |= TIM_CCER_CC1E;
+            }
+        }
+        
     }
     
     //VHT wait output compare channel 2
@@ -182,12 +199,14 @@ void __attribute__((used)) tim3handlerImpl()
         {
             vhtIntWait=true;
             wakeup=true;
-        }else
-        {
-            if((((vhtWakeupWait & 0xFFFFFFFFFFFF0000)-(vhtOverflows+(ovf?1<<16:0)))==0x10000ll) 
-                    && vhtTriggerEnable)
-                TIM3->DIER |= TIM_DIER_CC1IE;
         }
+//        else
+//        {
+//            if((((vhtWakeupWait & 0xFFFFFFFFFFFF0000)-(vhtOverflows+(ovf?1<<16:0)))==0x10000ll) 
+//                    && vhtTriggerEnable)
+//                TIM3->DIER |= TIM_DIER_CC1IE;
+//            //miosix::Gpio<GPIOC_BASE,8>::high();
+//        }
     }
     
     //IRQ input capture channel 3
@@ -506,27 +525,58 @@ void VHT::setAbsoluteWakeupWait(unsigned long long value)
 
 void VHT::setAbsoluteTriggerEvent(unsigned long long value)
 {
+//    FastInterruptDisableLock dLock;
+//    vhtTriggerEnable=true;
+//    vhtIntWait=false; 
+//    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
+//    TIM3->SR =~(TIM_SR_CC2IF | TIM_SR_CC1IF);  //reset interrupt flag channel 1,2
+//    TIM3->CCR1=vhtWakeupWait & 0xFFFF;  //set match register channel 1
+//    //Enable output compare 1 in each case: both whether the wakeup is in the past and in the future
+//    TIM3->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
+//    TIM3->DIER |= TIM_DIER_CC2IE;       //enable interrupt channel 2
+//    //first case: heck if wakeup is in this turn
+//    // -overflow not pending: high part of time wakeup and overflow counter is equal
+//    // -overflow pending: high part of time wakeup and overflow counter is equal to less than 1 bit
+//    if((vhtWakeupWait & 0xFFFFFFFFFFFF0000)==(vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0))) 
+//    {
+//        TIM3->DIER |= TIM_DIER_CC1IE;
+//        //TIM3->CCMR1=TIM_CCMR1_OC1M_0
+//    }
+//     //second case: check if wakeup is in the past
+//    if(vhtWakeupWait <= 
+//            ((vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0)) | TIM3->CNT))
+//    {
+//        TIM3->DIER &=~(TIM_DIER_CC1IE | TIM_DIER_CC2IE);
+//        vhtTriggerEnable = false;
+//        vhtIntWait = true;
+//    }
+//    FastInterruptEnableLock eLock(dLock);  
+    
+    
     FastInterruptDisableLock dLock;
-    vhtTriggerEnable=true;
+    vhtTriggerEnable=false;
     vhtIntWait=false; 
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
-    TIM3->SR =~(TIM_SR_CC2IF | TIM_SR_CC1IF);  //reset interrupt flag channel 1,2
-    TIM3->CCR1=vhtWakeupWait & 0xFFFF;  //set match register channel 1
-    TIM3->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
-    TIM3->DIER |= TIM_DIER_CC2IE;       //enable interrupt channel 2
+    TIM3->CCMR1 &=~TIM_CCMR1_OC1PE; //preload disable
+    TIM3->SR =~ TIM_SR_CC1IF;  //reset interrupt flag channel 1
+    TIM3->CCR1=0;  //set match register channel 1
+    TIM3->DIER |= TIM_DIER_CC1IE;       
     //first case: heck if wakeup is in this turn
     // -overflow not pending: high part of time wakeup and overflow counter is equal
     // -overflow pending: high part of time wakeup and overflow counter is equal to less than 1 bit
     if((vhtWakeupWait & 0xFFFFFFFFFFFF0000)==(vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0))) 
     {
+        vhtTriggerEnable=true;
+        TIM3->SR =~ TIM_SR_CC1IF;
+        TIM3->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
         TIM3->DIER |= TIM_DIER_CC1IE;
-        //TIM3->CCMR1=TIM_CCMR1_OC1M_0;
+        //TIM3->CCMR1=TIM_CCMR1_OC1M_0
     }
      //second case: check if wakeup is in the past
     if(vhtWakeupWait <= 
             ((vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0)) | TIM3->CNT))
     {
-        TIM3->DIER &=~(TIM_DIER_CC1IE | TIM_DIER_CC2IE);
+        TIM3->DIER &=~TIM_DIER_CC1IE;
         vhtTriggerEnable = false;
         vhtIntWait = true;
     }
@@ -686,17 +736,16 @@ VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), offset(0)
     TIM3->PSC=vhtPrescaler;  //  24000000/24000000-1; //High frequency timer runs @24MHz
     TIM3->ARR=0xFFFF; //auto reload if counter register go in overflow
     TIM3->CR1=TIM_CR1_URS; 
-    //TIM3->CR1 = TIM_CR1_ARPE; //enable auto reload preload enabled
     
     //setting output compare register1 for channel 1 and 2
-    TIM3->CCMR1=TIM_CCMR1_OC1M_0 | TIM_CCMR1_OC1M_1;
+    //TIM3->CCMR1=TIM_CCMR1_OC1M_0 | TIM_CCMR1_OC1M_1;
     //setting input capture register2 for channel 3 and 4
     TIM3->CCMR2=TIM_CCMR2_CC3S_0  //CC3 connected to input 3 (cc2520 SFD)
               | TIM_CCMR2_IC3F_0 //Sample at 24MHz, resynchronize with 2 samples
               | TIM_CCMR2_CC4S_0  //CC4 connected as input (rtc freq for resync)
               | TIM_CCMR2_IC4F_0; //Sample at 24MHz, resynchronize with 2 samples
                
-    TIM3->CCER= TIM_CCER_CC1E | TIM_CCER_CC3E | TIM_CCER_CC4E; //enable channel
+    TIM3->CCER= TIM_CCER_CC3E | TIM_CCER_CC4E; //enable channel
     TIM3->DIER=TIM_DIER_UIE;  //Enable interrupt event @ end of time to set flag
     TIM3->CR1=TIM_CR1_CEN;
     NVIC_SetPriority(TIM3_IRQn,5); //Low priority

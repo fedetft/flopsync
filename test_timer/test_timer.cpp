@@ -222,7 +222,7 @@ static void inline testVhtTriggerEvent()
         vht.wait();
        
         printf("Timestamp:  %016llX\n",vht.getValue());
-        //blueLed::low();
+        blueLed::low();
         i++;
     }
 }
@@ -247,5 +247,5 @@ int main(int argc, char** argv) {
     //testVhtWaitExtEvent();
     //testVhtMonotonic();
     //testVhtEvent();
-    //testVhtTriggerEvent();
+    testVhtTriggerEvent();
 }

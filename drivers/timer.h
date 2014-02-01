@@ -30,8 +30,8 @@
 #include <miosix.h>
 #define TIMER_DEBUG  //uncomment only for testing
 
-#define ccoRtc 32768
-#define ccoVht 24000000
+#define ccoRtc 32768ll
+#define ccoVht 24000000ll
 #define rtcPrescaler 1    //rtcFreq = ccoRtc/(rtcPrescaler+1) go from 1 to 2^20
 #define vhtPrescaler 1-1   //vhtFreq = ccoVht/(vhtPrescaler+1) go from 0 to 2^16 
 #define rtcFreq ccoRtc/(rtcPrescaler+1)

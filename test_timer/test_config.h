@@ -33,12 +33,12 @@ inline void lowPowerSetup()
     Gpio<GPIOA_BASE,14>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOA_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN);
     
-    //Gpio<GPIOB_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 GPIO3
+    //Gpio<GPIOB_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 GPIO4
     //Gpio<GPIOB_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN); //RTC clock in
     //Gpio<GPIOB_BASE,2>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 fifop_irq
     Gpio<GPIOB_BASE,3>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOB_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOB_BASE,5>::mode(Mode::INPUT_PULL_UP_DOWN);
+    //Gpio<GPIOB_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN); //trigger send packet
+    Gpio<GPIOB_BASE,5>::mode(Mode::INPUT_PULL_UP_DOWN); 
     Gpio<GPIOB_BASE,6>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOB_BASE,7>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOB_BASE,8>::mode(Mode::INPUT_PULL_UP_DOWN);
