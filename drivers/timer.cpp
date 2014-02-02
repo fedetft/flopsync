@@ -166,10 +166,10 @@ void __attribute__((used)) tim3handlerImpl()
         if(vhtTriggerEnable)
         {
             wakeup=true;
-            miosix::Gpio<GPIOC_BASE,8>::high();
+            //miosix::Gpio<GPIOC_BASE,8>::high();
             TIM3->DIER &=~TIM_DIER_CC1IE;
             vhtIntWait=true;
-             //TIM3->CCMR1=TIM_CCMR1_OC1M_2; //force inactive level
+            TIM3->CCMR1&=~TIM_CCMR1_OC1M_2; //force inactive level
         }
         else
         {
@@ -178,9 +178,9 @@ void __attribute__((used)) tim3handlerImpl()
             {
                     vhtTriggerEnable=true;
                     TIM3->CCMR1|=TIM_CCMR1_OC1PE; //preload enable
-                    TIM3->CCR2=vhtWakeupWait & 0xFFFF;
-                    //TIM3->CCMR1=TIM_CCMR1_OC1M_2; //enable output ref
-                    TIM3->CCER |= TIM_CCER_CC1E;
+                    //TIM3->CCMR1|=TIM_CCMR1_OC1M_0 | TIM_CCMR1_OC1M_2 ; //force active level on match
+                    TIM3->CCR1=vhtWakeupWait & 0xFFFF;
+                    //TIM3->CCER |= TIM_CCER_CC1E;
             }
         }
         
@@ -200,13 +200,6 @@ void __attribute__((used)) tim3handlerImpl()
             vhtIntWait=true;
             wakeup=true;
         }
-//        else
-//        {
-//            if((((vhtWakeupWait & 0xFFFFFFFFFFFF0000)-(vhtOverflows+(ovf?1<<16:0)))==0x10000ll) 
-//                    && vhtTriggerEnable)
-//                TIM3->DIER |= TIM_DIER_CC1IE;
-//            //miosix::Gpio<GPIOC_BASE,8>::high();
-//        }
     }
     
     //IRQ input capture channel 3
@@ -524,55 +517,44 @@ void VHT::setAbsoluteWakeupWait(unsigned long long value)
 }
 
 void VHT::setAbsoluteTriggerEvent(unsigned long long value)
-{
-//    FastInterruptDisableLock dLock;
-//    vhtTriggerEnable=true;
-//    vhtIntWait=false; 
-//    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
-//    TIM3->SR =~(TIM_SR_CC2IF | TIM_SR_CC1IF);  //reset interrupt flag channel 1,2
-//    TIM3->CCR1=vhtWakeupWait & 0xFFFF;  //set match register channel 1
-//    //Enable output compare 1 in each case: both whether the wakeup is in the past and in the future
-//    TIM3->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
-//    TIM3->DIER |= TIM_DIER_CC2IE;       //enable interrupt channel 2
-//    //first case: heck if wakeup is in this turn
-//    // -overflow not pending: high part of time wakeup and overflow counter is equal
-//    // -overflow pending: high part of time wakeup and overflow counter is equal to less than 1 bit
-//    if((vhtWakeupWait & 0xFFFFFFFFFFFF0000)==(vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0))) 
-//    {
-//        TIM3->DIER |= TIM_DIER_CC1IE;
-//        //TIM3->CCMR1=TIM_CCMR1_OC1M_0
-//    }
-//     //second case: check if wakeup is in the past
-//    if(vhtWakeupWait <= 
-//            ((vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0)) | TIM3->CNT))
-//    {
-//        TIM3->DIER &=~(TIM_DIER_CC1IE | TIM_DIER_CC2IE);
-//        vhtTriggerEnable = false;
-//        vhtIntWait = true;
-//    }
-//    FastInterruptEnableLock eLock(dLock);  
-    
-    
+{   
     FastInterruptDisableLock dLock;
+    //The order of the if is important to be sure that even if an overflow 
+    //occurs in the meantime, however, the awakening is set up correctly. The 
+    //if statement are placed in the following order: deadline from more distant 
+    //in time, and therefore less restrictive than the nearest, and therefore 
+    //more restrictive.
+    //base case: wakeup is not in this turn or in the next but is in future
     vhtTriggerEnable=false;
     vhtIntWait=false; 
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
     TIM3->CCMR1 &=~TIM_CCMR1_OC1PE; //preload disable
-    TIM3->SR =~ TIM_SR_CC1IF;  //reset interrupt flag channel 1
+    TIM3->SR =~TIM_SR_CC1IF;  //reset interrupt flag channel 1
     TIM3->CCR1=0;  //set match register channel 1
-    TIM3->DIER |= TIM_DIER_CC1IE;       
-    //first case: heck if wakeup is in this turn
+    TIM3->DIER |= TIM_DIER_CC1IE;  
+    //first case: check if wakeup is in the next turn
+    if((vhtWakeupWait & 0xFFFFFFFFFFFF0000)-(vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0))==0x10000ll)
+    {
+        vhtTriggerEnable=true;
+        TIM3->CCMR1|=TIM_CCMR1_OC1PE; //preload enable
+        //TIM3->CCMR1|=TIM_CCMR1_OC1M_0 | TIM_CCMR1_OC1M_2 ; //force active level on match
+        TIM3->CCR1=vhtWakeupWait & 0xFFFF;
+        //TIM3->CCER |= TIM_CCER_CC1E;
+    }
+    //second case: check if wakeup is in this turn
     // -overflow not pending: high part of time wakeup and overflow counter is equal
     // -overflow pending: high part of time wakeup and overflow counter is equal to less than 1 bit
     if((vhtWakeupWait & 0xFFFFFFFFFFFF0000)==(vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0))) 
     {
         vhtTriggerEnable=true;
+        //TIM3->CCMR1|=TIM_CCMR1_OC1M_0;
         TIM3->SR =~ TIM_SR_CC1IF;
-        TIM3->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
+        TIM3->CCR1=vhtWakeupWait & 0xFFFF;  //set match register channel 2
         TIM3->DIER |= TIM_DIER_CC1IE;
-        //TIM3->CCMR1=TIM_CCMR1_OC1M_0
+        //TIM3->CCER |=TIM_CCER_CC1E;
+        return;
     }
-     //second case: check if wakeup is in the past
+     //third case: check if wakeup is in the past
     if(vhtWakeupWait <= 
             ((vhtOverflows+((TIM3->SR & TIM_SR_UIF)?1<<16:0)) | TIM3->CNT))
     {
