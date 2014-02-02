@@ -242,10 +242,10 @@ private:
 /**
  * Virtual high resolution timer
  * Timer used: TIM3 with 4 channel for I/O capture compare
- * Channel: 1 used as Output compare for implement wait function
- *          2 used as Output compare for start send packet
+ * Channel: 2 used as Output compare for implement wait function
+ *          4 used as Output compare for start send packet
  *          3 used as Input capture for timestamping SFD
- *          4 used as Input capture for synchronize function (input rtc clock)
+ *          1 used as Input capture for synchronize function (input rtc clock)
  * 
  */
 class VHT : public Timer
@@ -359,7 +359,7 @@ private:
     Rtc& rtc; //The underlying rtc
     unsigned long long vhtBase;
     long long offset; //Only for setting the RTC value
-    typedef miosix::Gpio<GPIOB_BASE,4> trigger;
+    typedef miosix::Gpio<GPIOB_BASE,1> trigger;
 };
 
 /**
