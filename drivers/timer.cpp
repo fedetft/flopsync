@@ -46,6 +46,7 @@ static volatile bool vhtIntWait=false;
 static volatile bool vhtIntSync=false;
 static volatile bool vhtIntEvent=false;
 static volatile bool vhtTriggerEnable=false;
+static volatile bool rtcTriggerEnable=false;
 static volatile bool rtcInterrupt=false; ///< The RTC interrupt has fired
 static volatile bool eventRecived=false; ///< A packet was received
 static void (*eventHandler)(unsigned int)=0; ///< Called when event received
@@ -57,8 +58,9 @@ static unsigned int rtcOverflows=0;        ///< counter RTC overflows
 static unsigned int rtcLast=0;             ///< variable for evaluate overflow
 static unsigned long long vhtWakeupWait=0;
 
+typedef Gpio<GPIOB_BASE,1> trigger;
 typedef Gpio<GPIOC_BASE,13> clockout;
-typedef Gpio<GPIOB_BASE,1> clockin;
+typedef Gpio<GPIOB_BASE,4> clockin;
 
 #ifdef TIMER_DEBUG
 typeTimer info;
@@ -93,6 +95,11 @@ void __attribute__((used)) RTChandlerImpl()
     RTC->CRL =~RTC_CRL_ALRF;
     EXTI->PR=EXTI_PR_PR17;
     rtcInterrupt=true;
+    if(rtcTriggerEnable)
+    {
+        trigger::high();
+        rtcTriggerEnable=false;
+    }
     if(!rtcWaiting) return;
     rtcWaiting->IRQwakeup();
 	if(rtcWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
@@ -344,6 +351,23 @@ bool Rtc::waitForExtEventOrTimeout()
 
 void Rtc::setAbsoluteTriggerEvent(unsigned long long value)
 {
+    trigger::low();
+    RTC->CRH |= RTC_CRH_ALRIE;
+    RTC->CRL |= RTC_CRL_CNF;
+    RTC->ALRL=value & 0xffff;
+    RTC->ALRH=value>>16;
+    RTC->CRL &= ~RTC_CRL_CNF;
+    rtcInterrupt=false;
+    while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
+    if(value <= getValue())
+    {
+        rtcInterrupt = true;
+    }
+    else
+    {
+        rtcInterrupt = false;
+        rtcTriggerEnable=true;
+    }
     
 }
 
@@ -409,6 +433,7 @@ void Rtc::sleep()
 
 Rtc::Rtc()
 {
+    trigger::mode(Mode::OUTPUT);
     FastInterruptDisableLock dLock;
     clockin::mode(Mode::INPUT);
     clockout::mode(Mode::OUTPUT);
@@ -702,7 +727,7 @@ void VHT::synchronizeWithRtc()
 
 VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), offset(0)
 {
-     //trigger::mode(Mode::ALTERNATE);
+    trigger::mode(Mode::ALTERNATE);
     //enable TIM3
     {
         FastInterruptDisableLock dLock;
@@ -717,10 +742,10 @@ VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), offset(0)
     TIM3->PSC=vhtPrescaler;  //  24000000/24000000-1; //High frequency timer runs @24MHz
     TIM3->ARR=0xFFFF; //auto reload if counter register go in overflow
     TIM3->CR1= TIM_CR1_URS;
-    //setting output compare register1 for channel 1 and 2
+    //setting cc register1 for channel 1 and 2
     TIM3->CCMR1=TIM_CCMR1_CC1S_0  //CC1 connected as input (rtc freq for resync)
               | TIM_CCMR1_IC1F_0; //Sample at 24MHz, resynchronize with 2 samples
-    //setting input capture register2 for channel 3 and 4
+    //setting cc register2 for channel 3 and 4
     TIM3->CCMR2=TIM_CCMR2_CC3S_0  //CC3 connected to input 3 (cc2520 SFD)
               | TIM_CCMR2_IC3F_0  //Sample at 24MHz, resynchronize with 2 samples
               | TIM_CCMR2_OC4M_0;
@@ -732,8 +757,6 @@ VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), offset(0)
     NVIC_EnableIRQ(TIM3_IRQn);
     
     synchronizeWithRtc();
-    
-    trigger::mode(Mode::ALTERNATE); //FIXME
 }
 #else //_BOARD_STM32VLDISCOVERY
 #error "rtc.cpp not implemented for the selected board"

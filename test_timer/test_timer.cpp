@@ -34,7 +34,7 @@ static void inline testRtc()
     for(;;)
     {        
         blueLed::low(); 
-        rtc.setAbsoluteWakeupSleep((0xFFFFFFFFll-5/2*rtcFreq) + (1*rtcFreq)); //1 secondo
+        rtc.setAbsoluteWakeupSleep((0xFFFFFFFFll-5/2*rtcFreq) + (i*rtcFreq)); //1 secondo
         rtc.sleep();
         blueLed::high();  
         printf("Timestamp:  %016llX\n",rtc.getValue());
@@ -66,6 +66,27 @@ static void inline testRtcWaitExtEventOrTimeout()
         timeout?
             printf("Timestamp:  %016llX\n",rtc.getValue()):
             printf("Packet   :  %016llX\n",rtc.getExtEventTimestamp());
+        i++;
+    }
+}
+
+static void inline testRtcTriggerEvent()
+{
+    puts("---------------Test timer RTC----------------");
+    lowPowerSetup();
+    blueLed::mode(miosix::Mode::INPUT);
+    greenLed::mode(miosix::Mode::OUTPUT);
+    greenLed::high();
+    Timer& rtc=Rtc::instance();
+    
+    int i=1;
+    rtc.setValue(0xFFFFFFFFll - 5/2*rtcFreq); 
+    printf("Timestamp:  %016llX\n",rtc.getValue());
+    for(;;)
+    {        
+        rtc.setAbsoluteTriggerEvent((0xFFFFFFFFll-5/2*rtcFreq) + (i*rtcFreq)); //1 secondo
+        rtc.wait();
+        printf("Timestamp:  %016llX\n",rtc.getValue());
         i++;
     }
 }
@@ -329,6 +350,7 @@ static void inline testOutputCompare()
 int main(int argc, char** argv) {
     //testRtc();
     //testRtcWaitExtEventOrTimeout();
+    //testRtcTriggerEvent();
     //testVhtSleep();
     //testVhtGetPacketTimestamp();
     //testVhtWait();
