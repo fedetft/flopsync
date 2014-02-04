@@ -467,6 +467,8 @@ int Cc2520::sendTxFifoFrame() const
 int Cc2520::isTxFrameDone() const
 {
     if(this->mode != TX) return -1;
+    //disable SFD and TX_FRM_DONE
+    isExcRaised(CC2520_EXC_SFD);
     return isExcRaised(CC2520_EXC_TX_FRM_DONE);
 }
 
@@ -490,7 +492,16 @@ int Cc2520::isRxFrameDone() const {
         flushRxFifoBuffer();
         return false;
     }
-    return cc2520::fifop_irq::value() == 1 ? true : false;
+    if(cc2520::fifop_irq::value() == 1 )
+    {
+        //disable SFD and RX_FRM_DONE exception
+        isExcRaised(CC2520_EXC_RX_FRM_DONE);
+        isExcRaised(CC2520_EXC_SFD);
+        return true;
+    }
+    else
+        return false;
+    
 }
 
 int Cc2520::isRxBufferNotEmpty() const
@@ -731,13 +742,14 @@ inline void Cc2520::initConfigureReg()
     //writeReg(CC2520_EXCBINDX0,0x0A);
     //writeReg(CC2520_EXCBINDX1,0x80 | 0x06 );
     
-    //Setting all exception on channel A
+    //Setting all exception on channel A 
     writeReg(CC2520_EXCMASKA0,0XFF);
     writeReg(CC2520_EXCMASKA1,0XFF);
     writeReg(CC2520_EXCMASKA2,0XFF);
     
-    writeReg(CC2520_EXCMASKB0,0X00);
-    writeReg(CC2520_EXCMASKB1,0X00);
+    //Setting SFD, TX_FRM_DONE, RX_FRM_DONE on channel B
+    writeReg(CC2520_EXCMASKB0,CC2520_EXC_TX_FRM_DONE);
+    writeReg(CC2520_EXCMASKB1,CC2520_EXC_RX_FRM_DONE | CC2520_EXC_SFD);
     writeReg(CC2520_EXCMASKB2,0X00);
     
     //Register that need to update from their default value
@@ -751,4 +763,6 @@ inline void Cc2520::initConfigureReg()
     
     //Setting gpio5 as input on rising edge send command strobe STXON
     writeReg(CC2520_GPIOCTRL5,0x80|0x08);
+    //Setting gpio3 as output exception channel B
+    writeReg(CC2520_GPIOCTRL3,0x22);
 }
