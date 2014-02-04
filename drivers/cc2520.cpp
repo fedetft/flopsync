@@ -464,11 +464,16 @@ int Cc2520::sendTxFifoFrame() const
     return !isExcRaised(CC2520_EXC_RX_FRM_ABORTED, commandStrobe(CC2520_INS_STXON));
 }
 
+int Cc2520::isSFDRaised() const
+{
+    if(this->mode != TX || this->mode != RX ) return -1;
+    return isExcRaised(CC2520_EXC_SFD);
+}
+
+
 int Cc2520::isTxFrameDone() const
 {
     if(this->mode != TX) return -1;
-    //disable SFD and TX_FRM_DONE
-    isExcRaised(CC2520_EXC_SFD);
     return isExcRaised(CC2520_EXC_TX_FRM_DONE);
 }
 
@@ -496,7 +501,6 @@ int Cc2520::isRxFrameDone() const {
     {
         //disable SFD and RX_FRM_DONE exception
         isExcRaised(CC2520_EXC_RX_FRM_DONE);
-        isExcRaised(CC2520_EXC_SFD);
         return true;
     }
     else

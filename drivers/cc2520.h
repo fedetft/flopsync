@@ -174,7 +174,16 @@ public:
     int sendTxFifoFrame() const;
     
     /**
-     * When called if raised, disable SFD and TX_FRM_DONE exception.
+     * When called if raised, disable SFD exception.
+     * \return integer code status number:
+     *          -1 error not in TX state 
+     *           0 frame transmission not completed
+     *           1 frame transmission completed
+     */
+    int isSFDRaised() const;
+    
+    /**
+     * When called if raised, disable TX_FRM_DONE exception.
      * \return integer code status number:
      *          -1 error not in TX state 
      *           0 frame transmission not completed
@@ -183,7 +192,7 @@ public:
     int isTxFrameDone() const;
     
     /**
-     *  When called if raised, disable SFD and RX_FRM_DONE exception.
+     *  When called if raised, disable RX_FRM_DONE exception.
      * \return integer code status number:
      *          -1 error not in RX state 
      *           0 no frame available
