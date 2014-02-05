@@ -27,6 +27,11 @@
 
 #ifndef CC2520_H
 #define	CC2520_H
+//#define CC2520_DEBUG //uncomment only for testing
+
+#ifdef CC2520_DEBUG
+#include <cstdio>
+#endif //CC2520_DEBUG
 
 #include "frame.h"
 /**

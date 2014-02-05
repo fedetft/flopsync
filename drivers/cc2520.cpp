@@ -30,11 +30,7 @@
 #include "timer.h"
 #include <miosix.h>
 #include <cstring>
-//#include "../test_cc2520/test_config.h"
-
-#ifdef DEBUG_CC2520
-    #include <cstdio>
-#endif //DEBUG_CC2520
+#include "../test_cc2520/test_config.h"
 
 using namespace miosix;
 
@@ -212,21 +208,21 @@ void Cc2520::setMode(Mode mode)
             break;  
     }
     this->mode=mode;
-    #ifdef DEBUG_CC2520
+    #ifdef CC2520_DEBUG
     switch (this->mode)
     {
-        case 0: printf("--DEBUG_CC2520-- Setting mode: TX\n");
+        case 0: printf("--CC2520_DEBUG-- Setting mode: TX\n");
             break;
-        case 1: printf("--DEBUG_CC2520-- Setting mode: RX \n");
+        case 1: printf("--CC2520_DEBUG-- Setting mode: RX \n");
             break;
-        case 2: printf("--DEBUG_CC2520-- Setting mode: SLEEP\n");
+        case 2: printf("--CC2520_DEBUG-- Setting mode: SLEEP\n");
             break;
-        case 3: printf("--DEBUG_CC2520-- Setting mode: IDLE\n");
+        case 3: printf("--CC2520_DEBUG-- Setting mode: IDLE\n");
             break;
-        case 4: printf("--DEBUG_CC2520-- Setting mode: DEEP_SLEEP\n");
+        case 4: printf("--CC2520_DEBUG-- Setting mode: DEEP_SLEEP\n");
             break;
     }
-    #endif //DEBUG_CC2520
+    #endif //CC2520_DEBUG
     return;
 }
     
@@ -310,11 +306,11 @@ int Cc2520::writeFrame(const Frame& frame)
     unsigned char status = cc2520SpiSendRecv(CC2520_INS_TXBUF);
     Frame::ConstIterator i; 
     Frame::ConstIterator end = frame.end();
-    #ifdef DEBUG_CC2520
+    #ifdef CC2520_DEBUG
         Frame::ConstIterator b=frame.begin(); 
         Frame::ConstIterator e=frame.end();
-        printf("--DEBUG_CC2520-- Frame LEN: %d\n",e-b);    
-    #endif //DEBUG_CC2520
+        printf("--CC2520_DEBUG-- Frame LEN: %d\n",e-b);    
+    #endif //CC2520_DEBUG
     for(i=frame.begin(); i<end; i++) {
         cc2520SpiSendRecv(*i);
     }
@@ -353,13 +349,13 @@ int Cc2520::readFrame(unsigned char& length, unsigned char* pframe) const
     if(autoFCS)
     {
         fcs=cc2520SpiSendRecv();
-         #ifdef DEBUG_CC2520
-            printf("--DEBUG_CC2520-- Second byte RSSI: %ddBm\n",((char)fcs)-76);
-        #endif //DEBUG_CC2520
+         #ifdef CC2520_DEBUG
+            printf("--CC2520_DEBUG-- Second byte RSSI: %ddBm\n",((char)fcs)-76);
+        #endif //CC2520_DEBUG
         fcs=cc2520SpiSendRecv();
-        #ifdef DEBUG_CC2520
-            printf("--DEBUG_CC2520-- Second byte CRC+Correlation value: %x\n",fcs);
-        #endif //DEBUG_CC2520
+        #ifdef CC2520_DEBUG
+            printf("--CC2520_DEBUG-- Second byte CRC+Correlation value: %x\n",fcs);
+        #endif //CC2520_DEBUG
     }
     cc2520::cs::high();
     delayUs(1);
@@ -388,28 +384,28 @@ int Cc2520::readFrame(Frame& frame) const
     }
     Frame::Iterator i;
     Frame::Iterator end = frame.end();
-    #ifdef DEBUG_CC2520
+    #ifdef CC2520_DEBUG
         Frame::Iterator b=frame.begin(); 
         Frame::Iterator e=frame.end();
-        printf("--DEBUG_CC2520-- Frame LEN: %d\n",e-b);    
-    #endif //DEBUG_CC2520
+        printf("--CC2520_DEBUG-- Frame LEN: %d\n",e-b);    
+    #endif //CC2520_DEBUG
     for(i = frame.begin(); i<end; i++) {
         *i = cc2520SpiSendRecv();
-        #ifdef DEBUG_CC2520
-            printf("--DEBUG_CC2520-- payload: %x \n",*i);  
-        #endif //DEBUG_CC2520
+        #ifdef CC2520_DEBUG
+            printf("--CC2520_DEBUG-- payload: %x \n",*i);  
+        #endif //CC2520_DEBUG
     }
     unsigned char fcs=0;
     if(autoFCS)
     {
         fcs=cc2520SpiSendRecv();
-        #ifdef DEBUG_CC2520
-            printf("--DEBUG_CC2520-- First byte RSSI: %ddBm\n",((char)fcs)-76);
-        #endif //DEBUG_CC2520
+        #ifdef CC2520_DEBUG
+            printf("--CC2520_DEBUG-- First byte RSSI: %ddBm\n",((char)fcs)-76);
+        #endif //CC2520_DEBUG
         fcs=cc2520SpiSendRecv();
-        #ifdef DEBUG_CC2520
-            printf("--DEBUG_CC2520-- Second byte fcs: %x\n",fcs);
-        #endif //DEBUG_CC2520
+        #ifdef CC2520_DEBUG
+            printf("--CC2520_DEBUG-- Second byte fcs: %x\n",fcs);
+        #endif //CC2520_DEBUG
     }
     cc2520::cs::high();
     delayUs(1);
@@ -426,9 +422,9 @@ int Cc2520::flushTxFifoBuffer() const
 {
     if(this->mode == SLEEP || this->mode == DEEP_SLEEP ) return -1;
     //reset RX exception
-    #ifdef DEBUG_CC2520
-        printf("--DEBUG_CC2520-- Flush TX FIFO buffer\n");   
-    #endif //DEBUG_CC2520
+    #ifdef CC2520_DEBUG
+        printf("--CC2520_DEBUG-- Flush TX FIFO buffer\n");   
+    #endif //CC2520_DEBUG
     writeReg(CC2520_EXCFLAG0,CC2520_EXC_TX_FRM_DONE |
                              CC2520_EXC_TX_ACK_DONE |  
                              CC2520_EXC_TX_UNDERFLOW |
@@ -441,9 +437,9 @@ int Cc2520::flushRxFifoBuffer() const
 {
     if(this->mode == SLEEP || this->mode == DEEP_SLEEP ) return -1;
     //reset RX exception
-    #ifdef DEBUG_CC2520
-        printf("--DEBUG_CC2520-- Flush RX FIFO buffer\n");   
-    #endif //DEBUG_CC2520
+    #ifdef CC2520_DEBUG
+        printf("--CC2520_DEBUG-- Flush RX FIFO buffer\n");   
+    #endif //CC2520_DEBUG
     writeReg(CC2520_EXCFLAG0,CC2520_EXC_RX_OVERFLOW);
     writeReg(CC2520_EXCFLAG1,CC2520_EXC_RX_FRM_DONE |
                              CC2520_EXC_RX_FRM_ACCEPETED |
@@ -477,10 +473,13 @@ int Cc2520::isTxFrameDone() const
     return isExcRaised(CC2520_EXC_TX_FRM_DONE);
 }
 
-int Cc2520::isRxFrameDone() const {
+int Cc2520::isRxFrameDone() const
+{
     if(this->mode != RX) return -1;
-    if (cc2520::fifo_irq::value() == 0 && cc2520::fifop_irq::value() == 1) {
-        #ifdef DEBUG_CC2520
+    
+    if(isExcRaised(CC2520_EXC_RX_OVERFLOW))
+    {
+        #ifdef CC2520_DEBUG
             commandStrobe(CC2520_INS_SFLUSHRX);
             unsigned char f0;
             unsigned char f1;
@@ -488,24 +487,16 @@ int Cc2520::isRxFrameDone() const {
             readReg(CC2520_EXCFLAG0, f0);
             readReg(CC2520_EXCFLAG1, f1);
             readReg(CC2520_EXCFLAG2, f2);
-            printf("--DEBUG_CC2520-- ---------------------------Buffer overflow!\n    "
+            printf("--CC2520_DEBUG-- ---------------------------Buffer overflow!\n    "
                     "EXCFLAG0: %x\n     "
                     "EXCFLAG1: %x\n    "
                     "EXCFLAG2: %x\n",f0,f1,f2);
             
-        #endif //DEBUG_CC2520
+        #endif //CC2520_DEBUG
         flushRxFifoBuffer();
         return false;
     }
-    if(cc2520::fifop_irq::value() == 1 )
-    {
-        //disable SFD and RX_FRM_DONE exception
-        isExcRaised(CC2520_EXC_RX_FRM_DONE);
-        return true;
-    }
-    else
-        return false;
-    
+    return isExcRaised(CC2520_EXC_RX_FRM_DONE);
 }
 
 int Cc2520::isRxBufferNotEmpty() const
@@ -513,20 +504,20 @@ int Cc2520::isRxBufferNotEmpty() const
     if(this->mode != RX) return -1;
     if(cc2520::fifo_irq::value()==0 && cc2520::fifop_irq::value()==1)
     {
-        #ifdef DEBUG_CC2520
+        #ifdef CC2520_DEBUG
            commandStrobe(CC2520_INS_SFLUSHRX);
-           printf("--DEBUG_CC2520-- Buffer overflow!\n");
+           printf("--CC2520_DEBUG-- Buffer overflow!\n");
            unsigned char f0;
             unsigned char f1;
             unsigned char f2;
             readReg(CC2520_EXCFLAG0, f0);
             readReg(CC2520_EXCFLAG1, f1);
             readReg(CC2520_EXCFLAG2, f2);
-            printf("--DEBUG_CC2520-- Buffer overflow!\n    "
+            printf("--CC2520_DEBUG-- Buffer overflow!\n    "
                     "EXCFLAG0: %x\n     "
                     "EXCFLAG1: %x\n    "
                     "EXCFLAG2: %x\n",f0,f1,f2);
-        #endif //DEBUG_CC2520
+        #endif //CC2520_DEBUG
         flushRxFifoBuffer();
         return false;
     }else if(cc2520::fifo_irq::value()==1 || cc2520::fifop_irq::value()==1)
@@ -637,9 +628,9 @@ bool Cc2520::isExcRaised(Cc2520Exc0 exc, unsigned char status) const
         
         if((result & exc )== exc) 
         {
-            #ifdef DEBUG_CC2520
-                printf("--DEBUG_CC2520-- Exception EXCFLAG0: %x\n",exc);
-            #endif //DEBUG_CC2520
+            #ifdef CC2520_DEBUG
+                printf("--CC2520_DEBUG-- Exception EXCFLAG0: %x\n",exc);
+            #endif //CC2520_DEBUG
             //clear exception
             //bit to 1 will not result in a register change
             cc2520::cs::low();
@@ -669,9 +660,9 @@ bool Cc2520::isExcRaised(Cc2520Exc1 exc, unsigned char status) const
         
         if((result & exc )== exc)  
         {
-            #ifdef DEBUG_CC2520
-                printf("--DEBUG_CC2520-- Exception EXCFLAG1: %x\n",exc);
-            #endif //DEBUG_CC2520
+            #ifdef CC2520_DEBUG
+                printf("--CC2520_DEBUG-- Exception EXCFLAG1: %x\n",exc);
+            #endif //CC2520_DEBUG
             //clear exception
             //bit to 1 will not result in a register change
             cc2520::cs::low();
@@ -701,9 +692,9 @@ bool Cc2520::isExcRaised(Cc2520Exc2 exc, unsigned char status) const
         
         if((result & exc )== exc) 
         {
-            #ifdef DEBUG_CC2520
-                printf("--DEBUG_CC2520-- Exception EXCFLAG2: %x\n",exc);
-            #endif //DEBUG_CC2520
+            #ifdef CC2520_DEBUG
+                printf("--CC2520_DEBUG-- Exception EXCFLAG2: %x\n",exc);
+            #endif //CC2520_DEBUG
             //clear exception
             //bit to 1 will not result in a register change
             cc2520::cs::low();
@@ -720,9 +711,9 @@ bool Cc2520::isExcRaised(Cc2520Exc2 exc, unsigned char status) const
 
 inline void Cc2520::initConfigureReg()
 {    
-    #ifdef DEBUG_CC2520
-    printf("--DEBUG_CC2520-- Initialize registers.\n");
-    #endif //DEBUG_CC2520
+    #ifdef CC2520_DEBUG
+    printf("--CC2520_DEBUG-- Initialize registers.\n");
+    #endif //CC2520_DEBUG
     writeReg(CC2520_FREQCTRL,this->frequency-2394); //set frequency
     writeReg(CC2520_FRMCTRL0,0x40*autoFCS); //automatically add FCS
     writeReg(CC2520_FRMCTRL1,0x2); //ignore tx underflow exception

@@ -47,6 +47,7 @@ namespace cc2520 {
     typedef miosix::Gpio<GPIOA_BASE, 2> cs;
     typedef miosix::Gpio<GPIOC_BASE, 4> fifo_irq; //GPIO1
     typedef miosix::Gpio<GPIOB_BASE, 2> fifop_irq; //GPIO2
+    typedef miosix::Gpio<GPIOB_BASE, 0> exc_channelB; //GPIO3
     typedef miosix::Gpio<GPIOC_BASE, 5> sfd; //GPIO4
     typedef miosix::Gpio<GPIOA_BASE, 5> sck;
     typedef miosix::Gpio<GPIOA_BASE, 6> miso;
@@ -66,6 +67,7 @@ static inline void cc2520GpioInit() {
         cc2520::fifo_irq::mode(miosix::Mode::INPUT);
         cc2520::fifop_irq::mode(miosix::Mode::INPUT);
         cc2520::sfd::mode(miosix::Mode::INPUT);
+        cc2520::exc_channelB::mode(miosix::Mode::INPUT);
         cc2520::sck::mode(miosix::Mode::ALTERNATE);
         cc2520::miso::mode(miosix::Mode::ALTERNATE);
         cc2520::mosi::mode(miosix::Mode::ALTERNATE);
