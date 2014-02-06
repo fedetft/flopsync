@@ -462,7 +462,7 @@ int Cc2520::sendTxFifoFrame() const
 
 int Cc2520::isSFDRaised() const
 {
-    if(this->mode != TX || this->mode != RX ) return -1;
+    if(this->mode != TX && this->mode != RX ) return -1;
     return isExcRaised(CC2520_EXC_SFD);
 }
 
