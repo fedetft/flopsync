@@ -17,7 +17,7 @@ while(<$file>)
 close($file);
 my @configkeys=('experiment_name','experiment_time','sync_period',
 				'relative_clock','interactive_rootnode','event_timestamping',
-				'vht','sense_temperature','send_timestamps','use_transceiver_cc2520','node0_file',
+				'vht','sense_temperature','send_timestamps','glossy','node0_file',
 				'node0_second_hop','node1_file','node1_second_hop','node2_file',
 				'node2_second_hop','node3_file','node3_second_hop');
 @configkeys=sort(@configkeys);
@@ -55,9 +55,9 @@ sub build
 	close($outfile);
 
 	# Step 2: create a protocol_constants.h correctly configured
-	move('flopsync_v2/protocol_constants.h','flopsync_v2/protocol_constants.h.orig');
-	open($infile, '<', 'flopsync_v2/protocol_constants.h.orig');
-	open($outfile, '>', 'flopsync_v2/protocol_constants.h');
+	move('flopsync_v3/protocol_constants.h','flopsync_v3/protocol_constants.h.orig');
+	open($infile, '<', 'flopsync_v3/protocol_constants.h.orig');
+	open($outfile, '>', 'flopsync_v3/protocol_constants.h');
 	while(<$infile>)
 	{
 		if(/#define RELATIVE_CLOCK/)
@@ -86,9 +86,9 @@ sub build
 		} elsif(/#define SEND_TIMESTAMPS/) {
 			print $outfile '//' unless($config{'send_timestamps'});
 			print $outfile "#define SEND_TIMESTAMPS\n";
-		} elsif(/#define USE_TRANSCEIVER_CC2520/) {
-			print $outfile '//' unless($config{'use_transceiver_cc2520'});
-			print $outfile "#define USE_TRANSCEIVER_CC2520\n";
+		} elsif(/#define GLOSSY/) {
+			print $outfile '//' unless($config{'glossy'});
+			print $outfile "#define GLOSSY\n";
 		} elsif(/^#define experimentName/) {
 			my $n="#define experimentName \"$config{experiment_name}#$binfile";
 			$n.='#'.localtime();
@@ -103,7 +103,7 @@ sub build
 	# Uncomment for debugging the substitution code
 	my $e=$config{'experiment_name'};
 	#copy('Makefile',"$e/$binfile.Makefile");
-	#copy('flopsync_v2/protocol_constants.h',"$e/$binfile.flopsync_v2/protocol_constants.h");
+	#copy('flopsync_v3/protocol_constants.h',"$e/$binfile.protocol_constants");
 
 	# Step 3: build the binary
 	system('make 1>/dev/null');
@@ -115,9 +115,9 @@ sub build
 
 	# Step 4: restore original Makefile and protocol_constants.h
 	unlink('Makefile');
-	unlink('flopsync_v2/protocol_constants.h');
+	unlink('flopsync_v3/protocol_constants.h');
 	move('Makefile.orig','Makefile');
-	move('flopsync_v2/protocol_constants.h.orig','flopsync_v2/protocol_constants.h');
+	move('flopsync_v3/protocol_constants.h.orig','flopsync_v3/protocol_constants.h');
 }
 
 # Build files for all three nodes

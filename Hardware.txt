@@ -39,6 +39,23 @@ the stm32vldiscovery. This is the event input used for timestamp tests.
 *********************************************************************************************
 
 Configuration for cc2520:
+
+GPIO stm32vldiscovery vacate
+---------------------------------------
+PC8-> blue led
+PC9-> green led
+PA0-> user button
+
+
+TIM3 PARTIAL REMAP (CH1/PB4, CH2/PB5, CH3/PB0, CH4/PB1)
+-----------------------------------------------------------
+
+GPIO mapping stm32vldiscovery to itself
+---------------------------------------
+Connect PC13 and PB4 together
+
+
+
 GPIO mapping stm32vldiscovery to cc2520
 ------------------------------------------
 PCB | cc2520  | STM32      *       PCB | cc2520  | STM32
@@ -53,6 +70,6 @@ PCB | cc2520  | STM32      *       PCB | cc2520  | STM32
 PCB | cc2520  | STM32      *       PCB | cc2520  | STM32
 1   |    -    |  -         *       2   |    -    |  -
 3   | VCC     | 3V3        *       4   |    -    |  -
-5   | GPIO4   | PC5        *       6   |    -    |  -          ----->CC2520
-7   | GPIO5   | GND        *       8   |    -    |  - 
+5   | GPIO4   | ---        *       6   |    -    |  -          ----->CC2520
+7   | GPIO5   | PB1        *       8   |    -    |  - 
 9   | RESET   | PA1        *       10  |    -    |  -      
