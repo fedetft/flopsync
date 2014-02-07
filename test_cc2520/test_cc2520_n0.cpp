@@ -6,7 +6,7 @@
  */
 
 #include <cstdio>
-#include "../drivers/transceiver.h"
+#include "../drivers/cc2520.h"
 #include <miosix.h>
 #include "test_config.h"
 
@@ -32,13 +32,10 @@ int main(int argc, char** argv) {
     //const char* packet="HELLO";
     unsigned char cont = 0x0;
     unsigned char* pCont =&cont;
-    Transceiver& cc2520 = Transceiver::instance();
+    Cc2520& cc2520 = Cc2520::instance();
     
     cc2520.setFrequency(2450);
-    cc2520.setMode(Transceiver::TX);
-    cc2520.setPacketLength(1);
-    
-    printf("La dimensione del pacchetto è: %d bytes\n",cc2520.getPacketLength());
+    cc2520.setMode(Cc2520::TX);
 
     greenLed::high();
     blueLed::low();
@@ -50,9 +47,9 @@ int main(int argc, char** argv) {
            //MemoryProfiling::print();
             blueLed::high();
             cont++;
-            cc2520.writePacket(pCont);
-            while(cc2520.irq()==false) printf("TX busy\n"); //Wait
-            cc2520.endWritePacket();
+            cc2520.writeFrame(1,pCont);
+            cc2520.sendTxFifoFrame();
+            while(!cc2520.isTxFrameDone()) printf("TX busy\n"); //Wait
             blueLed::low();
             printf("Ho inviato: %x \n",cont);
         }

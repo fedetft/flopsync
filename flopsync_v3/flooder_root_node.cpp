@@ -38,50 +38,76 @@ using namespace std;
 
 FlooderRootNode::FlooderRootNode(Timer& timer) : timer(timer),
         transceiver(Cc2520::instance()),frameStart(0), 
-        wakeupTime(timer.getValue()+nominalPeriod) {}
+        wakeupTime(timer.getValue()+nominalPeriod) 
+{
+    #ifndef SEND_TIMESTAMPS
+    syncFrame = new Frame(1,false,false,1);
+    #else
+    syncFrame = new Frame(8,false,true);
+    #endif //SEND_TIMESTAMPS
+}
 
 bool FlooderRootNode::synchronize()
 {
     #ifdef FLOPSYNC_DEBUG   
     if(wakeupTime<timer.getValue())
-        printf("Wakeup is in the past.\n");
-    assert(false);
+    {
+        puts("--FLOPSYNC_DEBUG-- Wakeup is in the past.");
+        assert(false);
+    }
     #endif//FLOPSYNC_DEBUG
     timer.setAbsoluteWakeupSleep(wakeupTime);
     timer.sleep();
-    timer.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
-    transceiver.setMode(Transceiver::TX);
+    frameStart=wakeupTime+jitterAbsorption;
+    timer.setAbsoluteTriggerEvent(frameStart);
+    transceiver.setMode(Cc2520::TX);
     #ifndef SEND_TIMESTAMPS
     transceiver.setAutoFCS(false);
-    const char payload[]={0x00};
-    const char fcs[]={0xFF};
-    syncFrame.setPayload(payload);
-    syncFrame.setFCS(fcs);
+    const unsigned char payload[]={0x00};
+    const unsigned char fcs[]={0xFF};
+    syncFrame->setPayload(payload);
+    syncFrame->setFCS(fcs);
     #else //SEND_TIMESTAMPS
     transceiver.setAutoFCS(true);
-    unsigned long long timestamp;
+    unsigned long long timestamp = wakeupTime+jitterAbsorption;
     unsigned long long *payload=&timestamp;
-    syncFrame.setPayload(payload);
+    syncFrame->setPayload(payload);
     #endif //SEND_TIMESTAMPS
-    timer.setAbsoluteTimeout(0);
+    transceiver.writeFrame(*syncFrame);
     // To minimize jitter in the packet transmission time caused by the
     // variable time sleepAndWait() takes to restart the STM32 PLL an
     // additional wait is done here to absorb the jitter.
-    {
-        CriticalSection cs;
-        timer.wait();
-        miosix::ledOn();
-        #ifdef SEND_TIMESTAMPS
-        timestamp=timer.getValue();
-        #endif //SEND_TIMESTAMPS
-        transceiver.writeFrame(*syncFrame);
-        timer.waitForExtEventOrTimeout(); //Wait for packet sent, sleeping the CPU TODO: fix its
-        frameStart=timer.getExtEventTimestamp();
-        miosix::ledOff(); //Falling edge signals synchronization packet sent
-    }
-    transceiver.sendTxFifoFrame();
-    while(!transceiver.isTxFrameDone()); //FIXME
-    transceiver.setMode(Transceiver::DEEP_SLEEP);
+    timer.wait();
+    miosix::ledOn();
+    timer.setAbsoluteTimeout(wakeupTime+jitterAbsorption+preamblePacketTime+delaySendPacketTime);
+    #ifndef FLOPSYNC_DEBUG
+    timer.waitForExtEventOrTimeout();
+    #else //FLOPSYNC_DEBUG
+    timer.waitForExtEventOrTimeout()?
+        puts("--FLOPSYNC_DEBUG-- Timeout occurred."):puts("--FLOPSYNC_DEBUG-- Event occurred.");
+    #endif//FLOPSYNC_DEBUG
+    #ifndef FLOPSYNC_DEBUG
+    transceiver.isSFDRaised();
+    #else //FLOPSYNC_DEBUG
+    transceiver.isSFDRaised()?
+        puts("--FLOPSYNC_DEBUG-- SFD raised."):puts("--FLOPSYNC_DEBUG-- No SFD raised.");
+    #endif//FLOPSYNC_DEBUG
+    timer.setAbsoluteTimeout(wakeupTime+jitterAbsorption+preamblePacketTime
+                           +payloadPacketTime+fcsPacketTime+delaySendPacketTime);
+    timer.waitForExtEventOrTimeout();
+    #ifndef FLOPSYNC_DEBUG
+    transceiver.isTxFrameDone();
+    #else //FLOPSYNC_DEBUG
+    transceiver.isTxFrameDone()?
+        puts("--FLOPSYNC_DEBUG-- Tx Frame done."):puts("--FLOPSYNC_DEBUG-- Tx Frame not done.");
+    #endif//FLOPSYNC_DEBUG
+    miosix::ledOff(); //Falling edge signals synchronization packet sent
+    transceiver.setMode(Cc2520::DEEP_SLEEP);
     wakeupTime+=nominalPeriod;
     return false; //Root node does not desynchronize
+}
+
+FlooderRootNode::~FlooderRootNode()
+{
+    delete syncFrame;
 }

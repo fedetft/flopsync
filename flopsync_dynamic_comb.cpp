@@ -29,17 +29,17 @@
 #include <cstring>
 #include <limits>
 #include <miosix.h>
-#include "drivers/transceiver.h"
-#include "drivers/rtc.h"
+#include "drivers/cc2520.h"
+#include "drivers/timer.h"
 #include "drivers/temperature.h"
-#include "flopsync_v2/protocol_constants.h"
-#include "flopsync_v2/flooder_sync_node.h"
-#include "flopsync_v2/synchronizer.h"
-#include "flopsync_v2/optimized_ramp_flopsync2.h"
-#include "flopsync_v2/clock.h"
-#include "flopsync_v2/monotonic_clock.h"
-#include "flopsync_v2/non_monotonic_clock.h"
-#include "flopsync_v2/critical_section.h"
+#include "flopsync_v3/protocol_constants.h"
+#include "flopsync_v3/flooder_sync_node.h"
+#include "flopsync_v3/synchronizer.h"
+#include "flopsync_v3/optimized_ramp_flopsync2.h"
+#include "flopsync_v3/clock.h"
+#include "flopsync_v3/monotonic_clock.h"
+#include "flopsync_v3/non_monotonic_clock.h"
+#include "flopsync_v3/critical_section.h"
 #include "low_power_setup.h"
 
 using namespace std;
@@ -58,19 +58,18 @@ int main()
 {
     lowPowerSetup();
     
-    miosix::Gpio<GPIOC_BASE,0>::mode(miosix::Mode::INPUT_ANALOG);  
+    //miosix::Gpio<GPIOC_BASE,0>::mode(miosix::Mode::INPUT_ANALOG);  
+
     
-    blueLed::mode(miosix::Mode::OUTPUT);
+    blueLed::mode(miosix::Mode::INPUT);  //FIXME
     puts(experimentName);
-    const unsigned char address[]={0xab, 0xcd, 0xef};
-    Transceiver& tr=Transceiver::instance();
-    tr.setAddress(address);
-    tr.setFrequency(2450);
+    Cc2520& transceiver=Cc2520::instance();
+    transceiver.setFrequency(2450);
     const int node=identifyNode();
     #ifndef USE_VHT
-    Timer& rtc=Rtc::instance();
+    Timer& timer=Rtc::instance();
     #else //USE_VHT
-    Timer& rtc=VHT::instance();
+    Timer& timer=VHT::instance();
     #endif //USE_VHT
     Synchronizer *sync;
     bool monotonic=false;
@@ -85,60 +84,55 @@ int main()
 //         case 3: sync=new FTSP; break;
 //     }
     #ifndef MULTI_HOP
-    FlooderSyncNode flooder(rtc,*sync);
+    FlooderSyncNode flooder(timer,*sync);
     #else //MULTI_HOP
-    FlooderSyncNode flooder(rtc,*sync,node-1);
+    FlooderSyncNode flooder(timer,*sync,node-1);
     #endif //MULTI_HOP
 
     Clock *clock;
     if(monotonic) clock=new MonotonicClock(*sync,flooder);
     else clock=new NonMonotonicClock(*sync,flooder);
     
-    AuxiliaryTimer& timer=AuxiliaryTimer::instance();
     for(;;)
     {
         if(flooder.synchronize()) flooder.resynchronize();
         
-        unsigned int start=node*combSpacing;
-        for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
-        {   
-            #ifdef SENSE_TEMPERATURE
-            unsigned short temperature=getDACTemperature();
-            #endif //SENSE_TEMPERATURE
-            
-            unsigned int wakeupTime=clock->rootFrame2localAbsolute(i)-
-                (jitterAbsorption+receiverTurnOn+longPacketTime+spiPktSend);
-            rtc.setAbsoluteWakeupSleep(wakeupTime);
-            rtc.sleep();
-            blueLed::high();
-            rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
-            tr.setMode(Transceiver::TX);
-            tr.setPacketLength(sizeof(Packet2));
-            timer.initTimeoutTimer(0);
-            Packet2 packet;
-            packet.e=sync->getSyncError();
-            packet.u=max<int>(numeric_limits<short>::min(),
-                min<int>(numeric_limits<short>::max(),
-                sync->getClockCorrection()));
-            packet.w=sync->getReceiverWindow();
-                  
-            #ifndef SENSE_TEMPERATURE
-            packet.miss=flooder.isPacketMissed() ? 1 : 0;
-            packet.check=0;
-            #else //SENSE_TEMPERATURE
-            packet.miss=temperature & 0xff;
-            packet.check=(temperature>>8) | 0x10;
-            #endif //SENSE_TEMPERATURE
-           
-            {
-                CriticalSection cs;
-                rtc.wait();
-                tr.writePacket(&packet);
-            }
-            timer.waitForPacketOrTimeout();
-            blueLed::low();
-            tr.endWritePacket();
-            tr.setMode(Transceiver::SLEEP);
-        }
+//        unsigned int start=node*combSpacing;
+//        for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
+//        {   
+//            #ifdef SENSE_TEMPERATURE
+//            unsigned short temperature=getDACTemperature();
+//            #endif //SENSE_TEMPERATURE
+//            
+//            unsigned int wakeupTime=clock->rootFrame2localAbsolute(i)-
+//                (jitterAbsorption+receiverTurnOn+preamblePacketTime);
+//            timer.setAbsoluteWakeupSleep(wakeupTime);
+//            timer.sleep();
+//            blueLed::high();
+//            timer.setAbsoluteTriggerEvent(wakeupTime+jitterAbsorption);
+//            transceiver.setMode(Cc2520::TX);
+//            transceiver.setAutoFCS(true);
+//            timer.setAbsoluteTimeout(0);
+//            Packet packet;
+//            packet.e=sync->getSyncError();
+//            packet.u=max<int>(numeric_limits<short>::min(),
+//                min<int>(numeric_limits<short>::max(),
+//                sync->getClockCorrection()));
+//            packet.w=sync->getReceiverWindow();
+//                  
+//            #ifndef SENSE_TEMPERATURE
+//            packet.miss=flooder.isPacketMissed() ? 1 : 0;
+//            packet.check=0;
+//            #else //SENSE_TEMPERATURE
+//            packet.miss=temperature & 0xff;
+//            packet.check=(temperature>>8) | 0x10;
+//            #endif //SENSE_TEMPERATURE
+//            unsigned char *data=reinterpret_cast<unsigned char*>(&packet);
+//            transceiver.writeFrame(data);
+//            timer.wait();
+//            while(!transceiver.isTxFrameDone()); //FIXME
+//            blueLed::low();
+//            transceiver.setMode(Cc2520::DEEP_SLEEP);
+//        }
     }
 }

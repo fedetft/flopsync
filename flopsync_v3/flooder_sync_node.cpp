@@ -56,16 +56,20 @@ bool FlooderSyncNode::synchronize()
         (jitterAbsorption+receiverTurnOn+receiverWindow+preamblePacketTime);
     #ifdef FLOPSYNC_DEBUG   
     if(wakeupTime<timer.getValue())
-        printf("Wakeup is in the past.\n");
-    assert(false);
+    {
+        puts("--FLOPSYNC_DEBUG-- Wakeup is in the past.");
+        assert(false);
+    }
     #endif
     timer.setAbsoluteWakeupSleep(wakeupTime);
     timer.sleep();
     timer.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
     #ifdef FLOPSYNC_DEBUG   
     if(wakeupTime+jitterAbsorption<timer.getValue())
-        printf("Wakeup is in the past.\n");
-    assert(false);
+    {
+        puts("--FLOPSYNC_DEBUG-- Wakeup is in the past.");
+        assert(false);
+    }
     #endif
     // To minimize jitter in the packet transmission time caused by the
     // variable time sleepAndWait() takes to restart the STM32 PLL an
@@ -77,7 +81,7 @@ bool FlooderSyncNode::synchronize()
     #else //SEND_TIMESTAMPS
     transceiver.setAutoFCS(true);
     #endif //SEND_TIMESTAMPS
-    transceiver.setMode(Transceiver::RX);
+    transceiver.setMode(Cc2520::RX);
     bool timeout;
     {
         CriticalSection cs;
@@ -86,21 +90,44 @@ bool FlooderSyncNode::synchronize()
             timer.setAbsoluteTimeout(wakeupTime+jitterAbsorption+receiverTurnOn+2*receiverWindow+preamblePacketTime);
             timeout=timer.waitForExtEventOrTimeout();
             measuredFrameStart=timer.getExtEventTimestamp();
+            #ifndef FLOPSYNC_DEBUG
+            transceiver.isSFDRaised();
+            #else //FLOPSYNC_DEBUG
+            transceiver.isSFDRaised()?printf("--FLOPSYNC_DEBUG-- SFD raised.\n"):printf("--FLOPSYNC_DEBUG-- No SFD raised.\n");
+            #endif//FLOPSYNC_DEBUG
             miosix::ledOff();
             if(timeout) break;
-            
-            while(!transceiver.isRxFrameDone());   //FIXME 
             //Wait end of packet
+            timer.setAbsoluteTimeout(measuredFrameStart+payloadPacketTime+fcsPacketTime+delaySendPacketTime);
+            #ifndef SEND_TIMESTAMPS
+            //Empty frame not inizialized with lenght.
+            syncFrame = new Frame(false,false,1);
+            #else
+            syncFrame = new Frame(false,true);
+            #endif //SEND_TIMESTAMPS
+            timer.waitForExtEventOrTimeout();
+            #ifndef FLOPSYNC_DEBUG
+            transceiver.isRxFrameDone();
+            #else //FLOPSYNC_DEBUG
+            transceiver.isRxFrameDone()?printf("--FLOPSYNC_DEBUG-- Rx Frame done\n"):printf("--FLOPSYNC_DEBUG-- Rx Frame not done\n");
+            #endif//FLOPSYNC_DEBUG
+            
             if(transceiver.readFrame(*syncFrame)==0)
             {
                 #ifndef SEND_TIMESTAMPS
-                unsigned char *payload;
-                unsigned char *fcs;  
+                unsigned char payload[1];;
+                unsigned char fcs[1];  
                 syncFrame->getPayload(payload);
                 syncFrame->getFCS(fcs);
-                if(*payload==~*fcs)
+                if((payload[0] & fcs[0]) ==0)
                 {
-                    if(*payload==hop) break;
+                    #ifndef GLOSSY
+                    if(payload[0]==hop) break;
+                    #endif //GLOSSY
+                }
+                else
+                {
+                    delete syncFrame;
                 }
                 #else //SEND_TIMESTAMPS
                 unsigned long long *timestamps=&receivedTimestamp;
@@ -113,11 +140,11 @@ bool FlooderSyncNode::synchronize()
             transceiver.flushRxFifoBuffer();
         }
         #ifdef MULTI_HOP
-        //FIXME compute the time to rebroadcast
-        if(!timeout) rebroadcast(       );
+        if(!timeout) rebroadcast(measuredFrameStart+payloadPacketTime+delayRebroadcastTime);
         #endif //MULTI_HOP
     }
     transceiver.setMode(Cc2520::DEEP_SLEEP);
+    delete syncFrame;
     
     pair<int,int> r;
     if(timeout)
@@ -129,16 +156,18 @@ bool FlooderSyncNode::synchronize()
         }
         r=synchronizer.lostPacket();
         measuredFrameStart=computedFrameStart;
-    } else 
+    }
+    else 
     {
-        r=synchronizer.computeCorrection(measuredFrameStart-computedFrameStart);
+        int e = measuredFrameStart-computedFrameStart;
+        r=synchronizer.computeCorrection(e);
         missPackets=0;
     }
     clockCorrection=r.first;
     receiverWindow=r.second;
-    
-    printf("e=%d u=%d w=%d%s\n",measuredFrameStart-computedFrameStart,
-        clockCorrection,receiverWindow,timeout ? " (miss)" : "");
+    int e = measuredFrameStart-computedFrameStart;
+    printf("e=%d u=%d w=%d",e,clockCorrection,receiverWindow);
+    timeout? printf(" ---> miss\n") : printf("\n");
     
     //Correct frame start considering hops
     measuredFrameStart-=hop*retransmitDelta;
@@ -153,38 +182,61 @@ void FlooderSyncNode::resynchronize()
     #else //SEND_TIMESTAMPS
     transceiver.setAutoFCS(true);
     #endif //SEND_TIMESTAMPS
-    transceiver.setMode(Transceiver::RX);
+    transceiver.setMode(Cc2520::RX);
     miosix::ledOn();
     for(;;)
     {
         timer.setAbsoluteTimeout(0);
         timer.waitForExtEventOrTimeout();
         measuredFrameStart=timer.getExtEventTimestamp();
-        computedFrameStart=measuredFrameStart;
-        
+        computedFrameStart=measuredFrameStart;    
+        #ifndef FLOPSYNC_DEBUG
+        transceiver.isSFDRaised();
+        #else //FLOPSYNC_DEBUG
+        transceiver.isSFDRaised()?puts("--FLOPSYNC_DEBUG-- SFD raised."):puts("--FLOPSYNC_DEBUG-- No SFD raised.");
+        #endif//FLOPSYNC_DEBUG
+        //Wait end of packet
+        timer.setAbsoluteTimeout(measuredFrameStart+payloadPacketTime+fcsPacketTime+delaySendPacketTime);
+        #ifndef SEND_TIMESTAMPS
+        //Empty frame not inizialized with lenght.
+        syncFrame = new Frame(false,false,1);
+        #else
+        syncFrame = new Frame(false,true);
+        #endif //SEND_TIMESTAMPS
+        timer.waitForExtEventOrTimeout();
+        #ifndef FLOPSYNC_DEBUG
+        transceiver.isRxFrameDone();
+        #else //FLOPSYNC_DEBUG
+        transceiver.isRxFrameDone()?puts("--FLOPSYNC_DEBUG-- Rx Frame done\n"):puts("--FLOPSYNC_DEBUG-- Rx Frame not done.");
+        #endif//FLOPSYNC_DEBUG
+      
         if(transceiver.readFrame(*syncFrame)==0)
         {
             #ifndef SEND_TIMESTAMPS
-            unsigned char *payload;
-            unsigned char *fcs;  
+            unsigned char payload[1];
+            unsigned char fcs[1];  
             syncFrame->getPayload(payload);
             syncFrame->getFCS(fcs);
-            if(*payload==~*fcs)
+            if((payload[0] & fcs[0]) ==0)
             {
                 #ifndef GLOSSY
-                if(*payload==hop) break;
+                if(payload[0]==hop) break;
                 #endif //GLOSSY
+                delete syncFrame;
+            }
+            else
+            {
+                delete syncFrame;
             }
             #else //SEND_TIMESTAMPS
             unsigned long long *timestamps=&receivedTimestamp;
-            syncFrame->getPayload(timestamps);
+            f->getPayload(timestamps);
             synchronizer.timestamps(getRadioTimestamp(),measuredFrameStart);
             if(synchronizer.overwritesHardwareClock())
                 computedFrameStart=getRadioTimestamp();
             break;
             #endif //SEND_TIMESTAMPS
         }
-        
     }
     miosix::ledOff();
     transceiver.setMode(Cc2520::DEEP_SLEEP);
@@ -194,26 +246,14 @@ void FlooderSyncNode::resynchronize()
     //Correct frame start considering hops
     #ifndef GLOSSY
     measuredFrameStart-=hop*retransmitDelta;
-    #else
-    FIXME
-    #endif
+    #else// GLOSSY
+    //FIXME
+    #endif//GLOSSY
     
 }
 
-void FlooderSyncNode::rebroadcast(unsigned long long value)
+FlooderSyncNode::~FlooderSyncNode()
 {
-    transceiver.setAutoFCS(false);
-    transceiver.setMode(Transceiver::TX);  
-    #ifndef GLOSSY
-    const char packet[]={hop+1};
-    const char fcs[]={~(hop+1)};
-    syncFrame->setPayload(packet);
-    syncFrame->setFCF(fcs);
-    #endif //GLOSSY
-    transceiver.writeFrame(*syncFrame);
-    timer.setAbsoluteTriggerEvent(value);
-    wait();
-    miosix::ledOn();
-    //FIXME
-    while(!transceiver.isTxFrameDone());//wait packet frame done
+   // delete syncFrame;
 }
+

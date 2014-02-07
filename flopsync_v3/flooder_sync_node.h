@@ -93,30 +93,58 @@ public:
      */
     unsigned int getRadioTimestamp() const
     {
-        return receivedTimestamp+packetTime; //Correct for packet lenght
+        return receivedTimestamp+preamblePacketTime; //Correct for packet lenght
     }
     #endif //SEND_TIMESTAMPS
 
+    ~FlooderSyncNode();
+    
 private:  
     /**
      * Resend the synchronization packet to let other hops synchronize
      */
-    void rebroadcast(unsigned long long value);
+    void inline rebroadcast(unsigned long long value)
+    {
+        transceiver.setAutoFCS(false);
+        transceiver.setMode(Cc2520::TX);  
+        #ifndef GLOSSY
+        const unsigned char packet[]={hop+1};
+        const unsigned char fcs[]={~(hop+1)};
+        syncFrame->setPayload(packet);
+        syncFrame->setFCF(fcs);
+        #endif //GLOSSY
+        transceiver.writeFrame(*syncFrame);
+        timer.setAbsoluteTriggerEvent(value);
+        timer.wait();
+        miosix::ledOn();
+        timer.setAbsoluteTimeout(value+preamblePacketTime+delaySendPacketTime);
+        timer.waitForExtEventOrTimeout();
+        #ifndef FLOPSYNC_DEBUG
+        transceiver.isSFDRaised();
+        #else //FLOPSYNC_DEBUG
+        transceiver.isSFDRaised()?printf("--FLOPSYNC_DEBUG-- SFD raised.\n"):printf("--FLOPSYNC_DEBUG-- No SFD raised.\n");
+        #endif//FLOPSYNC_DEBUG
+        timer.setAbsoluteTimeout(value+preamblePacketTime+payloadPacketTime+fcsPacketTime+delaySendPacketTime);
+        timer.waitForExtEventOrTimeout();
+        #ifndef FLOPSYNC_DEBUG
+        transceiver.isTxFrameDone();
+        #else //FLOPSYNC_DEBUG
+        transceiver.isTxFrameDone()?printf("--FLOPSYNC_DEBUG-- Tx Frame done\n"):printf("--FLOPSYNC_DEBUG-- Tx Frame not done\n");
+        #endif//FLOPSYNC_DEBUG
+    }
     
     Timer& timer;
     Cc2520& transceiver;
     Synchronizer& synchronizer;
-    unsigned int measuredFrameStart;
-    unsigned int computedFrameStart;
+    unsigned long long measuredFrameStart;
+    unsigned long long computedFrameStart;
     int clockCorrection;
     int receiverWindow; 
     unsigned char missPackets;
     unsigned char hop;
-    #ifndef SEND_TIMESTAMPS
-    Frame syncFrame = new Frame(1,false,false,1);
-    #else
+    Frame *syncFrame;
+    #ifdef SEND_TIMESTAMPS
     unsigned long long receivedTimestamp;
-    Frame *syncFrame = new Frame(8,false,true);
     #endif //SEND_TIMESTAMPS
     
     static const unsigned char maxMissPackets=3;

@@ -55,7 +55,7 @@ public:
      * \param root a frame time (0 to nominalPeriod-1) referenced to the root node
      * \return the local absolute time time corresponding to the given root time
      */
-    unsigned int rootFrame2localAbsolute(unsigned int root);
+    unsigned long long rootFrame2localAbsolute(unsigned int root);
     
 private:
     const Synchronizer& sync;

@@ -54,19 +54,19 @@ public:
      * \return The (local) time when the synchronization packet was
      * actually received
      */
-    virtual unsigned int getMeasuredFrameStart() const=0;
+    virtual unsigned long long getMeasuredFrameStart() const=0;
     
     /**
      * \return The (local) time when the synchronization packet was
      * expected to be received
      */
-    virtual unsigned int getComputedFrameStart() const=0;
+    virtual unsigned long long getComputedFrameStart() const=0;
 
     #ifdef SEND_TIMESTAMPS
     /**
      * \return the timestamp received through the radio
      */
-    virtual unsigned int getRadioTimestamp() const=0;
+    virtual unsigned long long getRadioTimestamp() const=0;
     #endif //SEND_TIMESTAMPS
 
     /**

@@ -30,6 +30,7 @@
 
 #include "protocol_constants.h"
 #include "synchronizer.h"
+#include "../drivers/timer.h"
 
 /**
  * A PI controller feeded with timestamps

@@ -34,7 +34,7 @@ using namespace std;
 // class NonMonotonicClock
 //
 
-unsigned int NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
+unsigned long long NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
 {
     int signedRoot=root; //Conversion unsigned to signed is *required*
     int period=nominalPeriod;

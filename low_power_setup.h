@@ -3,7 +3,7 @@
 #define LOW_POWER_SETUP_H
 
 #include <miosix.h>
-#include "flopsync_v2/protocol_constants.h"
+#include "flopsync_v3/protocol_constants.h"
 
 #ifndef USE_TRANSCEIVER_CC2520 
 //inline because it's called once
@@ -31,11 +31,11 @@ inline void lowPowerSetup()
     Gpio<GPIOA_BASE,14>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOA_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN);
     
-    //Gpio<GPIOB_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 GPIO4
-    //Gpio<GPIOB_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN); //RTC clock in
+    //Gpio<GPIOB_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 GPIO3
+    //Gpio<GPIOB_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN); //send packet
     //Gpio<GPIOB_BASE,2>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 fifop_irq
     Gpio<GPIOB_BASE,3>::mode(Mode::INPUT_PULL_UP_DOWN);
-    //Gpio<GPIOB_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN); //trigger send packet
+    //Gpio<GPIOB_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN); //RTC clock in
     Gpio<GPIOB_BASE,5>::mode(Mode::INPUT_PULL_UP_DOWN); 
     Gpio<GPIOB_BASE,6>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOB_BASE,7>::mode(Mode::INPUT_PULL_UP_DOWN);
@@ -52,7 +52,7 @@ inline void lowPowerSetup()
     Gpio<GPIOC_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOC_BASE,2>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOC_BASE,3>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOC_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN);
+    //Gpio<GPIOC_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 fifo
     //Gpio<GPIOC_BASE,5>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 sfd 
     Gpio<GPIOC_BASE,6>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOC_BASE,7>::mode(Mode::INPUT_PULL_UP_DOWN);

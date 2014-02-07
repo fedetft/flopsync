@@ -9,10 +9,6 @@
 #define	TEST_CONFIG_H
 #include <miosix.h>
 
-#define USE_TRANSCEIVER_CC2520
-#define DEBUG_CC2520
-#define DEBUG_CC2520_MAP
-
 inline void lowPowerSetup()
 {
     using namespace miosix;
@@ -38,7 +34,7 @@ inline void lowPowerSetup()
     Gpio<GPIOA_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN);
     
     //Gpio<GPIOB_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 GPIO3
-    //Gpio<GPIOB_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN); //RTC clock in
+    Gpio<GPIOB_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN); //RTC clock in
     //Gpio<GPIOB_BASE,2>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 fifop_irq
     Gpio<GPIOB_BASE,3>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOB_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN);
@@ -58,7 +54,7 @@ inline void lowPowerSetup()
     Gpio<GPIOC_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOC_BASE,2>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOC_BASE,3>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOC_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN);
+    //Gpio<GPIOC_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN);
     //Gpio<GPIOC_BASE,5>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 sfd 
     Gpio<GPIOC_BASE,6>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOC_BASE,7>::mode(Mode::INPUT_PULL_UP_DOWN);

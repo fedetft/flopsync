@@ -28,7 +28,7 @@
 #ifndef TIMER_H
 #define	TIMER_H
 #include <miosix.h>
-#define TIMER_DEBUG  //uncomment only for testing
+//#define TIMER_DEBUG  //uncomment only for testing
 
 #define ccoRtc 32768ll
 #define ccoVht 24000000ll
@@ -246,7 +246,9 @@ private:
  *          4 used as Output compare for start send packet
  *          3 used as Input capture for timestamping SFD
  *          1 used as Input capture for synchronize function (input rtc clock)
- * 
+ * Note:
+ * do not use channel 1 or 2 for output compare in non frozen mode because
+ * doesn't work.
  */
 class VHT : public Timer
 {
@@ -359,7 +361,6 @@ private:
     Rtc& rtc; //The underlying rtc
     unsigned long long vhtBase;
     long long offset; //Only for setting the RTC value
-    typedef miosix::Gpio<GPIOB_BASE,1> trigger;
 };
 
 /**

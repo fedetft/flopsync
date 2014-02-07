@@ -100,7 +100,7 @@ private:
     //(to save RAM). This requires a higher scale factor, of about w/255, or 12.
     //However, this requires more iterations to approximate the square root,
     //so we're using a scale factor of 30.
-    static const int scaleFactor=30;
+    static const int scaleFactor=300;
     #endif //USE_VHT
 };
 

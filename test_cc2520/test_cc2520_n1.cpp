@@ -6,8 +6,8 @@
  */
 
 #include <cstdio>
-#include "../drivers/transceiver.h"
 #include <miosix.h>
+#include "../drivers/cc2520.h"
 #include "test_config.h"
 
 using namespace std;
@@ -34,25 +34,23 @@ int main(int argc, char** argv) {
     
     unsigned char packet[5];
     
-    Transceiver& cc2520 = Transceiver::instance();
+    Cc2520& cc2520 = Cc2520::instance();
     
     cc2520.setFrequency(2450);
-    cc2520.setMode(Transceiver::RX);
-    cc2520.setPacketLength(5);
-    
-    printf("La dimensione del pacchetto è: %d bytes\n",cc2520.getPacketLength());
+    cc2520.setMode(Cc2520::RX);
     
     greenLed::high();
     blueLed::low();
     for(;;)
     {
-        while(cc2520.irq()==false);
-        while(cc2520.isRxPacketAvailable()) 
+        //printf("Result isRxFrameDone: %d\n",cc2520.isRxFrameDone());
+        if(cc2520.isRxFrameDone()==1)
         {
             blueLed::high();
-            cc2520.readPacket(packet);
+            unsigned char len =1;
+            cc2520.readFrame(len,packet);
             printf("Ho ricevuto: %x\n",*packet);
             blueLed::low(); 
-         }
+        }
      }
 }

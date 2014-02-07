@@ -34,7 +34,7 @@ using namespace std;
 // class MonotonicClock
 //
 
-unsigned int MonotonicClock::rootFrame2localAbsolute(unsigned int root)
+unsigned long long MonotonicClock::rootFrame2localAbsolute(unsigned int root)
 {
     #ifdef SEND_TIMESTAMPS
     //Can't have a monotonic clock with a sync scheme that overwrites the RTC

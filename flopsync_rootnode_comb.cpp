@@ -26,11 +26,12 @@
  ***************************************************************************/
 
 #include <cstdio>
-#include "drivers/transceiver.h"
-#include "drivers/rtc.h"
-#include "flopsync_v2/protocol_constants.h"
-#include "flopsync_v2/flooder_root_node.h"
-#include "flopsync_v2/synchronizer.h"
+#include "drivers/cc2520.h"
+#include "drivers/timer.h"
+#include "drivers/frame.h"
+#include "flopsync_v3/protocol_constants.h"
+#include "flopsync_v3/flooder_root_node.h"
+#include "flopsync_v3/synchronizer.h"
 #include "low_power_setup.h"
 
 using namespace std;
@@ -42,63 +43,64 @@ int main()
     lowPowerSetup();
     blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
-    const unsigned char address[]={0xab, 0xcd, 0xef};
-    Transceiver& tr=Transceiver::instance();
-    tr.setAddress(address);
-    tr.setFrequency(2450);
+    Cc2520& transceiver=Cc2520::instance();
+    transceiver.setFrequency(2450);
     #ifndef USE_VHT
-    Timer& rtc=Rtc::instance();
+    Timer& timer=Rtc::instance();
     #else //USE_VHT
-    Timer& rtc=VHT::instance();
+    Timer& timer=VHT::instance();
     #endif //USE_VHT
-    FlooderRootNode flooder(rtc);
-    
-    AuxiliaryTimer& timer=AuxiliaryTimer::instance();
+    FlooderRootNode flooder(timer);
+   
     for(;;)
     {
         flooder.synchronize();
         
         puts("----");
-        unsigned int frameStart=flooder.getMeasuredFrameStart();
-        for(unsigned int i=combSpacing,j=0;i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
-        {
-            unsigned int wakeupTime=frameStart+i-
-                (jitterAbsorption+receiverTurnOn+w+longPacketTime);
-            rtc.setAbsoluteWakeupSleep(wakeupTime);
-            rtc.sleep();
-            rtc.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
-            tr.setMode(Transceiver::RX);
-            tr.setPacketLength(sizeof(Packet2));
-            rtc.wait();
-            tr.startReceiving();
-            timer.initTimeoutTimer(toAuxiliaryTimer(receiverTurnOn+2*w+longPacketTime));
-            bool timeout;
-            unsigned int measuredTime;
-            Packet2 packet;
-            for(;;)
-            {
-                timeout=timer.waitForPacketOrTimeout();
-                measuredTime=rtc.getPacketTimestamp();
-                if(timeout) break;
-                tr.readPacket(&packet);
-                if(packet.check==0 || (packet.check & 0xf0)==0x10) break;
-            }
-            timer.stopTimeoutTimer();
-            tr.setMode(Transceiver::SLEEP);
-            if(timeout) printf("node%d timeout\n",(j % 3)+1);
-            else {
-                if(j<3) printf("e=%d u=%d w=%d%s\n",packet.e,packet.u,packet.w,
-                    (packet.miss && packet.check==0) ? "(miss)" : "");
-                printf("node%d.e=%d",(j % 3)+1,measuredTime-(frameStart+i));
-                if(packet.check==0) printf("\n");
-                else {
-                    unsigned short temperature=packet.check & 0x0f;
-                    temperature<<=8;
-                    temperature|=packet.miss;
-                    
-                    printf(" t=%d\n",temperature);
-                }
-            }
-        }
+        
+        
+//        unsigned int frameStart=flooder.getMeasuredFrameStart();
+//        for(unsigned int i=combSpacing,j=0;i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
+//        {
+//            unsigned int wakeupTime=frameStart+i-
+//                (jitterAbsorption+receiverTurnOn+w+preamblePacketTime);
+//            timer.setAbsoluteWakeupSleep(wakeupTime);
+//            timer.sleep();
+//            timer.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
+//            transceiver.setMode(Cc2520::RX);
+//            transceiver.setAutoFCS(true);
+//            timer.wait();
+//            timer.setAbsoluteTimeout(receiverTurnOn+2*w+preamblePacketTime);
+//            bool timeout;
+//            unsigned int measuredTime;
+//            Packet packet;
+//            for(;;)
+//            {
+//                timeout=timer.waitForExtEventOrTimeout();
+//                measuredTime=timer.getExtEventTimestamp();
+//                if(timeout) break;
+//                while(!transceiver.isRxFrameDone()); //FIXME
+//                unsigned char len=sizeof(packet);
+//                unsigned char *data=reinterpret_cast<unsigned char*>(&packet);
+//                transceiver.readFrame(len,data);
+//                
+//                if(packet.check==0 || (packet.check & 0xf0)==0x10) break;
+//            }
+//            transceiver.setMode(Cc2520::DEEP_SLEEP);
+//            if(timeout) printf("node%d timeout\n",(j % 3)+1);
+//            else {
+//                if(j<3) printf("e=%d u=%d w=%d%s\n",packet.e,packet.u,packet.w,
+//                    (packet.miss && packet.check==0) ? "(miss)" : "");
+//                printf("node%d.e=%d",(j % 3)+1,measuredTime-(frameStart+i));
+//                if(packet.check==0) printf("\n");
+//                else {
+//                    unsigned short temperature=packet.check & 0x0f;
+//                    temperature<<=8;
+//                    temperature|=packet.miss;
+//                    
+//                    printf(" t=%d\n",temperature);
+//                }
+//            }
+//        }
     }
 }

@@ -30,6 +30,7 @@
 
 #include "protocol_constants.h"
 #include "synchronizer.h"
+#include "../drivers/timer.h"
 
 /**
  * Dummy synchronizer that does not perform skew/drift compensation.

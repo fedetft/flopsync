@@ -313,8 +313,10 @@ int Cc2520::writeFrame(const Frame& frame)
     #endif //CC2520_DEBUG
     for(i=frame.begin(); i<end; i++) {
         cc2520SpiSendRecv(*i);
+        #ifdef CC2520_DEBUG
+            printf("--CC2520_DEBUG-- Byte to send: %x \n",*i);  
+        #endif //CC2520_DEBUG
     }
-        
     cc2520::cs::high();
     delayUs(1);
     if(isExcRaised(CC2520_EXC_TX_OVERFLOW,status)) return 1; //exc tx overflow
@@ -349,8 +351,8 @@ int Cc2520::readFrame(unsigned char& length, unsigned char* pframe) const
     if(autoFCS)
     {
         fcs=cc2520SpiSendRecv();
-         #ifdef CC2520_DEBUG
-            printf("--CC2520_DEBUG-- Second byte RSSI: %ddBm\n",((char)fcs)-76);
+        #ifdef CC2520_DEBUG
+            printf("--CC2520_DEBUG-- First byte RSSI: %ddBm\n",((char)fcs)-76);
         #endif //CC2520_DEBUG
         fcs=cc2520SpiSendRecv();
         #ifdef CC2520_DEBUG

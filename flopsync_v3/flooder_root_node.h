@@ -45,7 +45,7 @@ public:
      * Constructor
      * \param rtc the main timer
      */
-    FlooderRootNode(Timer& rtc);
+    FlooderRootNode(Timer& timer);
 
     /**
      * Needs to be periodically called to send the synchronization packet.
@@ -75,17 +75,16 @@ public:
     unsigned int getRadioTimestamp() const { return frameStart; }
     #endif //SEND_TIMESTAMPS
 
+    ~FlooderRootNode();
+
+    
 private:
     Timer& timer;
     Cc2520& transceiver;
     unsigned long long frameStart;
     unsigned long long wakeupTime;
-    #ifndef SEND_TIMESTAMPS
-    Frame syncFrame = new Frame(1,false,false,1);
-    #else
-    unsigned int receivedTimestamp;
-    Frame *syncFrame = new Frame(8,false,true);
-    #endif //SEND_TIMESTAMPS
+    Frame *syncFrame;
+    
 };
 
 #endif //FLOODER_ROOT_NODE_H

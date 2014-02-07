@@ -28,8 +28,6 @@
 #ifndef PROTOCOL_CONSTANTS_H
 #define	PROTOCOL_CONSTANTS_H
 
-#include "../drivers/timer.h"
-
 // Define this to test the regulator performance with the relative clock model,
 // while comment it out to test the absolute clock model
 //#define RELATIVE_CLOCK //@@ Filled in by mkpackage.pl
@@ -57,6 +55,13 @@
 //Send timestamps in sync packets, used to make a comparison with existing
 //WSN sync schemes.
 //#define SEND_TIMESTAMPS //@@ Filled in by mkpackage.pl
+
+//Enable glossy flooding
+//#define GLOSSY //@@ Filled in by mkpackage.pl
+
+///This is for enable debug flopsync
+//#define FLOPSYNC_DEBUG
+//#include <cstdio>
 
 // Give a name to the experiment being done
 #define experimentName "" //@@ Filled in by mkpackage.pl
@@ -109,25 +114,41 @@ const unsigned int radioBoot=static_cast<int>(0.000392f*hz+0.5f);
 const unsigned int receiverTurnOn=0;
 
 //Time required to read the timestamp in the packet and overwrite the node's
-//hardwar clock (38us), measured with an oscilloscope. Used if SEND_TIMESTAMPS
+//hardware clock (38us), measured with an oscilloscope. Used if SEND_TIMESTAMPS
 const unsigned int overwriteClockTime=static_cast<int>(0.000038f*hz+0.5f);
 
 //Time to send a 1..8 byte packet via SPI @ 6MHz to the cc2520 (50us)
 //Computed as the missing piece in the difference between frameStart and
 //wakeupTime in FlooderRootNode. This is tricky to get right, especially with VHT.
-const unsigned int spiPktSend=static_cast<int>(0.000050f*hz+0.5f);
+//const unsigned int spiPktSend=static_cast<int>(0.000050f*hz+0.5f);
 
 #ifndef USE_VHT
 //Additonal delay to absorb jitter (must be greater than pllBoot+radioBoot)
-const unsigned int jitterAbsorption=static_cast<int>(0.0015f*hz+0.5f);
+const unsigned int jitterAbsorption=static_cast<int>(0.02f*hz+0.5f); //FIXME
 #else //USE_VHT
 //Additonal delay to absorb jitter (must be greater than pllBoot+radioBoot)
 //Also needs to account for vht resynchronization time
-const unsigned int jitterAbsorption=static_cast<int>(0.002f*hz+0.5f);
+const unsigned int jitterAbsorption=static_cast<int>(0.03f*hz+0.5f);  //FIXME
 #endif //USE_VHT
 
-//Time to transfer a 4byte of preamble on an 250Kbps channel (384us)
-const unsigned int preamblePacketTime=static_cast<int>(0.000384f*hz+0.5f);
+//Time to transfer a 4 preable + 1 sfd byte on an 250Kbps channel (160us)
+const unsigned int preamblePacketTime=static_cast<int>(0.00016f*hz+0.5f); 
+ 
+#ifndef SEND_TIMESTAMPS
+//Time to transfer a 1byte of payload on an 250Kbps channel (32us)
+const unsigned int payloadPacketTime=static_cast<int>(0.000032f*hz+0.5f);
+#else //SEND_TIMESTAMPS
+//Time to transfer a 8byte of payload on an 250Kbps channel (256us)
+const unsigned int payloadPacketTime=static_cast<int>(0.000256f*hz+0.5f);
+#endif//SEND_TIMESTAMPS
+
+#ifndef SEND_TIMESTAMPS
+//Time to transfer a 1byte of fcs on an 250Kbps channel (32us)
+const unsigned int fcsPacketTime=static_cast<int>(0.000032*hz+0.5f);
+#else //SEND_TIMESTAMPS
+//Time to transfer a 2byte of fcs on an 250Kbps channel (64us)
+const unsigned int fcsPacketTime=static_cast<int>(0.000064f*hz+0.5f);
+#endif//SEND_TIMESTAMPS
 
 //Time to transfer a 4byte packet (+8byte overhead) on an 250Kbps channel (384us)
 const unsigned int packetTime=static_cast<int>(0.000384f*hz+0.5f);
@@ -138,23 +159,15 @@ const unsigned int smallPacketTime=static_cast<int>(0.000288f*hz+0.5f);
 //Time to transfer a 8byte packet (+8byte overhead) on an 250Kbps channel (512us)
 const unsigned int longPacketTime=static_cast<int>(0.000512f*hz+0.5f);
 
+//Time to wait before forwarding the packet
+const unsigned int delayRebroadcastTime=static_cast<int>(0.0005f*hz+0.5f); //FIXME
 
+//Waiting time over the reception of the nominal time of packet
+const unsigned int delaySendPacketTime=static_cast<int>(0.0003f*hz+0.5f);  //FIXME
 
-//Packet containing synchronization quality statistics, to send to base station
-// (legacy, not used)
-struct Packet
-{ 
-    short e;
-    short u; 
-    short w;
-    unsigned short misspackets;
-    unsigned short unsynctime;
-    unsigned short sequence;
-    unsigned short check;
-};
 
 //New sync quality packet
-struct Packet2
+struct Packet
 {
     short e;
     short u;
@@ -165,9 +178,6 @@ struct Packet2
     unsigned char check;
     //unsigned short t;
 };
-
-//When to send the synchronization quality statistics packet (legacy, not used)
-const unsigned int txtime=static_cast<int>(30*hz+0.5f);
 
 //Comb spacing, for intra-frame error measure
 const unsigned int combSpacing=static_cast<int>(0.5f*hz+0.5f);
