@@ -26,12 +26,8 @@
  ***************************************************************************/
 
 #include <cassert>
-#include <miosix.h>
 #include <../miosix/kernel/scheduler/scheduler.h>
 #include "timer.h"
-#ifdef TIMER_DEBUG
-#include <cstdio>
-#endif//TIMER_DEBUG
 
 using namespace miosix;
 
@@ -62,7 +58,7 @@ typedef Gpio<GPIOB_BASE,1> trigger;
 typedef Gpio<GPIOC_BASE,13> clockout;
 typedef Gpio<GPIOB_BASE,4> clockin;
 
-#ifdef TIMER_DEBUG
+#if TIMER_DEBUG ==4
 typeTimer info;
 #endif //TIMER_DEBUG
 
@@ -198,7 +194,7 @@ void __attribute__((used)) tim3handlerImpl()
     //IRQ input capture channel 3
     if((TIM3->SR & TIM_SR_CC3IF) && (TIM3->DIER & TIM_DIER_CC3IE))
     {
-        #ifdef TIMER_DEBUG
+        #if TIMER_DEBUG ==4
         info.ts=vhtOverflows|TIM3->CCR3;
         info.ovf= vhtOverflows;
         info.sr = TIM3->SR;
@@ -208,7 +204,7 @@ void __attribute__((used)) tim3handlerImpl()
         unsigned short timeCapture=TIM3->CCR3;
         timestampEvent=vhtOverflows|timeCapture;
       
-        #ifdef TIMER_DEBUG
+        #if TIMER_DEBUG ==4
         info.cnt=TIM3->CNT;
         #endif //TIMER_DEBUG
         //IRQ overflow
@@ -216,7 +212,7 @@ void __attribute__((used)) tim3handlerImpl()
             timestampEvent+=1<<16;
         wakeup=true;
         
-        #ifdef TIMER_DEBUG
+        #if TIMER_DEBUG ==4
         info.cntFirstUIF=TIM3->CNT;
         info.srFirstUIF=TIM3->SR;
         #endif //TIMER_DEBUG
@@ -482,7 +478,7 @@ void setEventHandler(void (*handler)(unsigned int))
 // class VHT
 //
 
-#ifdef TIMER_DEBUG
+#if TIMER_DEBUG==4
 typeTimer VHT::getInfo() const
 {
     return info;

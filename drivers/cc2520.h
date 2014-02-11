@@ -27,11 +27,15 @@
 
 #ifndef CC2520_H
 #define	CC2520_H
-//#define CC2520_DEBUG //uncomment only for testing
 
-#ifdef CC2520_DEBUG
+#define CC2520_DEBUG 0 // 0 no debug; 1 soft debub; 2 pedantic debug; 4 for test;
+
+#if CC2520_DEBUG >0
 #include <cstdio>
 #endif //CC2520_DEBUG
+
+
+
 
 #include "frame.h"
 /**

@@ -223,7 +223,7 @@ static void inline testVhtMonotonic()
     unsigned long long prec=0;
     unsigned long long last=0;
 
-    #ifdef TIMER_DEBUG
+    #if TIMER_DEBUG ==4 
     typeTimer precInfo;
     typeTimer lastInfo;
     #endif//TIMER_DEBUG
@@ -235,14 +235,14 @@ static void inline testVhtMonotonic()
     {        
         blueLed::low(); 
         prec = last;
-        #ifdef TIMER_DEBUG
+        #if TIMER_DEBUG ==4
         //precInfo = lastInfo;
         #endif//TIMER_DEBUG
         vht.setAbsoluteTimeout(0); 
         vht.waitForExtEventOrTimeout();
         blueLed::high(); 
         last = vht.getExtEventTimestamp();
-        #ifndef TIMER_DEBUG
+        #if TIMER_DEBUG < 4
         assert(last>prec);
         #else//TIMER_DEBUG
         lastInfo = vht.getInfo();

@@ -28,7 +28,11 @@
 #ifndef TIMER_H
 #define	TIMER_H
 #include <miosix.h>
-//#define TIMER_DEBUG  //uncomment only for testing
+#if TIMER_DEBUG >0
+#include <cstdio> 
+#endif//TIMER_DEBUG
+
+#define TIMER_DEBUG 0 // 0 no debug; 1 soft debub; 2 pedantic debug; 4 for test;
 
 #define ccoRtc 32768ll
 #define ccoVht 24000000ll

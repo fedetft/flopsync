@@ -60,8 +60,8 @@
 //#define GLOSSY //@@ Filled in by mkpackage.pl
 
 ///This is for enable debug flopsync
-//#define FLOPSYNC_DEBUG
-//#include <cstdio>
+#define FLOPSYNC_DEBUG  1
+#include <cstdio>
 
 // Give a name to the experiment being done
 #define experimentName "" //@@ Filled in by mkpackage.pl
@@ -69,6 +69,12 @@
 #if defined(MULTI_HOP) && defined(SEND_TIMESTAMPS)
 #error "Sending timestamps in sync packets with multihop is unimplemented"
 #endif
+
+//Channel bandwidth 250 Kbps
+const unsigned int channelbps=250000;
+
+//Channel bandwidth 6 Mbps
+const unsigned int spibps=250000;
 
 #ifndef USE_VHT
 const unsigned int hz=16384;
@@ -107,15 +113,20 @@ const unsigned int minw=static_cast<int>(0.00006f*hz+0.5f);
 //received, measured with an oscilloscope
 const unsigned int retransmitDelta=static_cast<int>(0.000252f*hz+0.5f);
 
-//Time for cc2520 to start its clock oscillator (200+192us)
-const unsigned int radioBoot=static_cast<int>(0.000392f*hz+0.5f);
+//Time for cc2520 to start its clock oscillator (200us) + time to init cc2520 (200us)
+const unsigned int radioBoot=static_cast<int>(0.0004f*hz+0.5f); //FIXME
 
-//Time for the cc2520 to start receiving after a call to startReceiving() (0s)
-const unsigned int receiverTurnOn=0;
+//Transmission of preamble begins 192us after STXON
+const unsigned int txTurnaroundTime=static_cast<int>(0.000192*hz+0.5f); 
+
+//Receiver is ready 192us after RX are enabled
+const unsigned int rxTurnaroundTime=static_cast<int>(0.000192*hz+0.5f);
 
 //Time required to read the timestamp in the packet and overwrite the node's
 //hardware clock (38us), measured with an oscilloscope. Used if SEND_TIMESTAMPS
 const unsigned int overwriteClockTime=static_cast<int>(0.000038f*hz+0.5f);
+
+
 
 //Time to send a 1..8 byte packet via SPI @ 6MHz to the cc2520 (50us)
 //Computed as the missing piece in the difference between frameStart and
@@ -123,41 +134,43 @@ const unsigned int overwriteClockTime=static_cast<int>(0.000038f*hz+0.5f);
 //const unsigned int spiPktSend=static_cast<int>(0.000050f*hz+0.5f);
 
 #ifndef USE_VHT
-//Additonal delay to absorb jitter (must be greater than pllBoot+radioBoot)
-const unsigned int jitterAbsorption=static_cast<int>(0.02f*hz+0.5f); //FIXME
+//Additional delay to absorb jitter (must be greater than pllBoot+radioBoot)
+const unsigned int jitterHWAbsorption=static_cast<int>(0.002f*hz+0.5f); //FIXME
 #else //USE_VHT
-//Additonal delay to absorb jitter (must be greater than pllBoot+radioBoot)
+//Additional delay to absorb jitter (must be greater than pllBoot+radioBoot)
 //Also needs to account for vht resynchronization time
-const unsigned int jitterAbsorption=static_cast<int>(0.03f*hz+0.5f);  //FIXME
+const unsigned int jitterHWAbsorption=static_cast<int>(0.004f*hz+0.5f);  //FIXME
 #endif //USE_VHT
 
-//Time to transfer a 4 preable + 1 sfd byte on an 250Kbps channel (160us)
-const unsigned int preamblePacketTime=static_cast<int>(0.00016f*hz+0.5f); 
+//Additional delay to absorb jitter software (command transfer to spi + time to process instruction)
+const unsigned int jitterSWAbsorption=static_cast<int>(0.001f*hz+0.5f); //FIXME
+
+//Time to transfer a 4 preamble + 1 sfd byte on an 250Kbps channel
+const unsigned int preamblePacketTime=static_cast<int>(5*8/channelbps*hz+0.5f); 
  
 #ifndef SEND_TIMESTAMPS
-//Time to transfer a 1byte of payload on an 250Kbps channel (32us)
-const unsigned int payloadPacketTime=static_cast<int>(0.000032f*hz+0.5f);
+//Time to transfer a 1byte len 1byte payload 1byte fcs on an 6Mbps channel (1byte of LEN 1 payload)
+const unsigned int spiTime=static_cast<int>(3*8/spibps*hz+0.5f);
+//Time to transfer a 2byte of payload on an 250Kbps channel (1byte of LEN 1 payload)
+const unsigned int payloadPacketTime=static_cast<int>(2*8/channelbps*hz+0.5f);
+//Time to transfer a 1byte of fcs on an 250Kbps channel 
+const unsigned int fcsPacketTime=static_cast<int>(1*8/channelbps*hz+0.5f);
+//Time to transfer piggybacking
+const unsigned int piggybackingTime=static_cast<int>(0*8/channelbps*hz+0.5f);
+//Time to transfer full packet
+const unsigned int packetTime=static_cast<int>(8*8/channelbps*hz+0.5f);
 #else //SEND_TIMESTAMPS
-//Time to transfer a 8byte of payload on an 250Kbps channel (256us)
-const unsigned int payloadPacketTime=static_cast<int>(0.000256f*hz+0.5f);
+//Time to transfer a 1byte len 8byte payload on an 6Mbps channel (1byte of LEN 1 payload)
+const unsigned int spiTime=static_cast<int>(9*8/spibps*hz+0.5f);
+//Time to transfer a 9byte of payload on an 250Kbps channel (1byte of LEN 8 payload)
+const unsigned int payloadPacketTime=static_cast<int>(9*8/channelbps*hz+0.5f);
+//Time to transfer a 2byte of fcs on an 250Kbps channel 
+const unsigned int fcsPacketTime=static_cast<int>(2*8/channelbps*hz+0.5f);
+//Time to transfer piggybacking
+const unsigned int piggybackingTime=static_cast<int>(0*8/channelbps*hz+0.5f);
+//Time to transfer full packet
+const unsigned int packetTime=static_cast<int>(16*8/channelbps*hz+0.5f);
 #endif//SEND_TIMESTAMPS
-
-#ifndef SEND_TIMESTAMPS
-//Time to transfer a 1byte of fcs on an 250Kbps channel (32us)
-const unsigned int fcsPacketTime=static_cast<int>(0.000032*hz+0.5f);
-#else //SEND_TIMESTAMPS
-//Time to transfer a 2byte of fcs on an 250Kbps channel (64us)
-const unsigned int fcsPacketTime=static_cast<int>(0.000064f*hz+0.5f);
-#endif//SEND_TIMESTAMPS
-
-//Time to transfer a 4byte packet (+8byte overhead) on an 250Kbps channel (384us)
-const unsigned int packetTime=static_cast<int>(0.000384f*hz+0.5f);
-
-//Time to transfer a 1byte packet (+8byte overhead) on an 250Kbps channel (288us)
-const unsigned int smallPacketTime=static_cast<int>(0.000288f*hz+0.5f);
-
-//Time to transfer a 8byte packet (+8byte overhead) on an 250Kbps channel (512us)
-const unsigned int longPacketTime=static_cast<int>(0.000512f*hz+0.5f);
 
 //Time to wait before forwarding the packet
 const unsigned int delayRebroadcastTime=static_cast<int>(0.0005f*hz+0.5f); //FIXME

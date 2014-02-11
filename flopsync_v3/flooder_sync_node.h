@@ -119,17 +119,17 @@ private:
         miosix::ledOn();
         timer.setAbsoluteTimeout(value+preamblePacketTime+delaySendPacketTime);
         timer.waitForExtEventOrTimeout();
-        #ifndef FLOPSYNC_DEBUG
+        #if FLOPSYNC_DEBUG <2
         transceiver.isSFDRaised();
         #else //FLOPSYNC_DEBUG
-        transceiver.isSFDRaised()?printf("--FLOPSYNC_DEBUG-- SFD raised.\n"):printf("--FLOPSYNC_DEBUG-- No SFD raised.\n");
+        transceiver.isSFDRaised()?puts("--FLOPSYNC_DEBUG-- SFD raised."):puts("--FLOPSYNC_DEBUG-- No SFD raised.");
         #endif//FLOPSYNC_DEBUG
         timer.setAbsoluteTimeout(value+preamblePacketTime+payloadPacketTime+fcsPacketTime+delaySendPacketTime);
         timer.waitForExtEventOrTimeout();
-        #ifndef FLOPSYNC_DEBUG
+        #if FLOPSYNC_DEBUG <2
         transceiver.isTxFrameDone();
         #else //FLOPSYNC_DEBUG
-        transceiver.isTxFrameDone()?printf("--FLOPSYNC_DEBUG-- Tx Frame done\n"):printf("--FLOPSYNC_DEBUG-- Tx Frame not done\n");
+        transceiver.isTxFrameDone()?puts("--FLOPSYNC_DEBUG-- Tx Frame done."):puts("--FLOPSYNC_DEBUG-- Tx Frame not done.");
         #endif//FLOPSYNC_DEBUG
     }
     
