@@ -117,15 +117,15 @@ private:
         timer.setAbsoluteTriggerEvent(value);
         timer.wait();
         miosix::ledOn();
-        timer.setAbsoluteTimeout(value+preamblePacketTime+delaySendPacketTime);
-        timer.waitForExtEventOrTimeout();
+        timer.setAbsoluteTimeoutForEvent(value+preamblePacketTime+delaySendPacketTime);
+        timer.wait();
         #if FLOPSYNC_DEBUG <2
         transceiver.isSFDRaised();
         #else //FLOPSYNC_DEBUG
         transceiver.isSFDRaised()?puts("--FLOPSYNC_DEBUG-- SFD raised."):puts("--FLOPSYNC_DEBUG-- No SFD raised.");
         #endif//FLOPSYNC_DEBUG
-        timer.setAbsoluteTimeout(value+preamblePacketTime+payloadPacketTime+fcsPacketTime+delaySendPacketTime);
-        timer.waitForExtEventOrTimeout();
+        timer.setAbsoluteTimeoutForEvent(value+preamblePacketTime+payloadPacketTime+fcsPacketTime+delaySendPacketTime);
+        timer.wait();
         #if FLOPSYNC_DEBUG <2
         transceiver.isTxFrameDone();
         #else //FLOPSYNC_DEBUG
@@ -146,6 +146,14 @@ private:
     #ifdef SEND_TIMESTAMPS
     unsigned long long receivedTimestamp;
     #endif //SEND_TIMESTAMPS
+    
+    #if FLOPSYNC_DEBUG >0
+    typedef miosix::Gpio<GPIOA_BASE,11> wakeup;
+    typedef miosix::Gpio<GPIOA_BASE,12> pll;
+    typedef miosix::Gpio<GPIOC_BASE,10> syncVht;
+    typedef miosix::Gpio<GPIOC_BASE,11> xoscRadioBoot;
+    typedef miosix::Gpio<GPIOC_BASE,12> jitterHW;
+    #endif //FLOPSYNC_DEBUG  
     
     static const unsigned char maxMissPackets=3;
 };

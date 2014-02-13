@@ -32,7 +32,7 @@
 #include <cstdio> 
 #endif//TIMER_DEBUG
 
-#define TIMER_DEBUG 0 // 0 no debug; 1 soft debub; 2 pedantic debug; 4 for test;
+#define TIMER_DEBUG 1 // 0 no debug; 1 soft debug; 2 pedantic debug; 4 for test;
 
 #define ccoRtc 32768ll
 #define ccoVht 24000000ll
@@ -41,7 +41,7 @@
 #define rtcFreq ccoRtc/(rtcPrescaler+1)
 #define vhtFreq ccoVht/(vhtPrescaler+1)
 
-#ifdef TIMER_DEBUG
+#if TIMER_DEBUG==4
 struct typeTimer
 {
     volatile unsigned long long ovf;
@@ -51,7 +51,6 @@ struct typeTimer
     volatile unsigned short cntFirstUIF;
     volatile unsigned short srFirstUIF;
 };
-
 #endif //TIMER_DEUB
 
 class Timer
@@ -104,8 +103,9 @@ public:
      * Wait for the interrupt.
      * You must have called setAbsoluteWakeupWait() before this 
      * or setAbsoluteTriggerEvent().
+     * \return true if timeout occurs false otherwise
      */
-    virtual void wait()=0;
+    virtual bool wait()=0;
     
     /**
      * Set the timer interrupt to occur at an absolute timeout if no external 
@@ -115,15 +115,7 @@ public:
      * external event will be asserts.
      * If value of wakeup is in the past no interrupt will be set.
      */
-    virtual void setAbsoluteTimeout(unsigned long long value)=0;
-    
-    /**
-     * Return when either an external event arrived or the timeout value set by
-     * setAbsoluteWakeupWait expired.
-     * You must have called setAbsoluteTimeout() before this.
-     * \return true if timeout occurred, false if packet arrived
-     */
-    virtual bool waitForExtEventOrTimeout()=0;
+    virtual void setAbsoluteTimeoutForEvent(unsigned long long value)=0;
     
     /**
      * Set the timer timer interrupt to occur at an absolute value
@@ -201,8 +193,9 @@ public:
      * Wait for the interrupt.
      * You must have called setAbsoluteWakeupWait() before this 
      * or setAbsoluteTriggerEvent().
+     * \return true if timeout occurs false otherwise
      */
-    void wait();
+    bool wait();
     
      /**
      * Set the timer interrupt to occur at an absolute timeout if no external 
@@ -212,15 +205,7 @@ public:
      * external event will be asserts.
      * If value of wakeup is in the past no interrupt will be set.
      */
-    void setAbsoluteTimeout(unsigned long long value);
-    
-    /**
-     * Return when either an external event arrived or the timeout value set by
-     * setAbsoluteWakeupWait expired.
-     * You must have called setAbsoluteTimeout() before this.
-     * \return true if timeout occurred, false if packet arrived
-     */
-    bool waitForExtEventOrTimeout();
+    void setAbsoluteTimeoutForEvent(unsigned long long value);
     
     /**
      * Set the timer timer interrupt to occur at an absolute value
@@ -304,8 +289,9 @@ public:
      * Wait for the interrupt.
      * You must have called setAbsoluteWakeupWait() before this 
      * or setAbsoluteTriggerEvent().
+     * \return true if timeout occurs false otherwise
      */
-    void wait();
+    bool wait();
     
     /**
      * Set the timer interrupt to occur at an absolute timeout if no external 
@@ -315,15 +301,7 @@ public:
      * external event will be asserts.
      * If value of wakeup is in the past no interrupt will be set.
      */
-    void setAbsoluteTimeout(unsigned long long value);
-    
-    /**
-     * Return when either an external event arrived or the timeout value set by
-     * setAbsoluteWakeupWait expired.
-     * You must have called setAbsoluteTimeout() before this.
-     * \return true if timeout occurred, false if packet arrived
-     */
-    bool waitForExtEventOrTimeout();
+    void setAbsoluteTimeoutForEvent(unsigned long long value);
     
     /**
      * Set the timer timer interrupt to occur at an absolute value
@@ -344,7 +322,7 @@ public:
      */
     void synchronizeWithRtc();
     
-    #ifdef TIMER_DEBUG
+    #if TIMER_DEBUG==4
     typeTimer getInfo()const;
     #endif //TIMER_DEBUG
     

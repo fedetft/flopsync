@@ -60,8 +60,8 @@ static void inline testRtcWaitExtEventOrTimeout()
     for(;;)
     {        
         blueLed::low(); 
-        rtc.setAbsoluteTimeout((0xFFFFFFFFll-5/2*rtcFreq) + (rtcFreq*i)); //un secondo
-        timeout=rtc.waitForExtEventOrTimeout();
+        rtc.setAbsoluteTimeoutForEvent((0xFFFFFFFFll-5/2*rtcFreq) + (rtcFreq*i)); //un secondo
+        timeout=rtc.wait();
         blueLed::high(); 
         timeout?
             printf("Timestamp:  %016llX\n",rtc.getValue()):
@@ -177,8 +177,8 @@ static void inline testVhtWaitExtEventOrTimeout()
     for(;;)
     {        
         blueLed::low(); 
-        vht.setAbsoluteTimeout(vhtFreq*1/2+vhtFreq*i); //un secondo
-        timeout=vht.waitForExtEventOrTimeout();
+        vht.setAbsoluteTimeoutForEvent(vhtFreq*1/2+vhtFreq*i); //un secondo
+        timeout=vht.wait();
         blueLed::high(); 
         timeout?
             printf("Timestamp:  %016llX\n",vht.getValue()):
@@ -204,8 +204,8 @@ static void inline testVhtWaitExtEvent()
     for(;;)
     {        
         blueLed::low(); 
-        vht.setAbsoluteTimeout(0); 
-        timeout=vht.waitForExtEventOrTimeout();
+        vht.setAbsoluteTimeoutForEvent(0); 
+        timeout=vht.wait();
         blueLed::high(); 
         timeout?
             printf("Timestamp:  %016llX\n",vht.getValue()):
@@ -238,8 +238,8 @@ static void inline testVhtMonotonic()
         #if TIMER_DEBUG ==4
         //precInfo = lastInfo;
         #endif//TIMER_DEBUG
-        vht.setAbsoluteTimeout(0); 
-        vht.waitForExtEventOrTimeout();
+        vht.setAbsoluteTimeoutForEvent(0); 
+        vht.wait();
         blueLed::high(); 
         last = vht.getExtEventTimestamp();
         #if TIMER_DEBUG < 4
@@ -295,6 +295,27 @@ static void inline testVhtTriggerEvent()
        
         printf("Timestamp:  %016llX\n",vht.getValue());
         //TIM3->CCER &=~TIM_CCER_CC4E;
+        i++;
+    }
+}
+
+
+static void inline testVhtTriggerEventOscilloscope()
+{
+    puts("---------------Test timer VHT trigger event----------------");
+    lowPowerSetup();
+    blueLed::mode(miosix::Mode::INPUT);
+    greenLed::mode(miosix::Mode::OUTPUT);
+    userButton::mode(miosix::Mode::OUTPUT);
+    greenLed::high();
+    Timer& vht=VHT::instance();
+    vht.setValue(0); //mezzo secondo 
+    printf("Timestamp:  %016llX\n",vht.getValue());
+    int i=1;
+    for(;;)
+    {        
+        vht.setAbsoluteTriggerEvent(0.01*vhtFreq*i); // 10 ms
+        vht.wait();
         i++;
     }
 }
@@ -358,6 +379,7 @@ int main(int argc, char** argv) {
     //testVhtWaitExtEvent();
     //testVhtMonotonic();
     //testVhtEvent();
-    testVhtTriggerEvent();
+    //testVhtTriggerEvent();
+    testVhtTriggerEventOscilloscope();
     //testOutputCompare();
 }

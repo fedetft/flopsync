@@ -71,112 +71,111 @@
 #endif
 
 //Channel bandwidth 250 Kbps
-const unsigned int channelbps=250000;
+const unsigned long long channelbps=250000;
 
 //Channel bandwidth 6 Mbps
-const unsigned int spibps=250000;
+const unsigned long long spibps=6000000;
 
 #ifndef USE_VHT
-const unsigned int hz=16384;
+const unsigned long long hz=16384;
 #else //USE_VHT
-const unsigned int hz=24000000;
+const unsigned long long hz=24000000;
 #endif //USE_VHT
 
 //Sync period
-const unsigned int nominalPeriod=static_cast<int>(60*hz+0.5f); //@@ Filled in by mkpackage.pl
+const unsigned long long nominalPeriod=static_cast<unsigned long long>(60*hz+0.5f); //@@ Filled in by mkpackage.pl
 
 //In a real implementation this should need to be computed randomly per node
 //(legacy, not used)
 #ifndef SECOND_HOP
-const unsigned int retransmitPoint=static_cast<int>(0.333f*nominalPeriod+0.5f);
+const unsigned long long retransmitPoint=static_cast<unsigned long long>(0.333f*nominalPeriod+0.5f);
 #else //SECOND_HOP
-const unsigned int retransmitPoint=static_cast<int>(0.667f*nominalPeriod+0.5f);
+const unsigned long long retransmitPoint=static_cast<unsigned long long>(0.667f*nominalPeriod+0.5f);
 #endif //SECOND_HOP
 
 
-
-//Time for STM32 PLL startup (500us)
-const unsigned int pllBoot=static_cast<int>(0.0005f*hz+0.5f);
-
 //Sync window (fixed window), or maximum sync window (dynamic window)
-const unsigned int w=static_cast<int>(0.003f*hz+0.5f);
+const unsigned long long w=static_cast<unsigned long long>(0.003f*hz+0.5f);
 
 //Minimum sync window (dynamic window only)
 #ifndef USE_VHT
-const unsigned int minw=static_cast<int>(0.003f*hz+0.5f);
+const unsigned long long minw=static_cast<unsigned long long>(0.003f*hz+0.5f);
 #else //USE_VHT
-const unsigned int minw=static_cast<int>(0.00006f*hz+0.5f);
+const unsigned long long minw=static_cast<unsigned long long>(0.00006f*hz+0.5f);
 #endif //USE_VHT
 
 //Retransmit time for flopsync2 "Flooder" flooding scheme (252us)
 //Note that this is the time needed to rebroadcast a packet as soon as it's
 //received, measured with an oscilloscope
-const unsigned int retransmitDelta=static_cast<int>(0.000252f*hz+0.5f);
+const unsigned long long retransmitDelta=static_cast<unsigned long long>(0.000252f*hz+0.5f);
 
-//Time for cc2520 to start its clock oscillator (200us) + time to init cc2520 (200us)
-const unsigned int radioBoot=static_cast<int>(0.0004f*hz+0.5f); //FIXME
+//Time for STM32 PLL startup (500us)
+const unsigned long long pllBoot=static_cast<unsigned long long>(0.0005f*hz+0.5f);
+
+//Time for cc2520 to start its clock oscillator (1.5ms)
+const unsigned long long radioBoot=static_cast<unsigned long long>(0.001f*hz+0.5f); //FIXME
 
 //Transmission of preamble begins 192us after STXON
-const unsigned int txTurnaroundTime=static_cast<int>(0.000192*hz+0.5f); 
+const unsigned long long txTurnaroundTime=static_cast<unsigned long long>(0.000192*hz+0.5f); 
 
 //Receiver is ready 192us after RX are enabled
-const unsigned int rxTurnaroundTime=static_cast<int>(0.000192*hz+0.5f);
+const unsigned long long rxTurnaroundTime=static_cast<unsigned long long>(0.000192*hz+0.5f);
 
 //Time required to read the timestamp in the packet and overwrite the node's
 //hardware clock (38us), measured with an oscilloscope. Used if SEND_TIMESTAMPS
-const unsigned int overwriteClockTime=static_cast<int>(0.000038f*hz+0.5f);
+const unsigned long long overwriteClockTime=static_cast<unsigned long long>(0.000038f*hz+0.5f);
 
 
 
 //Time to send a 1..8 byte packet via SPI @ 6MHz to the cc2520 (50us)
 //Computed as the missing piece in the difference between frameStart and
 //wakeupTime in FlooderRootNode. This is tricky to get right, especially with VHT.
-//const unsigned int spiPktSend=static_cast<int>(0.000050f*hz+0.5f);
+//const unsigned long long spiPktSend=static_cast<unsigned long long>(0.000050f*hz+0.5f);
 
 #ifndef USE_VHT
 //Additional delay to absorb jitter (must be greater than pllBoot+radioBoot)
-const unsigned int jitterHWAbsorption=static_cast<int>(0.002f*hz+0.5f); //FIXME
+const unsigned long long jitterHWAbsorption=static_cast<unsigned long long>(0.0005f*hz+0.5f); //FIXME
 #else //USE_VHT
 //Additional delay to absorb jitter (must be greater than pllBoot+radioBoot)
 //Also needs to account for vht resynchronization time
-const unsigned int jitterHWAbsorption=static_cast<int>(0.004f*hz+0.5f);  //FIXME
+const unsigned long long jitterHWAbsorption=static_cast<unsigned long long>(0.001f*hz+0.5f);  //FIXME
 #endif //USE_VHT
 
 //Additional delay to absorb jitter software (command transfer to spi + time to process instruction)
-const unsigned int jitterSWAbsorption=static_cast<int>(0.001f*hz+0.5f); //FIXME
+const unsigned long long jitterSWAbsorption=static_cast<unsigned long long>(1*hz+0.5f); //FIXME
 
 //Time to transfer a 4 preamble + 1 sfd byte on an 250Kbps channel
-const unsigned int preamblePacketTime=static_cast<int>(5*8/channelbps*hz+0.5f); 
+const unsigned long long preamblePacketTime=static_cast<unsigned long long>(5*8/channelbps*hz+0.5f); 
  
 #ifndef SEND_TIMESTAMPS
 //Time to transfer a 1byte len 1byte payload 1byte fcs on an 6Mbps channel (1byte of LEN 1 payload)
-const unsigned int spiTime=static_cast<int>(3*8/spibps*hz+0.5f);
+const unsigned long long spiTime=static_cast<unsigned long long>(3*8/spibps*hz+0.5f);
 //Time to transfer a 2byte of payload on an 250Kbps channel (1byte of LEN 1 payload)
-const unsigned int payloadPacketTime=static_cast<int>(2*8/channelbps*hz+0.5f);
+const unsigned long long payloadPacketTime=static_cast<unsigned long long>(2*8/channelbps*hz+0.5f);
 //Time to transfer a 1byte of fcs on an 250Kbps channel 
-const unsigned int fcsPacketTime=static_cast<int>(1*8/channelbps*hz+0.5f);
+const unsigned long long fcsPacketTime=static_cast<unsigned long long>(1*8/channelbps*hz+0.5f);
 //Time to transfer piggybacking
-const unsigned int piggybackingTime=static_cast<int>(0*8/channelbps*hz+0.5f);
+const unsigned long long piggybackingTime=static_cast<unsigned long long>(0*8/channelbps*hz+0.5f);
 //Time to transfer full packet
-const unsigned int packetTime=static_cast<int>(8*8/channelbps*hz+0.5f);
+const unsigned long long packetTime=static_cast<unsigned long long>(8*8/channelbps*hz+0.5f);
 #else //SEND_TIMESTAMPS
 //Time to transfer a 1byte len 8byte payload on an 6Mbps channel (1byte of LEN 1 payload)
-const unsigned int spiTime=static_cast<int>(9*8/spibps*hz+0.5f);
+const unsigned long long spiTime=static_cast<unsigned long long>(9*8/spibps*hz+0.5f);
 //Time to transfer a 9byte of payload on an 250Kbps channel (1byte of LEN 8 payload)
-const unsigned int payloadPacketTime=static_cast<int>(9*8/channelbps*hz+0.5f);
+const unsigned long long payloadPacketTime=static_cast<unsigned long long>(9*8/channelbps*hz+0.5f);
 //Time to transfer a 2byte of fcs on an 250Kbps channel 
-const unsigned int fcsPacketTime=static_cast<int>(2*8/channelbps*hz+0.5f);
+const unsigned long long fcsPacketTime=static_cast<unsigned long long>(2*8/channelbps*hz+0.5f);
 //Time to transfer piggybacking
-const unsigned int piggybackingTime=static_cast<int>(0*8/channelbps*hz+0.5f);
+const unsigned long long piggybackingTime=static_cast<unsigned long long>(0*8/channelbps*hz+0.5f);
 //Time to transfer full packet
-const unsigned int packetTime=static_cast<int>(16*8/channelbps*hz+0.5f);
+const unsigned long long packetTime=static_cast<unsigned long long>(16*8/channelbps*hz+0.5f);
 #endif//SEND_TIMESTAMPS
 
 //Time to wait before forwarding the packet
-const unsigned int delayRebroadcastTime=static_cast<int>(0.0005f*hz+0.5f); //FIXME
+const unsigned long long delayRebroadcastTime=static_cast<unsigned long long>(0.0005f*hz+0.5f); //FIXME
 
 //Waiting time over the reception of the nominal time of packet
-const unsigned int delaySendPacketTime=static_cast<int>(0.0003f*hz+0.5f);  //FIXME
+const unsigned long long delaySendPacketTime=static_cast<unsigned long long>(0.00003f*hz+0.5f);  //FIXME
 
 
 //New sync quality packet
@@ -193,6 +192,6 @@ struct Packet
 };
 
 //Comb spacing, for intra-frame error measure
-const unsigned int combSpacing=static_cast<int>(0.5f*hz+0.5f);
+const unsigned long long combSpacing=static_cast<unsigned long long>(0.5f*hz+0.5f);
 
 #endif //PROTOCOL_CONSTANTS_H

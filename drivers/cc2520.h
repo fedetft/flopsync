@@ -27,8 +27,9 @@
 
 #ifndef CC2520_H
 #define	CC2520_H
+#include <miosix.h>
 
-#define CC2520_DEBUG 0 // 0 no debug; 1 soft debub; 2 pedantic debug; 4 for test;
+#define CC2520_DEBUG 1 // 0 no debug; 1 soft debub; 2 pedantic debug; 4 for test;
 
 #if CC2520_DEBUG >0
 #include <cstdio>
@@ -549,6 +550,10 @@ private:
     unsigned char shortAddress[2];
     bool autoFCS;
     Mode mode; //< Operating mode
+ 
+    #if CC2520_DEBUG>0
+    typedef miosix::Gpio<GPIOC_BASE,11> xoscRadioBoot;
+    #endif//CC2520_DEBUG
 };
 
 #endif //CC2520_H

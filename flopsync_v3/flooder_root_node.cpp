@@ -45,6 +45,14 @@ FlooderRootNode::FlooderRootNode(Timer& timer) : timer(timer),
     #else
     syncFrame = new Frame(8,false,true);
     #endif //SEND_TIMESTAMPS
+
+    #if FLOPSYNC_DEBUG>0
+    wakeup::mode(miosix::Mode::OUTPUT);
+    pll::mode(miosix::Mode::OUTPUT);;
+    syncVht::mode(miosix::Mode::OUTPUT);
+    xoscRadioBoot::mode(miosix::Mode::OUTPUT);;
+    jitterHW::mode(miosix::Mode::OUTPUT);;
+    #endif //FLOPSYNC_DEBUG   
 }
 
 bool FlooderRootNode::synchronize()
@@ -58,9 +66,8 @@ bool FlooderRootNode::synchronize()
     #endif//FLOPSYNC_DEBUG
     timer.setAbsoluteWakeupSleep(wakeupTime);
     timer.sleep();
-    frameStart=wakeupTime+jitterHWAbsorption+spiTime+txTurnaroundTime+jitterSWAbsorption;
-    timer.setAbsoluteWakeupWait(wakeupTime+jitterHWAbsorption);
-    timer.wait();
+    frameStart=wakeupTime+jitterHWAbsorption+radioBoot+txTurnaroundTime+jitterSWAbsorption;
+    timer.setAbsoluteWakeupWait(wakeupTime+jitterHWAbsorption+radioBoot);
     transceiver.setMode(Cc2520::TX);
     #ifndef SEND_TIMESTAMPS
     transceiver.setAutoFCS(false);
@@ -77,36 +84,49 @@ bool FlooderRootNode::synchronize()
     // To minimize jitter in the packet transmission time caused by the
     // variable time sleepAndWait() takes to restart the STM32 PLL an
     // additional wait is done here to absorb the jitter.
-    {
-        CriticalSection cs;
-        timer.setAbsoluteTriggerEvent(frameStart-txTurnaroundTime);
-        timer.wait();
-        miosix::ledOn();
-        timer.setAbsoluteTimeout(frameStart+preamblePacketTime+delaySendPacketTime);
-        #if FLOPSYNC_DEBUG <2
-        timer.waitForExtEventOrTimeout();
-        #else //FLOPSYNC_DEBUG
-        timer.waitForExtEventOrTimeout()?
-            puts("--FLOPSYNC_DEBUG-- Timeout occurred."):puts("--FLOPSYNC_DEBUG-- Event occurred.");
-        #endif//FLOPSYNC_DEBUG
-        #if FLOPSYNC_DEBUG <2
-        transceiver.isSFDRaised();
-        #else //FLOPSYNC_DEBUG
-        transceiver.isSFDRaised()?
-            puts("--FLOPSYNC_DEBUG-- SFD raised."):puts("--FLOPSYNC_DEBUG-- No SFD raised.");
-        #endif//FLOPSYNC_DEBUG
-        timer.setAbsoluteTimeout(frameStart+packetTime+delaySendPacketTime);
-        timer.waitForExtEventOrTimeout();
-        #if FLOPSYNC_DEBUG <2
-        transceiver.isTxFrameDone();
-        #else //FLOPSYNC_DEBUG
-        transceiver.isTxFrameDone()?
-            puts("--FLOPSYNC_DEBUG-- Tx Frame done."):puts("--FLOPSYNC_DEBUG-- Tx Frame not done.");
-        #endif//FLOPSYNC_DEBUG
-        miosix::ledOff(); //Falling edge signals synchronization packet sent
-    }
+    timer.wait();
+    #if FLOPSYNC_DEBUG>0
+    jitterHW::high();
+    #endif//FLOPSYNC_DEBUG
+    
+    //CriticalSection cs;
+    timer.setAbsoluteTriggerEvent(frameStart-txTurnaroundTime);
+    timer.wait();
+    miosix::ledOn();
+    timer.setAbsoluteTimeoutForEvent(frameStart+preamblePacketTime+delaySendPacketTime);
+    #if FLOPSYNC_DEBUG <2
+    timer.wait();
+    #else //FLOPSYNC_DEBUG
+    timer.wait()?
+        puts("--FLOPSYNC_DEBUG-- Timeout occurred."):puts("--FLOPSYNC_DEBUG-- Event occurred.");
+    #endif//FLOPSYNC_DEBUG
+    #if FLOPSYNC_DEBUG <2
+    transceiver.isSFDRaised();
+    #else //FLOPSYNC_DEBUG
+    transceiver.isSFDRaised()?
+        puts("--FLOPSYNC_DEBUG-- SFD raised."):puts("--FLOPSYNC_DEBUG-- No SFD raised.");
+    #endif//FLOPSYNC_DEBUG
+    timer.setAbsoluteTimeoutForEvent(frameStart+packetTime+delaySendPacketTime);
+    timer.wait();
+    #if FLOPSYNC_DEBUG <2
+    transceiver.isTxFrameDone();
+    #else //FLOPSYNC_DEBUG
+    transceiver.isTxFrameDone()?
+        puts("--FLOPSYNC_DEBUG-- Tx Frame done."):puts("--FLOPSYNC_DEBUG-- Tx Frame not done.");
+    #endif//FLOPSYNC_DEBUG
+    miosix::ledOff(); //Falling edge signals synchronization packet sent
+    
     transceiver.setMode(Cc2520::DEEP_SLEEP);
     wakeupTime+=nominalPeriod;
+    
+    #if FLOPSYNC_DEBUG>0
+    wakeup::low();
+    pll::low();
+    syncVht::low();
+    xoscRadioBoot::low();
+    jitterHW::low();
+    #endif//FLOPSYNC_DEBUG
+    
     return false; //Root node does not desynchronize
 }
 
