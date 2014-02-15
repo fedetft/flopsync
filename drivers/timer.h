@@ -108,6 +108,13 @@ public:
     virtual bool wait()=0;
     
     /**
+     * Wait for the interrupt.
+     * This function wait for a relative time passed as parameter.
+     * @param value relative time to wait.
+     */
+    virtual void wait(unsigned long long value)=0;
+    
+    /**
      * Set the timer interrupt to occur at an absolute timeout if no external 
      * event arrived before.
      * \param value absolute value when the interrupt will occur. If zero, 
@@ -168,14 +175,11 @@ public:
     void setAbsoluteWakeupWait(unsigned long long value);
     
     /**
-     * Set the RTC timer interrupt to occur at a relative value.
-     * Note: the stm32vldiscovery development board has been chosen because it
-     * has an absolute RTC timer. Given that, it easy to implement the relative
-     * timer model on top of the absolute one. The opposite is instead not
-     * possible.
-     * \param value relative value when the interrupt will occur
+     * Wait for the interrupt.
+     * This function wait for a relative time passed as parameter.
+     * @param value relative time to wait.
      */
-    void setRelativeWakeup(unsigned int value);
+    void wait(unsigned long long value);
     
       /**
      * Set the timer interrupt to occur at an absolute value.
@@ -187,7 +191,7 @@ public:
      * If value of wakeup is in the past no interrupt will be set
      * and wait function will do nothing.
      */
-    virtual void setAbsoluteTriggerEvent(unsigned long long value);
+    void setAbsoluteTriggerEvent(unsigned long long value);
     
     /**
      * Wait for the interrupt.
@@ -292,6 +296,13 @@ public:
      * \return true if timeout occurs false otherwise
      */
     bool wait();
+    
+    /**
+     * Wait for the interrupt.
+     * This function wait for a relative time passed as parameter.
+     * @param value relative time to wait.
+     */
+    void wait(unsigned long long value);
     
     /**
      * Set the timer interrupt to occur at an absolute timeout if no external 

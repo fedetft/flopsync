@@ -159,6 +159,30 @@ static void inline testVhtWait()
     }
 }
 
+static void inline testVhtWaitThick()
+{
+    puts("---------------Test timer VHT wait thick----------------");
+    lowPowerSetup();
+    blueLed::mode(miosix::Mode::OUTPUT);
+    greenLed::mode(miosix::Mode::OUTPUT);
+    userButton::mode(miosix::Mode::OUTPUT);
+    greenLed::high();
+    blueLed::high();
+    Timer& vht=VHT::instance();
+    
+    vht.setValue(vhtFreq*1/20); //mezzo secondo 
+    printf("Timestamp:  %016llX\n",vht.getValue());
+    int i=1;
+    for(;;)
+    {        
+        blueLed::low();
+        vht.wait(static_cast<unsigned long long>(1*vhtFreq));
+        blueLed::high();
+        printf("Timestamp:  %016llX\n",vht.getValue());
+        i++;
+    }
+}
+
 static void inline testVhtWaitExtEventOrTimeout()
 {
     puts("---------------Test timer VHT wait for event or timeout----------------");
@@ -294,7 +318,6 @@ static void inline testVhtTriggerEvent()
         vht.wait();
        
         printf("Timestamp:  %016llX\n",vht.getValue());
-        //TIM3->CCER &=~TIM_CCER_CC4E;
         i++;
     }
 }
@@ -314,7 +337,7 @@ static void inline testVhtTriggerEventOscilloscope()
     int i=1;
     for(;;)
     {        
-        vht.setAbsoluteTriggerEvent(0.01*vhtFreq*i); // 10 ms
+        vht.setAbsoluteTriggerEvent(0.001*vhtFreq*i); // 1 ms
         vht.wait();
         i++;
     }
@@ -375,11 +398,12 @@ int main(int argc, char** argv) {
     //testVhtSleep();
     //testVhtGetPacketTimestamp();
     //testVhtWait();
+    testVhtWaitThick();
     //testVhtWaitExtEventOrTimeout();
     //testVhtWaitExtEvent();
     //testVhtMonotonic();
     //testVhtEvent();
     //testVhtTriggerEvent();
-    testVhtTriggerEventOscilloscope();
+    //testVhtTriggerEventOscilloscope();
     //testOutputCompare();
 }
