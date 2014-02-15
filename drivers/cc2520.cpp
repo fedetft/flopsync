@@ -31,8 +31,46 @@
 #include <miosix.h>
 #include <cstring>
 #include "../test_cc2520/test_config.h"
+#include <../miosix/kernel/scheduler/scheduler.h>
 
 using namespace miosix;
+
+static Thread *waiting=0;
+static volatile bool xoscInterrupt=false;
+
+/**
+ * EXTI9_5 is connected to the so(PA6) of spi pin, this for irq xosc start
+ */
+void __attribute__((naked)) EXTI9_5_IRQHandler()
+{
+	saveContext();
+	asm volatile("bl _Z18xoscIrqhandlerImplv");
+	restoreContext();
+}
+
+/**
+ * xosx actual implementation
+ */
+void __attribute__((used)) xoscIrqhandlerImpl()
+{
+    EXTI->PR=EXTI_PR_PR6;
+    RCC->APB2ENR &= ~RCC_APB2ENR_AFIOEN;
+    AFIO->EXTICR[1] &= ~AFIO_EXTICR2_EXTI6_PA;
+    EXTI->IMR &= ~EXTI_IMR_MR6;
+    EXTI->EMR &= ~EXTI_EMR_MR6;
+    EXTI->RTSR &= ~EXTI_RTSR_TR6;
+    xoscInterrupt=true;
+    if(!waiting) return;
+    waiting->IRQwakeup();
+	if(waiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+		Scheduler::IRQfindNextThread();
+    waiting=0;
+}
+
+
+typedef miosix::Gpio<GPIOC_BASE, 6> xoscInt; //FIXME
+typedef miosix::Gpio<GPIOA_BASE, 0> button; //FIXME
+
 
 //
 // class Cc2520
@@ -44,8 +82,9 @@ Cc2520& Cc2520::instance()
     return singleton;
 }
 
-Cc2520::Cc2520() :  autoFCS(true), mode(DEEP_SLEEP)
+Cc2520::Cc2520() :  autoFCS(true), mode(DEEP_SLEEP),timer(VHT::instance())
 {
+    button::mode(miosix::Mode::OUTPUT);
     cc2520GpioInit();
     setMode(DEEP_SLEEP);  //entry state of FSM
     #if CC2520_DEBUG >0
@@ -71,21 +110,24 @@ void Cc2520::setMode(Mode mode)
                     break;
                 case SLEEP:
                     commandStrobe(CC2520_INS_SXOSCON); //turn on crystal oscillator
-                    while ((readStatus() & CC2520_STATUS_XOSC) != CC2520_STATUS_XOSC);
+                    cc2520::cs::low();
+                    //wait until SO=1 (clock stable and running)
+                    wait();
+                    cc2520::cs::high();
 
                     commandStrobe(CC2520_INS_SFLUSHTX); //flush TX FIFO
                     break;
                 case DEEP_SLEEP:
                     //reset device whit RESETn that automatically start crystal osc.
-                    cc2520::reset::low(); //take low for 0.2ms     
+                    cc2520::reset::low(); //take low for >= 0.1ms     
                     cc2520::vreg::high();
-                    delayUs(200);
+                    timer.wait(static_cast<unsigned long long> (0.0001f*vhtFreq+0.5f));
                     cc2520::reset::high();
-                    //wait until MISO=1xxxxxxx (clock stable and running)
-                    while ((readStatus() & CC2520_STATUS_XOSC) != CC2520_STATUS_XOSC);
-
+                    cc2520::cs::low();
+                    //wait until SO=1 (clock stable and running)
+                    wait();
+                    cc2520::cs::high();
                     initConfigureReg();
-
                     commandStrobe(CC2520_INS_SFLUSHTX); //flush TX FIFO
                    
                     #if CC2520_DEBUG>0
@@ -109,24 +151,27 @@ void Cc2520::setMode(Mode mode)
                 case RX:
                     break;
                 case SLEEP:
-                    status = commandStrobe(CC2520_INS_SFLUSHRX); //flush RX FIFO
-                    isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
                     status = commandStrobe(CC2520_INS_SXOSCON); //turn on crystal oscillator
                     isExcRaised(CC2520_EXC_OPERAND_ERROR, status);
-                    while ((readStatus() & CC2520_STATUS_XOSC) != CC2520_STATUS_XOSC);
-
+                    cc2520::cs::low();
+                    //wait until SO=1 (clock stable and running)
+                    wait();
+                    cc2520::cs::high();
+                    status = commandStrobe(CC2520_INS_SFLUSHRX); //flush RX FIFO
+                    isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
                     status = commandStrobe(CC2520_INS_SRXON); //Receive mode
                     isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
                     break;
-                case DEEP_SLEEP :
+                case DEEP_SLEEP:
                     //reset device whit RESETn that automatically start crystal osc.
                     cc2520::reset::low(); //take low for 0.2ms     
                     cc2520::vreg::high();
-                    delayUs(200);
+                    timer.wait(static_cast<unsigned long long> (0.0001f*vhtFreq+0.5f));
                     cc2520::reset::high();
-                    //wait until MISO=1xxxxxxx (clock stable and running)
-                    while ((readStatus() & CC2520_STATUS_XOSC) != CC2520_STATUS_XOSC);
-
+                    cc2520::cs::low();
+                    //wait until SO=1 (clock stable and running)
+                    wait();
+                    cc2520::cs::high();
                     initConfigureReg();
                     status = commandStrobe(CC2520_INS_SFLUSHRX); //flush RX FIFO
                     isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
@@ -178,13 +223,23 @@ void Cc2520::setMode(Mode mode)
             }
             break;
         case DEEP_SLEEP: 
-            //reset device will remove side effect 
-            cc2520::reset::low(); //take low for 0.1ms
-            delayUs(100);
-            cc2520::cs::high();        
-            cc2520::vreg::low();
-            cc2520::reset::high();
-            break;  
+            switch(this->mode)
+            {
+                case TX:
+                case RX:
+                case SLEEP:                  
+                case IDLE:
+                    //reset device will remove side effect 
+                    cc2520::reset::low(); //take low for 0.1ms
+                    timer.wait(static_cast<unsigned long long> (0.0001f*vhtFreq+0.5f));
+                    cc2520::cs::high();        
+                    cc2520::vreg::low();
+                    cc2520::reset::high();
+                    break; 
+               case DEEP_SLEEP:
+                    break;
+            }
+            break;
         case IDLE: 
             switch(this->mode)
             {
@@ -200,16 +255,21 @@ void Cc2520::setMode(Mode mode)
                     break;
                 case SLEEP:
                     commandStrobe(CC2520_INS_SXOSCON);
-                    while ((readStatus() & CC2520_STATUS_XOSC) != CC2520_STATUS_XOSC);
+                    cc2520::cs::low();
+                    //wait until SO=1 (clock stable and running)
+                    wait();
+                    cc2520::cs::high();
                     break;
                 case DEEP_SLEEP :
                     //reset device whit RESETn that automatically start crystal osc.
-                    cc2520::reset::low(); //take low for 0.2ms     
+                    cc2520::reset::low(); //take low for 0.1ms     
                     cc2520::vreg::high();
-                    delayUs(200);
+                    timer.wait(static_cast<unsigned long long> (0.0001f*vhtFreq+0.5f));
                     cc2520::reset::high();
-                    //wait until MISO=1xxxxxxx (clock stable and running)
-                    while ((readStatus() & CC2520_STATUS_XOSC) != CC2520_STATUS_XOSC);
+                    cc2520::cs::low();
+                    //wait until SO=1 (clock stable and running)
+                    wait();
+                    cc2520::cs::high();
                     initConfigureReg();
                     break;
                 case IDLE:
@@ -240,8 +300,8 @@ void Cc2520::setFrequency(unsigned short freq)
 {
     if(freq<2394 || freq>2507) return;
     this->frequency = freq;
-    if(this->mode != SLEEP || this->mode != DEEP_SLEEP) 
-                        writeReg(CC2520_FREQCTRL,freq-2394);
+    if(this->mode != SLEEP && this->mode != DEEP_SLEEP) 
+        writeReg(CC2520_FREQCTRL,freq-2394);
 }
 
 void Cc2520::setFrequencyChannel(unsigned char channel)
@@ -253,9 +313,9 @@ void Cc2520::setFrequencyChannel(unsigned char channel)
 void Cc2520::setShortAddress(const unsigned char address[2])
 {
     memcpy(this->shortAddress,address,2);
-    if(this->mode != SLEEP || this->mode != DEEP_SLEEP){
+    if(this->mode != SLEEP && this->mode != DEEP_SLEEP){
     cc2520::cs::low();
-    delayUs(1);
+    delay();
     
     //little endian
     cc2520SpiSendRecv(CC2520_INS_MEMORY_WRITE | 0x3);
@@ -266,17 +326,17 @@ void Cc2520::setShortAddress(const unsigned char address[2])
     cc2520SpiSendRecv(address[0]);
     
     cc2520::cs::high();
-    delayUs(1);
+    delay();
     }
 }
 
 void Cc2520::setPanId(const unsigned char panId[])
 {
     memcpy(this->panId,panId,2);
-    if (this->mode == SLEEP || this->mode == DEEP_SLEEP) 
+    if (this->mode != SLEEP  && this->mode != DEEP_SLEEP) 
     {
         cc2520::cs::low();
-        delayUs(1);
+        delay();
 
         //little endian
         cc2520SpiSendRecv(CC2520_INS_MEMORY_WRITE | 0x3);
@@ -287,7 +347,7 @@ void Cc2520::setPanId(const unsigned char panId[])
         cc2520SpiSendRecv(panId[0]);
 
         cc2520::cs::high();
-        delayUs(1);
+        delay();
     }
 }
 
@@ -297,12 +357,12 @@ int Cc2520::writeFrame(unsigned char length, const unsigned char* pframe)
     if(pframe==NULL) return -2;
     if (length<1 || length>127 ) return -1; 
     cc2520::cs::low();
-    delayUs(1);
+    delay();
     unsigned char status = cc2520SpiSendRecv(CC2520_INS_TXBUF);
     cc2520SpiSendRecv(length+autoFCS*SIZE_AUTO_FCS); //adding 2 bytes of FCS
     for(int i=0; i<length; i++) cc2520SpiSendRecv(pframe[i]);
     cc2520::cs::high();
-    delayUs(1);
+    delay();
     if(isExcRaised(CC2520_EXC_TX_OVERFLOW,status)) return 1;
     return 0;
 }
@@ -312,7 +372,7 @@ int Cc2520::writeFrame(const Frame& frame)
     if(this->mode != TX) return -3;
     if(frame.isNotInit()) return -1; //invalid parameter
     cc2520::cs::low();
-    delayUs(1);
+    delay();
     unsigned char status = cc2520SpiSendRecv(CC2520_INS_TXBUF);
     Frame::ConstIterator i; 
     Frame::ConstIterator end = frame.end();
@@ -328,7 +388,7 @@ int Cc2520::writeFrame(const Frame& frame)
         #endif //CC2520_DEBUG
     }
     cc2520::cs::high();
-    delayUs(1);
+    delay();
     if(isExcRaised(CC2520_EXC_TX_OVERFLOW,status)) return 1; //exc tx overflow
     return 0; //ok
 }
@@ -341,7 +401,7 @@ int Cc2520::readFrame(unsigned char& length, unsigned char* pframe) const
     if (length<1 || length>127 ) return -1; 
     unsigned char currLen;
     cc2520::cs::low();
-    delayUs(1);
+    delay();
     unsigned char status = cc2520SpiSendRecv(CC2520_INS_RXBUF);
     currLen = cc2520SpiSendRecv()-2*autoFCS;
     if(currLen>length)
@@ -370,7 +430,7 @@ int Cc2520::readFrame(unsigned char& length, unsigned char* pframe) const
         #endif //CC2520_DEBUG
     }
     cc2520::cs::high();
-    delayUs(1);
+    delay();
     isExcRaised(CC2520_EXC_RX_FRM_DONE);  //clear FRM_DONE exc
     if(isExcRaised(CC2520_EXC_RX_UNDERFLOW,status)) return 2;
     if(autoFCS)
@@ -384,13 +444,13 @@ int Cc2520::readFrame(Frame& frame) const
     if(!frame.isNotInit() || frame.isAutoFCS()!=autoFCS) return -1;
     
     cc2520::cs::low();
-    delayUs(1);
+    delay();
     
     unsigned char status = cc2520SpiSendRecv(CC2520_INS_RXBUF);
     if(!frame.initFrame(cc2520SpiSendRecv())) 
     {
         cc2520::cs::high();
-        delayUs(1);
+        delay();
         flushRxFifoBuffer();
         return -1;
     }
@@ -420,7 +480,7 @@ int Cc2520::readFrame(Frame& frame) const
         #endif //CC2520_DEBUG
     }
     cc2520::cs::high();
-    delayUs(1);
+    delay();
     isExcRaised(CC2520_EXC_RX_FRM_DONE); //clear RX_FRM_DONE exc
     if(isExcRaised(CC2520_EXC_RX_UNDERFLOW,status)) return 1;
     if(autoFCS)
@@ -546,7 +606,7 @@ Cc2520::Mode Cc2520::getMode() const
 void Cc2520::setAutoFCS(bool fcs)
 {
     autoFCS = fcs;
-    if(this->mode != SLEEP || this->mode != DEEP_SLEEP)
+    if(this->mode != SLEEP && this->mode != DEEP_SLEEP)
             writeReg(CC2520_FRMCTRL0,0x40*fcs);
 }
 
@@ -555,11 +615,11 @@ bool Cc2520::writeReg(Cc2520FREG reg, unsigned char data) const
 {
     if(reg>0x3F) return false;
     cc2520::cs::low();
-    delayUs(1);
+    delay();
     cc2520SpiSendRecv(CC2520_INS_REGISTER_WRITE | reg);
     cc2520SpiSendRecv(data);
     cc2520::cs::high();
-    delayUs(1);
+    delay();
     return true;  
 }
 
@@ -568,12 +628,12 @@ bool Cc2520::writeReg(Cc2520SREG reg, unsigned char data) const
 {
     if(reg>0x7E) return false;
     cc2520::cs::low();
-    delayUs(1);
+    delay();
     cc2520SpiSendRecv(CC2520_INS_MEMORY_WRITE);
     cc2520SpiSendRecv(reg);
     cc2520SpiSendRecv(data);
     cc2520::cs::high();
-    delayUs(1);
+    delay();
     return true;
 }
 
@@ -581,11 +641,11 @@ bool Cc2520::readReg(Cc2520FREG reg, unsigned char& result) const
 {
     if(reg>0x3F) return false;
     cc2520::cs::low();
-    delayUs(1);
+    delay();
     cc2520SpiSendRecv(CC2520_INS_REGISTER_READ | reg);
     result =cc2520SpiSendRecv();
     cc2520::cs::high();
-    delayUs(1);
+    delay();
     return true;
 }
 
@@ -593,12 +653,12 @@ bool Cc2520::readReg(Cc2520FREG reg, unsigned char& result) const
 {
     if(reg>0x7E) return false;
     cc2520::cs::low();
-    delayUs(1);
+    delay();
     cc2520SpiSendRecv(CC2520_INS_MEMORY_READ);
     cc2520SpiSendRecv(reg);
     result =cc2520SpiSendRecv();
     cc2520::cs::high();
-    delayUs(1);
+    delay();
     return true;
 }
 
@@ -607,10 +667,10 @@ bool Cc2520::readReg(Cc2520FREG reg, unsigned char& result) const
 unsigned char Cc2520::readStatus() const
 {
     cc2520::cs::low();
-    delayUs(1);
+    delay();
     unsigned char result=cc2520SpiSendRecv(CC2520_INS_SNOP); //NOP command
     cc2520::cs::high();
-    delayUs(1);
+    delay();
     return result;
 }
 
@@ -618,10 +678,10 @@ unsigned char Cc2520::commandStrobe(Cc2520SpiIsa ins) const
 {
     unsigned char status;
     cc2520::cs::low();
-    delayUs(1);
+    delay();
     status = cc2520SpiSendRecv(ins);
     cc2520::cs::high();
-    delayUs(1);
+    delay();
     return status;
 }
 
@@ -632,11 +692,11 @@ bool Cc2520::isExcRaised(Cc2520Exc0 exc, unsigned char status) const
     {
         unsigned char result;
         cc2520::cs::low();
-        delayUs(1);
+        delay();
         cc2520SpiSendRecv(CC2520_INS_REGISTER_READ | CC2520_EXCFLAG0);
         result =cc2520SpiSendRecv();
         cc2520::cs::high();
-        delayUs(1);
+        delay();
         
         if((result & exc )== exc) 
         {
@@ -646,11 +706,11 @@ bool Cc2520::isExcRaised(Cc2520Exc0 exc, unsigned char status) const
             //clear exception
             //bit to 1 will not result in a register change
             cc2520::cs::low();
-            delayUs(1);
+            delay();
             cc2520SpiSendRecv(CC2520_INS_REGISTER_WRITE | CC2520_EXCFLAG0);
             cc2520SpiSendRecv(~exc);
             cc2520::cs::high();
-            delayUs(1);
+            delay();
             return true;
         }
     }
@@ -664,11 +724,11 @@ bool Cc2520::isExcRaised(Cc2520Exc1 exc, unsigned char status) const
     {
         unsigned char result;
         cc2520::cs::low();
-        delayUs(1);
+        delay();
         cc2520SpiSendRecv(CC2520_INS_REGISTER_READ | CC2520_EXCFLAG1);
         result =cc2520SpiSendRecv();
         cc2520::cs::high();
-        delayUs(1);
+        delay();
         
         if((result & exc )== exc)  
         {
@@ -678,11 +738,11 @@ bool Cc2520::isExcRaised(Cc2520Exc1 exc, unsigned char status) const
             //clear exception
             //bit to 1 will not result in a register change
             cc2520::cs::low();
-            delayUs(1);
+            delay();
             cc2520SpiSendRecv(CC2520_INS_REGISTER_WRITE | CC2520_EXCFLAG1);
             cc2520SpiSendRecv(~exc);
             cc2520::cs::high();
-            delayUs(1);
+            delay();
             return true;
         }
     }
@@ -696,11 +756,11 @@ bool Cc2520::isExcRaised(Cc2520Exc2 exc, unsigned char status) const
     {
         unsigned char result;
         cc2520::cs::low();
-        delayUs(1);
+        delay();
         cc2520SpiSendRecv(CC2520_INS_REGISTER_READ | CC2520_EXCFLAG2);
         result =cc2520SpiSendRecv();
         cc2520::cs::high();
-        delayUs(1);
+        delay();
         
         if((result & exc )== exc) 
         {
@@ -710,22 +770,19 @@ bool Cc2520::isExcRaised(Cc2520Exc2 exc, unsigned char status) const
             //clear exception
             //bit to 1 will not result in a register change
             cc2520::cs::low();
-            delayUs(1);
+            delay();
             cc2520SpiSendRecv(CC2520_INS_REGISTER_WRITE | CC2520_EXCFLAG2);
             cc2520SpiSendRecv(~exc);
             cc2520::cs::high();
-            delayUs(1);
+            delay();
             return true;
         }
     }
     return false;
 }
 
-inline void Cc2520::initConfigureReg()
+void Cc2520::initConfigureReg()
 {    
-    #if CC2520_DEBUG >2
-    printf("--CC2520_DEBUG-- Initialize registers.\n");
-    #endif //CC2520_DEBUG
     writeReg(CC2520_FREQCTRL,this->frequency-2394); //set frequency
     writeReg(CC2520_FRMCTRL0,0x40*autoFCS); //automatically add FCS
     writeReg(CC2520_FRMCTRL1,0x2); //ignore tx underflow exception
@@ -772,4 +829,33 @@ inline void Cc2520::initConfigureReg()
     writeReg(CC2520_GPIOCTRL5,0x80|0x08);
     //Setting gpio3 as output exception channel B
     writeReg(CC2520_GPIOCTRL3,0x22);
+    
+    #if CC2520_DEBUG >2
+    printf("--CC2520_DEBUG-- Initialize registers.\n");
+    #endif //CC2520_DEBUG
+}
+
+void Cc2520::wait()
+{
+    FastInterruptDisableLock dLock;
+    
+    RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
+    AFIO->EXTICR[1] |= AFIO_EXTICR2_EXTI6_PA;
+    EXTI->IMR |= EXTI_IMR_MR6;
+    EXTI->EMR |= EXTI_EMR_MR6;
+    EXTI->RTSR |= EXTI_RTSR_TR6;
+    EXTI->PR=EXTI_PR_PR6; //Clear eventual pending IRQ
+    NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
+    NVIC_SetPriority(EXTI9_5_IRQn,10); //low priority
+    NVIC_EnableIRQ(EXTI9_5_IRQn); 
+    xoscInterrupt=false;
+    while(!xoscInterrupt)
+    {
+        waiting=Thread::IRQgetCurrentThread();
+        Thread::IRQwait();
+        {
+            FastInterruptEnableLock eLock(dLock);
+            Thread::yield();
+        }
+    }
 }

@@ -27,9 +27,10 @@
 
 #ifndef CC2520_H
 #define	CC2520_H
+#include "timer.h"
 #include <miosix.h>
 
-#define CC2520_DEBUG 1 // 0 no debug; 1 soft debub; 2 pedantic debug; 4 for test;
+#define CC2520_DEBUG 3 // 0 no debug; 1 soft debub; 2 pedantic debug; 4 for test;
 
 #if CC2520_DEBUG >0
 #include <cstdio>
@@ -543,14 +544,26 @@ private:
     /**
      * Write initial configuration Transceiver, or wake-up deep-sleep
      */
-    inline void initConfigureReg();
+    void initConfigureReg();
+
+    //delay for cs spi (2 tick ~80ns)
+    inline void delay() const
+    {
+        // This delay has been calibrated to take x microseconds
+        // It is written in assembler to be independent on compiler optimization
+        asm volatile("           nop    \n"
+                     "           nop    \n");
+    }
+    
+    void wait();
     
     unsigned short frequency;
     unsigned char panId[2];
     unsigned char shortAddress[2];
     bool autoFCS;
     Mode mode; //< Operating mode
- 
+    Timer& timer;
+    
     #if CC2520_DEBUG>0
     typedef miosix::Gpio<GPIOC_BASE,11> xoscRadioBoot;
     #endif//CC2520_DEBUG
