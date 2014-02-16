@@ -32,7 +32,7 @@
 #include <cstdio> 
 #endif//TIMER_DEBUG
 
-#define TIMER_DEBUG 1 // 0 no debug; 1 soft debug; 2 pedantic debug; 4 for test;
+#define TIMER_DEBUG 2 // 0 no debug; 1 soft debug; 2 pedantic debug; 4 for test;
 
 #define ccoRtc 32768ll
 #define ccoVht 24000000ll
@@ -68,7 +68,7 @@ public:
     virtual void setValue(unsigned long long value)=0;
     
     /**
-     * \return the precise time when the IRQ signal of the nRF24L01 was asserted.
+     * \return the precise time when the IRQ signal of the event was asserted.
      * This member function has two possible implementations: in case no hardware
      * input capture module is used, this function is the same as getValue(), and
      * simply return the current time, otherwise if the underlying timer has an
@@ -80,63 +80,65 @@ public:
     virtual unsigned long long getExtEventTimestamp() const=0;
     
     /**
-     * Set the timer interrupt to occur at an absolute value.
-     * \param value absolute value when the interrupt will occur.
-     * If value of wakeup is in the past no interrupt will be set
-     * and wait function will do nothing.
+     * Puts the thread in wait for the specified absolute time.
+     * \param value absolute time in which the thread is waiting.
+     * If value of absolute time is in the past no waiting will be set
+     * and function return immediately.
      */
-    virtual void setAbsoluteWakeupWait(unsigned long long value)=0;
+    virtual void absoluteWait(unsigned long long value)=0;
     
-      /**
+    /**
      * Set the timer interrupt to occur at an absolute value.
      * when the timer interrupt will occur, the associated GPIO passes 
      * from a low logic level to a high logic level.
-     * If wait() is call before this, we will have the same behavior of the 
-     * setAboluteWakeupWait whit more hardware event.
-     * \param value absolute value when the interrupt will occur.
-     * If value of wakeup is in the past no interrupt will be set
-     * and wait function will do nothing.
+     * \param value absolute value when the interrupt will occur, expressed in 
+     * number of tick of the count rate of timer.
      */
-    virtual void setAbsoluteTriggerEvent(unsigned long long value)=0;
+    virtual void absoluteTriggerEvent(unsigned long long value)=0;
     
     /**
-     * Wait for the interrupt.
-     * You must have called setAbsoluteWakeupWait() before this 
-     * or setAbsoluteTriggerEvent().
-     * \return true if timeout occurs false otherwise
+     * Set the timer interrupt to occur at an absolute value and put the 
+     * thread in wait of this. 
+     * \param value absolute value when the interrupt will occur, expressed in 
+     * number of tick of the count rate of timer.
+     * If value of absolute time is in the past no waiting will be set
+     * and function return immediately.
      */
-    virtual bool wait()=0;
+    virtual void absoluteWaitTriggerEvent(unsigned long long value)=0;
     
     /**
-     * Wait for the interrupt.
+     * Put thread in wait for the specified relative time.
      * This function wait for a relative time passed as parameter.
-     * @param value relative time to wait.
+     * @param value relative time to wait, expressed in number of tick of the 
+     * count rate of timer.
      */
     virtual void wait(unsigned long long value)=0;
     
     /**
-     * Set the timer interrupt to occur at an absolute timeout if no external 
-     * event arrived before.
-     * \param value absolute value when the interrupt will occur. If zero, 
-     * the timeout is disabled, and this function waits indefinitely till the 
-     * external event will be asserts.
-     * If value of wakeup is in the past no interrupt will be set.
+     * Put thread in waiting of timeout or extern event.
+     * \param value absolute timeout expressed in number of tick of the 
+     * count rate of timer. If zero, the timeout is disabled, and this function 
+     * waits indefinitely till the external event will be asserts.
+     * If value of absolute time is in the past no waiting will be set
+     * and function return immediately.
      */
-    virtual void setAbsoluteTimeoutForEvent(unsigned long long value)=0;
-    
-    /**
-     * Set the timer timer interrupt to occur at an absolute value
-     * \param value absolute value when the interrupt will occur.
-     * If value of wakeup is in the past no interrupt will be set
-     * and sleep function will do nothing.
-     */
-    virtual void setAbsoluteWakeupSleep(unsigned long long value)=0;
+    virtual bool absoluteWaitTimeoutOrEvent(unsigned long long value)=0;
     
     /**
      * Puts the microcontroller in low power mode (few uA) and wait for the
-     * interrupt. You must have called setAbsoluteWakeupSleep() before this
+     * absolute time.
+     * \param alue absolute timeout expressed in number of tick of the 
+     * count rate of timer.
+     * If value of absolute time is in the past no sleep will be set
+     * and function return immediately.
      */
-    virtual void sleep()=0;
+    virtual void absoluteSleep(unsigned long long value)=0;
+    
+    /**
+     * Puts the microcontroller in low power mode (few uA) and wait for the
+     * relative time.
+     */
+    virtual void sleep(unsigned long long value)=0;
 };
 
 /**
@@ -151,7 +153,7 @@ public:
     static Rtc& instance();
     
     /**
-     * \return the RTC counter value
+     * \return the timer counter value
      */
     unsigned long long getValue() const;
 
@@ -162,68 +164,77 @@ public:
     void setValue(unsigned long long value);
     
     /**
-     * No input capture used, this is the same as getValue()
+     * \return the precise time when the IRQ signal of the event was asserted.
+     * This member function has two possible implementations: in case no hardware
+     * input capture module is used, this function is the same as getValue(), and
+     * simply return the current time, otherwise if the underlying timer has an
+     * input capture event connected with the radio IRQ signal the time when the
+     * IRQ was asserted is returned. Note that you should call this member function
+     * <b>as soon as</b> the packet is received, because if the implementation #1
+     * is used, this function just returns the current time
      */
     unsigned long long getExtEventTimestamp() const;
     
     /**
-     * Set the timer interrupt to occur at an absolute value.
-     * \param value absolute value when the interrupt will occur.
-     * If value of wakeup is in the past no interrupt will be set
-     * and wait function will do nothing.
+     * Puts the thread in wait for the specified absolute time.
+     * \param value absolute time in which the thread is waiting.
+     * If value of absolute time is in the past no waiting will be set
+     * and function return immediately.
      */
-    void setAbsoluteWakeupWait(unsigned long long value);
+    void absoluteWait(unsigned long long value);
     
     /**
-     * Wait for the interrupt.
-     * This function wait for a relative time passed as parameter.
-     * @param value relative time to wait.
-     */
-    void wait(unsigned long long value);
-    
-      /**
      * Set the timer interrupt to occur at an absolute value.
      * when the timer interrupt will occur, the associated GPIO passes 
      * from a low logic level to a high logic level.
-     * If wait() is call before this, we will have the same behavior of the 
-     * setAboluteWakeupWait whit more hardware event.
-     * \param value absolute value when the interrupt will occur.
-     * If value of wakeup is in the past no interrupt will be set
-     * and wait function will do nothing.
+     * \param value absolute value when the interrupt will occur, expressed in 
+     * number of tick of the count rate of timer.
      */
-    void setAbsoluteTriggerEvent(unsigned long long value);
+    void absoluteTriggerEvent(unsigned long long value);
     
     /**
-     * Wait for the interrupt.
-     * You must have called setAbsoluteWakeupWait() before this 
-     * or setAbsoluteTriggerEvent().
-     * \return true if timeout occurs false otherwise
+     * Set the timer interrupt to occur at an absolute value and put the 
+     * thread in wait of this. 
+     * \param value absolute value when the interrupt will occur, expressed in 
+     * number of tick of the count rate of timer.
+     * If value of absolute time is in the past no waiting will be set
+     * and function return immediately.
      */
-    bool wait();
-    
-     /**
-     * Set the timer interrupt to occur at an absolute timeout if no external 
-     * event arrived before.
-     * \param value absolute value when the interrupt will occur. If zero, 
-     * the timeout is disabled, and this function waits indefinitely till the 
-     * external event will be asserts.
-     * If value of wakeup is in the past no interrupt will be set.
-     */
-    void setAbsoluteTimeoutForEvent(unsigned long long value);
+    void absoluteWaitTriggerEvent(unsigned long long value);
     
     /**
-     * Set the timer timer interrupt to occur at an absolute value
-     * \param value absolute value when the interrupt will occur.
-     * If value of wakeup is in the past no interrupt will be set
-     * and sleep function will do nothing.
+     * Put thread in wait for the specified relative time.
+     * This function wait for a relative time passed as parameter.
+     * @param value relative time to wait, expressed in number of tick of the 
+     * count rate of timer.
      */
-    void setAbsoluteWakeupSleep(unsigned long long value);
+    void wait(unsigned long long value);
+    
+    /**
+     * Put thread in waiting of timeout or extern event.
+     * \param value absolute timeout expressed in number of tick of the 
+     * count rate of timer. If zero, the timeout is disabled, and this function 
+     * waits indefinitely till the external event will be asserts.
+     * If value of absolute time is in the past no waiting will be set
+     * and function return immediately.
+     */
+    bool absoluteWaitTimeoutOrEvent(unsigned long long value);
     
     /**
      * Puts the microcontroller in low power mode (few uA) and wait for the
-     * RTC interrupt
+     * absolute time.
+     * \param alue absolute timeout expressed in number of tick of the 
+     * count rate of timer.
+     * If value of absolute time is in the past no sleep will be set
+     * and function return immediately.
      */
-    void sleep();
+    void absoluteSleep(unsigned long long value);
+    
+    /**
+     * Puts the microcontroller in low power mode (few uA) and wait for the
+     * relative time.
+     */
+    void sleep(unsigned long long value);
     
 private:
     /**
@@ -255,78 +266,85 @@ public:
      * \return the timer counter value
      */
     unsigned long long getValue() const;
-    
+
     /**
      * Set the RTC counter value
      * \param value new RTC value
      */
     void setValue(unsigned long long value);
-
+    
     /**
-     * \return the precise time when the IRQ signal of the nRF24L01 was asserted.
-     * This implementation uses an input capture hardware module for additional
-     * precision
+     * \return the precise time when the IRQ signal of the event was asserted.
+     * This member function has two possible implementations: in case no hardware
+     * input capture module is used, this function is the same as getValue(), and
+     * simply return the current time, otherwise if the underlying timer has an
+     * input capture event connected with the radio IRQ signal the time when the
+     * IRQ was asserted is returned. Note that you should call this member function
+     * <b>as soon as</b> the packet is received, because if the implementation #1
+     * is used, this function just returns the current time
      */
     unsigned long long getExtEventTimestamp() const;
     
     /**
-     * Set the timer interrupt to occur at an absolute value.
-     * \param value absolute value when the interrupt will occur.
-     * If value of wakeup is in the past no interrupt will be set
-     * and wait function will do nothing.
+     * Puts the thread in wait for the specified absolute time.
+     * \param value absolute time in which the thread is waiting.
+     * If value of absolute time is in the past no waiting will be set
+     * and function return immediately.
      */
-    void setAbsoluteWakeupWait(unsigned long long value);
+    void absoluteWait(unsigned long long value);
     
     /**
      * Set the timer interrupt to occur at an absolute value.
      * when the timer interrupt will occur, the associated GPIO passes 
      * from a low logic level to a high logic level.
-     * If wait() is call before this, we will have the same behavior of the 
-     * setAboluteWakeupWait whit more hardware event.
-     * \param value absolute value when the interrupt will occur.
-     * If value of wakeup is in the past no interrupt will be set
-     * and wait function will do nothing.
+     * \param value absolute value when the interrupt will occur, expressed in 
+     * number of tick of the count rate of timer.
      */
-    virtual void setAbsoluteTriggerEvent(unsigned long long value);
+    void absoluteTriggerEvent(unsigned long long value);
     
     /**
-     * Wait for the interrupt.
-     * You must have called setAbsoluteWakeupWait() before this 
-     * or setAbsoluteTriggerEvent().
-     * \return true if timeout occurs false otherwise
+     * Set the timer interrupt to occur at an absolute value and put the 
+     * thread in wait of this. 
+     * \param value absolute value when the interrupt will occur, expressed in 
+     * number of tick of the count rate of timer.
+     * If value of absolute time is in the past no waiting will be set
+     * and function return immediately.
      */
-    bool wait();
+    void absoluteWaitTriggerEvent(unsigned long long value);
     
     /**
-     * Wait for the interrupt.
+     * Put thread in wait for the specified relative time.
      * This function wait for a relative time passed as parameter.
-     * @param value relative time to wait.
+     * @param value relative time to wait, expressed in number of tick of the 
+     * count rate of timer.
      */
     void wait(unsigned long long value);
     
     /**
-     * Set the timer interrupt to occur at an absolute timeout if no external 
-     * event arrived before.
-     * \param value absolute value when the interrupt will occur. If zero, 
-     * the timeout is disabled, and this function waits indefinitely till the 
-     * external event will be asserts.
-     * If value of wakeup is in the past no interrupt will be set.
+     * Put thread in waiting of timeout or extern event.
+     * \param value absolute timeout expressed in number of tick of the 
+     * count rate of timer. If zero, the timeout is disabled, and this function 
+     * waits indefinitely till the external event will be asserts.
+     * If value of absolute time is in the past no waiting will be set
+     * and function return immediately.
      */
-    void setAbsoluteTimeoutForEvent(unsigned long long value);
-    
-    /**
-     * Set the timer timer interrupt to occur at an absolute value
-     * \param value absolute value when the interrupt will occur.
-     * If value of wakeup is in the past no interrupt will be set
-     * and sleep function will do nothing.
-     */
-    void setAbsoluteWakeupSleep(unsigned long long value);
+    bool absoluteWaitTimeoutOrEvent(unsigned long long value);
     
     /**
      * Puts the microcontroller in low power mode (few uA) and wait for the
-     * interrupt. You must have called setAbsoluteWakeupSleep() before this
+     * absolute time.
+     * \param alue absolute timeout expressed in number of tick of the 
+     * count rate of timer.
+     * If value of absolute time is in the past no sleep will be set
+     * and function return immediately.
      */
-    void sleep();
+    void absoluteSleep(unsigned long long value);
+    
+    /**
+     * Puts the microcontroller in low power mode (few uA) and wait for the
+     * relative time.
+     */
+    void sleep(unsigned long long value);
     
     /**
      * Synchronize the VHT timer with the low frequency RTC
@@ -336,14 +354,6 @@ public:
     #if TIMER_DEBUG==4
     typeTimer getInfo()const;
     #endif //TIMER_DEBUG
-    
-    
-    
-    // Ratio between timers 24MHz / 16384Hz. Note that the division is
-    // not exact, and this introduces a clock skew by itself, even if
-    // the RTC was perfect. So don't use it to make precise conversions
-    // from VHT to RTC
-    static const unsigned int scaleFactor=1464;
     
 private:
     /**
@@ -365,5 +375,49 @@ private:
  * an IRQ.
  */
 void setEventHandler(void (*handler)(unsigned int));
+
+
+struct typeVecInt{
+    unsigned char wait    : 1;
+    unsigned char trigger : 1;
+    unsigned char event   : 1;
+    unsigned char sync    : 1;
+
+    typeVecInt(bool wait =0, int trigger =0, bool event=0, bool sync=0) :
+                            wait(wait), trigger(trigger), event(event), sync(sync)
+    {}
+
+    typeVecInt operator=(const typeVecInt& a)
+    {
+        wait = a.wait;
+        trigger = a.trigger;
+        event = a.event;
+        sync = a.sync;
+        return *this;
+    }
+
+    bool operator==(const typeVecInt & a) const
+    {
+        if (wait == a.wait &&
+            trigger == a.trigger &&
+            event == a.event &&
+            sync == a.sync ) return true;
+        else
+            return false;
+    }
+
+    bool operator!=(const typeVecInt& a) const
+    {
+        if (wait == a.wait &&
+            trigger == a.trigger &&
+            event == a.event &&
+            sync == a.sync ) return false;
+        else
+            return true;
+    }
+};
+
+
+
 
 #endif //TIMER_H
