@@ -35,6 +35,7 @@
 #include "protocol_constants.h"
 #include "flooding_scheme.h"
 #include <miosix.h>
+#include "../board_setup.h"
 
 /**
  * A very simple flooding scheme, synchronized node implementation
@@ -114,23 +115,12 @@ private:
         syncFrame->setFCF(fcs);
         #endif //GLOSSY
         transceiver.writeFrame(*syncFrame);
-        timer.setAbsoluteTriggerEvent(value);
-        timer.wait();
+        timer.absoluteWaitTriggerEvent(value);
         miosix::ledOn();
-        timer.setAbsoluteTimeoutForEvent(value+preamblePacketTime+delaySendPacketTime);
-        timer.wait();
-        #if FLOPSYNC_DEBUG <2
+        timer.absoluteWaitTimeoutOrEvent(value+preamblePacketTime+delaySendPacketTime);
         transceiver.isSFDRaised();
-        #else //FLOPSYNC_DEBUG
-        transceiver.isSFDRaised()?puts("--FLOPSYNC_DEBUG-- SFD raised."):puts("--FLOPSYNC_DEBUG-- No SFD raised.");
-        #endif//FLOPSYNC_DEBUG
-        timer.setAbsoluteTimeoutForEvent(value+preamblePacketTime+payloadPacketTime+fcsPacketTime+delaySendPacketTime);
-        timer.wait();
-        #if FLOPSYNC_DEBUG <2
+        timer.absoluteWaitTimeoutOrEvent(value+preamblePacketTime+payloadPacketTime+fcsPacketTime+delaySendPacketTime);
         transceiver.isTxFrameDone();
-        #else //FLOPSYNC_DEBUG
-        transceiver.isTxFrameDone()?puts("--FLOPSYNC_DEBUG-- Tx Frame done."):puts("--FLOPSYNC_DEBUG-- Tx Frame not done.");
-        #endif//FLOPSYNC_DEBUG
     }
     
     Timer& timer;
@@ -146,14 +136,6 @@ private:
     #ifdef SEND_TIMESTAMPS
     unsigned long long receivedTimestamp;
     #endif //SEND_TIMESTAMPS
-    
-    #if FLOPSYNC_DEBUG >0
-    typedef miosix::Gpio<GPIOA_BASE,11> wakeup;
-    typedef miosix::Gpio<GPIOA_BASE,12> pll;
-    typedef miosix::Gpio<GPIOC_BASE,10> syncVht;
-    typedef miosix::Gpio<GPIOC_BASE,11> xoscRadioBoot;
-    typedef miosix::Gpio<GPIOC_BASE,12> jitterHW;
-    #endif //FLOPSYNC_DEBUG  
     
     static const unsigned char maxMissPackets=3;
 };

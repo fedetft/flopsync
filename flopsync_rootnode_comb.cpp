@@ -32,7 +32,7 @@
 #include "flopsync_v3/protocol_constants.h"
 #include "flopsync_v3/flooder_root_node.h"
 #include "flopsync_v3/synchronizer.h"
-#include "low_power_setup.h"
+#include "board_setup.h"
 
 using namespace std;
 
@@ -41,7 +41,7 @@ typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
 int main()
 {
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
+    blueLed::mode(miosix::Mode::INPUT); //FIXME
     puts(experimentName);
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setFrequency(2450);

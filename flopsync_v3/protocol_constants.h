@@ -110,10 +110,10 @@ const unsigned long long minw=static_cast<unsigned long long>(0.00006f*hz+0.5f);
 const unsigned long long retransmitDelta=static_cast<unsigned long long>(0.000252f*hz+0.5f);
 
 //Time for STM32 PLL startup (500us)
-const unsigned long long pllBoot=static_cast<unsigned long long>(0.0005f*hz+0.5f);
+//const unsigned long long pllBoot=static_cast<unsigned long long>(0.0005f*hz+0.5f);
 
 //Time for cc2520 to start its clock oscillator (1.5ms)
-const unsigned long long radioBoot=static_cast<unsigned long long>(0.001f*hz+0.5f); //FIXME
+//const unsigned long long radioBoot=static_cast<unsigned long long>(0.001f*hz+0.5f); 
 
 //Transmission of preamble begins 192us after STXON
 const unsigned long long txTurnaroundTime=static_cast<unsigned long long>(0.000192*hz+0.5f); 
@@ -134,15 +134,15 @@ const unsigned long long overwriteClockTime=static_cast<unsigned long long>(0.00
 
 #ifndef USE_VHT
 //Additional delay to absorb jitter (must be greater than pllBoot+radioBoot)
-const unsigned long long jitterHWAbsorption=static_cast<unsigned long long>(0.0005f*hz+0.5f); //FIXME
+const unsigned long long jitterAbsorption=static_cast<unsigned long long>(0.005f*hz+0.5f); //FIXME
 #else //USE_VHT
 //Additional delay to absorb jitter (must be greater than pllBoot+radioBoot)
 //Also needs to account for vht resynchronization time
-const unsigned long long jitterHWAbsorption=static_cast<unsigned long long>(0.001f*hz+0.5f);  //FIXME
+const unsigned long long jitterAbsorption=static_cast<unsigned long long>(0.0015f*hz+0.5f);  //FIXME
 #endif //USE_VHT
 
 //Additional delay to absorb jitter software (command transfer to spi + time to process instruction)
-const unsigned long long jitterSWAbsorption=static_cast<unsigned long long>(1*hz+0.5f); //FIXME
+//const unsigned long long jitterSWAbsorption=static_cast<unsigned long long>(0.005f*hz+0.5f); //FIXME
 
 //Time to transfer a 4 preamble + 1 sfd byte on an 250Kbps channel
 const unsigned long long preamblePacketTime=static_cast<unsigned long long>(5*8/channelbps*hz+0.5f); 

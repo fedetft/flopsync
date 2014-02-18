@@ -433,7 +433,7 @@ static void inline testVhtTriggerEventOscilloscope()
     int i=1;
     for(;;)
     {        
-        vht.absoluteWaitTriggerEvent(0.001*vhtFreq*i); // 1 ms
+        vht.absoluteWaitTriggerEvent(0.005*vhtFreq*i); // 500 us
         i++;
     }
 }
@@ -504,7 +504,7 @@ int main() {
     //testVhtWaitExtEvent();
     //testVhtWaitExtEventOrTimeout();
     //testVhtMonotonic();
-    //testVhtTriggerEventOscilloscope();
+    testVhtTriggerEventOscilloscope();
     //testOutputCompare();
-    generetCasualEvent();
+    //generetCasualEvent();
 }

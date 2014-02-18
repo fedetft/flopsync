@@ -55,12 +55,6 @@ typedef Gpio<GPIOB_BASE,9> trigger;
 typedef Gpio<GPIOC_BASE,13> clockout;
 typedef Gpio<GPIOB_BASE,6> clockin;
 
-#if TIMER_DEBUG >0
-typedef miosix::Gpio<GPIOA_BASE,11> wakeup;
-typedef miosix::Gpio<GPIOA_BASE,12> pll;
-typedef miosix::Gpio<GPIOC_BASE,10> syncVht;
-#endif//TIMER_DEBUG
-
 #if TIMER_DEBUG ==4
 typeTimer info;
 #endif //TIMER_DEBUG
@@ -231,16 +225,30 @@ void __attribute__((used)) tim4handlerImpl()
         //<= is necessary for allow wakeup missed
         if(remainingSlot <= 0)    
         {
-            TIM4->DIER &=~TIM_DIER_CC4IE;
-            TIM4->CCMR2 &=~TIM_CCMR2_OC4M_0 ;  //reset oc on mathc
-            TIM4->CCMR2 |=TIM_CCMR2_OC4M_2 ;   //force inactive level
+            //TIM4->CCMR2 &=~TIM_CCMR2_OC4M ;  //reset
+            //TIM4->CCMR2 |=TIM_CCMR2_OC4M_2 ;   //force inactive level
+            //TIM4->EGR |= TIM_EGR_UG;
+            //TIM4->CCMR2 &=~TIM_CCMR2_OC4M ; //frozen mode
+            //TIM4->CCMR2 |=TIM_CCMR2_OC4M_0 ;  //set oc on match
+            //TIM4->CCER &=~TIM_CCER_CC4E;
+            
+            TIM4->CCMR2 &=~TIM_CCMR2_OC4M ;  //frozen mode
             vhtInt.trigger=true;
-            TIM4->CCER &=~TIM_CCER_CC4E;
-            TIM4->CCMR2 &=~TIM_CCMR2_OC4M_2 ; //reset force inactive level
-            TIM4->CCMR2 |=TIM_CCMR2_OC4M_0 ;  //set oc on match
+            TIM4->DIER &=~TIM_DIER_CC4IE;
+            //TIM4->CCMR2 |=TIM_CCMR2_OC4M_2 ;   //force inactive level
+            //TIM4->CCMR2 &=~TIM_CCMR2_OC4M ;  //reset
+            pin15::low();
         }
-        else if(remainingSlot==1)
-                TIM4->CCER |= TIM_CCER_CC4E;
+        else 
+        {
+            if(remainingSlot==1)
+            {
+                //TIM4->CCER |= TIM_CCER_CC4E;
+                TIM4->CCMR2 |=TIM_CCMR2_OC4M_0 ; 
+                pin15::high();
+            }
+        }
+        
     }
     
     //IRQ overflow
@@ -327,7 +335,7 @@ void Rtc::absoluteWait(unsigned long long value)
 
 bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
 {
-    if(value)
+    if(value!=0)
     {
         FastInterruptDisableLock dLock;
         RTC->CRL |= RTC_CRL_CNF;
@@ -337,7 +345,7 @@ bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
         RTC->ALRH=value>>16;
         RTC->CRL &= ~RTC_CRL_CNF;
         rtcInt.wait=false;
-        rtcInt.trigger=false;
+        rtcInt.event=false;
         while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
         if(value > getValue())
         {
@@ -474,7 +482,7 @@ void Rtc::absoluteSleep(unsigned long long value)
         
         RTC->CRH &=~RTC_CRH_ALRIE;
         #if TIMER_DEBUG>0
-        pll::high();
+        pll_boot::high();
         #endif//TIMER_DEBUG
     }
 }
@@ -488,11 +496,6 @@ void Rtc::sleep(unsigned long long value)
 Rtc::Rtc()
 {
     trigger::mode(Mode::OUTPUT);
-    #if TIMER_DEBUG >0
-    wakeup::mode(Mode::OUTPUT);
-    pll::mode(Mode::OUTPUT);
-    syncVht::mode(Mode::OUTPUT);
-    #endif//TIMER_DEBUG
     FastInterruptDisableLock dLock;
     clockin::mode(Mode::INPUT);
     clockout::mode(Mode::OUTPUT);
@@ -608,7 +611,7 @@ void VHT::absoluteWait(unsigned long long value)
 bool VHT::absoluteWaitTimeoutOrEvent(unsigned long long value)
 {
     FastInterruptDisableLock dLock;
-    if(value)
+    if(value!=0)
     {
         vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
         TIM4->SR =~(TIM_SR_CC2IF |         //reset interrupt flag channel 2
@@ -684,9 +687,10 @@ void VHT::absoluteTriggerEvent(unsigned long long value)
 void VHT::absoluteWaitTriggerEvent(unsigned long long value)
 {
     FastInterruptDisableLock dLock;
+    TIM4->CCMR2 |=TIM_CCMR2_OC4M_2 ;   //force inactive level
+    TIM4->CCMR2 &=~TIM_CCMR2_OC4M ;  //reset
     //base case: wakeup is not in this turn 
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
-    TIM4->CCER &=~TIM_CCER_CC4E;
     TIM4->SR =~TIM_SR_CC4IF;  //reset interrupt flag channel 4
     TIM4->CCR4=vhtWakeupWait & 0xFFFF;  //set match register channel 4
     TIM4->DIER |= TIM_DIER_CC4IE;  
@@ -695,7 +699,7 @@ void VHT::absoluteWaitTriggerEvent(unsigned long long value)
     //check if wakeup is in this turn
     if(diff>0 && diff<= 0xFFFFll)
     {
-        TIM4->CCER |= TIM_CCER_CC4E;
+        TIM4->CCMR2 |=TIM_CCMR2_OC4M_0;
     }
     else
     {
@@ -703,8 +707,8 @@ void VHT::absoluteWaitTriggerEvent(unsigned long long value)
         if(diff<=0)
         {
             TIM4->DIER &=~TIM_DIER_CC4IE;
-            TIM4->CCER &=~TIM_CCER_CC4E;
             vhtInt.trigger = true;
+            TIM4->CCMR2 &=~TIM_CCMR2_OC4M_0;
         }
     }
     while(!vhtInt.trigger)
@@ -716,7 +720,6 @@ void VHT::absoluteWaitTriggerEvent(unsigned long long value)
             Thread::yield();
         }
     }
-    TIM4->DIER &=~TIM_DIER_CC1IE;
 }
 
 void VHT::absoluteSleep(unsigned long long value)
@@ -737,14 +740,13 @@ void VHT::absoluteSleep(unsigned long long value)
     rtc.absoluteSleep(conversion);
     synchronizeWithRtc();
     #if TIMER_DEBUG>0
-    syncVht::high();
+    sync_vht::high();
     #endif
 }
 
 void VHT::sleep(unsigned long long value)
 {
     absoluteSleep(getValue()+value);
-    synchronizeWithRtc();
 }
 
 
@@ -803,13 +805,12 @@ void VHT::synchronizeWithRtc()
         unsigned int a,b;
         a=RTC->CNTL;
         b=RTC->CNTH;
-        
-        vhtInt.sync=false;
+     
         TIM4->SR =~TIM_SR_CC1IF;     //Disable interrupt flag on channel 1
         TIM4->DIER |= TIM_DIER_CC1IE; //Enable interrupt on channel 1
         
         vhtSyncPointRtc=getRTC64bit(a | b<<16);
-        
+        vhtInt.sync=false;
         while(!vhtInt.sync)
         {
             vhtWaiting=Thread::IRQgetCurrentThread();
@@ -858,9 +859,8 @@ VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), offset(0)
               | TIM_CCMR1_IC1F_0; //Sample at 24MHz, resynchronize with 2 samples
     //setting cc register2 for channel 3 and 4
     TIM4->CCMR2=TIM_CCMR2_CC3S_0  //CC3 connected to input 3 (cc2520 SFD)
-              | TIM_CCMR2_IC3F_0  //Sample at 24MHz, resynchronize with 2 samples
-              | TIM_CCMR2_OC4M_0;
-    TIM4->CCER= TIM_CCER_CC1E | TIM_CCER_CC3E; //enable channel
+              | TIM_CCMR2_IC3F_0;  //Sample at 24MHz, resynchronize with 2 samples
+    TIM4->CCER= TIM_CCER_CC1E|TIM_CCER_CC3E|TIM_CCER_CC4E ;  //enable channel
     TIM4->DIER=TIM_DIER_UIE;  //Enable interrupt event @ end of time to set flag
     TIM4->CR1|=TIM_CR1_CEN;
     NVIC_SetPriority(TIM4_IRQn,5); //Low priority

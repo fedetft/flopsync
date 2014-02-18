@@ -75,7 +75,12 @@ static inline void cc2520GpioInit() {
         cc2520::vreg::low();
         cc2520::reset::mode(miosix::Mode::OUTPUT);
         cc2520::reset::high();
+        RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;         //enable AFIO reg
+        AFIO->EXTICR[1] |= AFIO_EXTICR2_EXTI6_PA;   //enable interrupt on PA6
         RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
+        NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
+        NVIC_SetPriority(EXTI9_5_IRQn,10); //low priority
+        NVIC_EnableIRQ(EXTI9_5_IRQn);
     }
     //Configuration SPI
     SPI1->CR1 = SPI_CR1_SSM //CS handled in software

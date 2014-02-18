@@ -52,7 +52,7 @@ TIM3 PARTIAL REMAP (CH1/PB4, CH2/PB5, CH3/PB0, CH4/PB1)
 
 GPIO mapping stm32vldiscovery to itself
 ---------------------------------------
-Connect PC13 and PB4 together
+Connect PC13 and PB6 together
 
 
 
@@ -60,7 +60,7 @@ GPIO mapping stm32vldiscovery to cc2520
 ------------------------------------------
 PCB | cc2520  | STM32      *       PCB | cc2520  | STM32
 1   | VREG_EN | PA3        *       2   | VSS     | GND 
-3   | GPIO3   | PB0        *       4   | GPIO0   |  -            <----CC2520
+3   | GPIO3   | PB8        *       4   | GPIO0   |  -            <----CC2520
 5   | CS      | PA2        *       6   | GPIO1   | PC4 
 7   | SCK     | PA5        *       8   | GPIO2   | PB2
 9   | SI      | PA7        *       10  | SO      | PA6 
@@ -71,5 +71,5 @@ PCB | cc2520  | STM32      *       PCB | cc2520  | STM32
 1   |    -    |  -         *       2   |    -    |  -
 3   | VCC     | 3V3        *       4   |    -    |  -
 5   | GPIO4   | ---        *       6   |    -    |  -          ----->CC2520
-7   | GPIO5   | PB1        *       8   |    -    |  - 
+7   | GPIO5   | PB9        *       8   |    -    |  - 
 9   | RESET   | PA1        *       10  |    -    |  -      

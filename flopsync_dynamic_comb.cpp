@@ -40,7 +40,7 @@
 #include "flopsync_v3/monotonic_clock.h"
 #include "flopsync_v3/non_monotonic_clock.h"
 #include "flopsync_v3/critical_section.h"
-#include "low_power_setup.h"
+#include "board_setup.h"
 
 using namespace std;
 

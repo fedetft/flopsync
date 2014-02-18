@@ -28,11 +28,12 @@
 #ifndef TIMER_H
 #define	TIMER_H
 #include <miosix.h>
-#if TIMER_DEBUG >0
-#include <cstdio> 
-#endif//TIMER_DEBUG
 
 #define TIMER_DEBUG 2 // 0 no debug; 1 soft debug; 2 pedantic debug; 4 for test;
+#if TIMER_DEBUG >0
+#include <cstdio> 
+#include "../board_setup.h"
+#endif//TIMER_DEBUG
 
 #define ccoRtc 32768ll
 #define ccoVht 24000000ll

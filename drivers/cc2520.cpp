@@ -54,22 +54,15 @@ void __attribute__((naked)) EXTI9_5_IRQHandler()
 void __attribute__((used)) xoscIrqhandlerImpl()
 {
     EXTI->PR=EXTI_PR_PR6;
-    RCC->APB2ENR &= ~RCC_APB2ENR_AFIOEN;
-    AFIO->EXTICR[1] &= ~AFIO_EXTICR2_EXTI6_PA;
     EXTI->IMR &= ~EXTI_IMR_MR6;
-    EXTI->EMR &= ~EXTI_EMR_MR6;
     EXTI->RTSR &= ~EXTI_RTSR_TR6;
     xoscInterrupt=true;
     if(!waiting) return;
     waiting->IRQwakeup();
-	if(waiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+	  if(waiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
 		Scheduler::IRQfindNextThread();
     waiting=0;
 }
-
-
-typedef miosix::Gpio<GPIOC_BASE, 6> xoscInt; //FIXME
-typedef miosix::Gpio<GPIOA_BASE, 0> button; //FIXME
 
 
 //
@@ -84,12 +77,8 @@ Cc2520& Cc2520::instance()
 
 Cc2520::Cc2520() :  autoFCS(true), mode(DEEP_SLEEP),timer(VHT::instance())
 {
-    button::mode(miosix::Mode::OUTPUT);
     cc2520GpioInit();
     setMode(DEEP_SLEEP);  //entry state of FSM
-    #if CC2520_DEBUG >0
-    xoscRadioBoot::mode(miosix::Mode::OUTPUT);
-    #endif//CC2520_DEBUG
 }
 
 void Cc2520::setMode(Mode mode)
@@ -131,7 +120,7 @@ void Cc2520::setMode(Mode mode)
                     commandStrobe(CC2520_INS_SFLUSHTX); //flush TX FIFO
                    
                     #if CC2520_DEBUG>0
-                    xoscRadioBoot::high();
+                    xosc_radio_boot::high();
                     #endif//CC2520_DEBUG
                     break;
                 case IDLE:
@@ -178,7 +167,7 @@ void Cc2520::setMode(Mode mode)
                     status = commandStrobe(CC2520_INS_SRXON); //Receive mode
                     isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
                     #if CC2520_DEBUG>0
-                    xoscRadioBoot::high();
+                    xosc_radio_boot::high();
                     #endif//CC2520_DEBUG
                     break;
                 case IDLE:
@@ -244,10 +233,6 @@ void Cc2520::setMode(Mode mode)
             switch(this->mode)
             {
                 case TX:
-                    status = commandStrobe(CC2520_INS_SRFOFF); //radio in IDLE
-                    isExcRaised(CC2520_EXC_USAGE_ERROR, status);
-                    isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
-                    break;
                 case RX:
                     status = commandStrobe(CC2520_INS_SRFOFF); //radio in IDLE
                     isExcRaised(CC2520_EXC_USAGE_ERROR, status);
@@ -259,6 +244,9 @@ void Cc2520::setMode(Mode mode)
                     //wait until SO=1 (clock stable and running)
                     wait();
                     cc2520::cs::high();
+                    #if CC2520_DEBUG>0
+                    xosc_radio_boot::high();
+                    #endif//CC2520_DEBUG
                     break;
                 case DEEP_SLEEP :
                     //reset device whit RESETn that automatically start crystal osc.
@@ -838,16 +826,9 @@ void Cc2520::initConfigureReg()
 void Cc2520::wait()
 {
     FastInterruptDisableLock dLock;
-    
-    RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
-    AFIO->EXTICR[1] |= AFIO_EXTICR2_EXTI6_PA;
     EXTI->IMR |= EXTI_IMR_MR6;
-    EXTI->EMR |= EXTI_EMR_MR6;
     EXTI->RTSR |= EXTI_RTSR_TR6;
-    EXTI->PR=EXTI_PR_PR6; //Clear eventual pending IRQ
-    NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
-    NVIC_SetPriority(EXTI9_5_IRQn,10); //low priority
-    NVIC_EnableIRQ(EXTI9_5_IRQn); 
+    EXTI->PR=EXTI_PR_PR6; //Clear eventual pending IRQ 
     xoscInterrupt=false;
     while(!xoscInterrupt)
     {

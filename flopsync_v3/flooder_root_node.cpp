@@ -45,34 +45,20 @@ FlooderRootNode::FlooderRootNode(Timer& timer) : timer(timer),
     #else
     syncFrame = new Frame(8,false,true);
     #endif //SEND_TIMESTAMPS
-
-    #if FLOPSYNC_DEBUG>0
-    wakeup::mode(miosix::Mode::OUTPUT);
-    pll::mode(miosix::Mode::OUTPUT);;
-    syncVht::mode(miosix::Mode::OUTPUT);
-    xoscRadioBoot::mode(miosix::Mode::OUTPUT);;
-    jitterHW::mode(miosix::Mode::OUTPUT);;
-    #endif //FLOPSYNC_DEBUG   
 }
 
 bool FlooderRootNode::synchronize()
 {
     #if FLOPSYNC_DEBUG  >0
-    if(wakeupTime<timer.getValue())
-    {
-        puts("--FLOPSYNC_DEBUG-- Wakeup is in the past.");
-        assert(false);
-    }
+    assert(timer.getValue()<wakeupTime);
     #endif//FLOPSYNC_DEBUG
-    timer.setAbsoluteWakeupSleep(wakeupTime);
-    timer.sleep();
-    frameStart=wakeupTime+jitterHWAbsorption+radioBoot+txTurnaroundTime+jitterSWAbsorption;
-    timer.setAbsoluteWakeupWait(wakeupTime+jitterHWAbsorption+radioBoot);
+    timer.absoluteSleep(wakeupTime);
+    frameStart=wakeupTime+jitterAbsorption+txTurnaroundTime;
     transceiver.setMode(Cc2520::TX);
     #ifndef SEND_TIMESTAMPS
     transceiver.setAutoFCS(false);
-    const unsigned char payload[]={0x00};
-    const unsigned char fcs[]={0xFF};
+    const unsigned char payload[1]={0x00};
+    const unsigned char fcs[1]={0xFF};
     syncFrame->setPayload(payload);
     syncFrame->setFCS(fcs);
     #else //SEND_TIMESTAMPS
@@ -84,36 +70,16 @@ bool FlooderRootNode::synchronize()
     // To minimize jitter in the packet transmission time caused by the
     // variable time sleepAndWait() takes to restart the STM32 PLL an
     // additional wait is done here to absorb the jitter.
-    timer.wait();
-    #if FLOPSYNC_DEBUG>0
-    jitterHW::high();
+
+    #if FLOPSYNC_DEBUG  >0
+    assert(timer.getValue()<frameStart-txTurnaroundTime);
     #endif//FLOPSYNC_DEBUG
-    
-    //CriticalSection cs;
-    timer.setAbsoluteTriggerEvent(frameStart-txTurnaroundTime);
-    timer.wait();
     miosix::ledOn();
-    timer.setAbsoluteTimeoutForEvent(frameStart+preamblePacketTime+delaySendPacketTime);
-    #if FLOPSYNC_DEBUG <2
-    timer.wait();
-    #else //FLOPSYNC_DEBUG
-    timer.wait()?
-        puts("--FLOPSYNC_DEBUG-- Timeout occurred."):puts("--FLOPSYNC_DEBUG-- Event occurred.");
-    #endif//FLOPSYNC_DEBUG
-    #if FLOPSYNC_DEBUG <2
+    timer.absoluteWaitTriggerEvent(frameStart-txTurnaroundTime);
+    timer.absoluteWaitTimeoutOrEvent(frameStart+preamblePacketTime+delaySendPacketTime);
     transceiver.isSFDRaised();
-    #else //FLOPSYNC_DEBUG
-    transceiver.isSFDRaised()?
-        puts("--FLOPSYNC_DEBUG-- SFD raised."):puts("--FLOPSYNC_DEBUG-- No SFD raised.");
-    #endif//FLOPSYNC_DEBUG
-    timer.setAbsoluteTimeoutForEvent(frameStart+packetTime+delaySendPacketTime);
-    timer.wait();
-    #if FLOPSYNC_DEBUG <2
+    timer.absoluteWaitTimeoutOrEvent(frameStart+packetTime+delaySendPacketTime);
     transceiver.isTxFrameDone();
-    #else //FLOPSYNC_DEBUG
-    transceiver.isTxFrameDone()?
-        puts("--FLOPSYNC_DEBUG-- Tx Frame done."):puts("--FLOPSYNC_DEBUG-- Tx Frame not done.");
-    #endif//FLOPSYNC_DEBUG
     miosix::ledOff(); //Falling edge signals synchronization packet sent
     
     transceiver.setMode(Cc2520::DEEP_SLEEP);
@@ -121,10 +87,9 @@ bool FlooderRootNode::synchronize()
     
     #if FLOPSYNC_DEBUG>0
     wakeup::low();
-    pll::low();
-    syncVht::low();
-    xoscRadioBoot::low();
-    jitterHW::low();
+    pll_boot::low();
+    sync_vht::low();
+    xosc_radio_boot::low();
     #endif//FLOPSYNC_DEBUG
     
     return false; //Root node does not desynchronize

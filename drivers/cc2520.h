@@ -30,9 +30,10 @@
 #include "timer.h"
 #include <miosix.h>
 
-#define CC2520_DEBUG 3 // 0 no debug; 1 soft debub; 2 pedantic debug; 4 for test;
+#define CC2520_DEBUG 1 // 0 no debug; 1 soft debub; 2 pedantic debug; 4 for test;
 
 #if CC2520_DEBUG >0
+#include "../board_setup.h"
 #include <cstdio>
 #endif //CC2520_DEBUG
 
@@ -563,10 +564,6 @@ private:
     bool autoFCS;
     Mode mode; //< Operating mode
     Timer& timer;
-    
-    #if CC2520_DEBUG>0
-    typedef miosix::Gpio<GPIOC_BASE,11> xoscRadioBoot;
-    #endif//CC2520_DEBUG
 };
 
 #endif //CC2520_H
