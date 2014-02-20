@@ -819,7 +819,7 @@ void Cc2520::initConfigureReg()
     writeReg(CC2520_GPIOCTRL3,0x22);
     
     #if CC2520_DEBUG >2
-    printf("--CC2520_DEBUG-- Initialize registers.\n");
+    printf("--CC2520_DEBUG-- Registers initialized.\n");
     #endif //CC2520_DEBUG
 }
 

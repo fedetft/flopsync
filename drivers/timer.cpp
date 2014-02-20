@@ -94,6 +94,7 @@ void __attribute__((used)) RTChandlerImpl()
         rtcTriggerEnable=false;
         rtcInt.trigger=true;
         RTC->CRL &=~RTC_CRH_ALRIE;
+        trigger::low();
     }
     if(!rtcWaiting) return;
     rtcWaiting->IRQwakeup();
@@ -225,27 +226,17 @@ void __attribute__((used)) tim4handlerImpl()
         //<= is necessary for allow wakeup missed
         if(remainingSlot <= 0)    
         {
-            //TIM4->CCMR2 &=~TIM_CCMR2_OC4M ;  //reset
-            //TIM4->CCMR2 |=TIM_CCMR2_OC4M_2 ;   //force inactive level
-            //TIM4->EGR |= TIM_EGR_UG;
-            //TIM4->CCMR2 &=~TIM_CCMR2_OC4M ; //frozen mode
-            //TIM4->CCMR2 |=TIM_CCMR2_OC4M_0 ;  //set oc on match
-            //TIM4->CCER &=~TIM_CCER_CC4E;
-            
-            TIM4->CCMR2 &=~TIM_CCMR2_OC4M ;  //frozen mode
             vhtInt.trigger=true;
             TIM4->DIER &=~TIM_DIER_CC4IE;
-            //TIM4->CCMR2 |=TIM_CCMR2_OC4M_2 ;   //force inactive level
-            //TIM4->CCMR2 &=~TIM_CCMR2_OC4M ;  //reset
-            pin15::low();
+            TIM4->CCMR2 &=~TIM_CCMR2_OC4M ;  //frozen mode
+            TIM4->CCMR2 |=TIM_CCMR2_OC4M_2 ; //force inactive level
+            TIM4->CCMR2 &=~TIM_CCMR2_OC4M ;  //frozen mode
         }
         else 
         {
             if(remainingSlot==1)
             {
-                //TIM4->CCER |= TIM_CCER_CC4E;
-                TIM4->CCMR2 |=TIM_CCMR2_OC4M_0 ; 
-                pin15::high();
+                TIM4->CCMR2 |=TIM_CCMR2_OC4M_0; //active level on match 
             }
         }
         
@@ -378,7 +369,7 @@ bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
     return rtcInt.wait;
 }
 
-void Rtc::absoluteTriggerEvent(unsigned long long value)
+void Rtc::absoluteTrigger(unsigned long long value)
 {
     FastInterruptDisableLock dLock;
     trigger::low();
@@ -395,7 +386,7 @@ void Rtc::absoluteTriggerEvent(unsigned long long value)
     FastInterruptEnableLock eLock(dLock);
 }
 
-void Rtc::absoluteWaitTriggerEvent(unsigned long long value)
+void Rtc::absoluteWaitTrigger(unsigned long long value)
 {
     FastInterruptDisableLock dLock;
     trigger::low();
@@ -657,38 +648,9 @@ bool VHT::absoluteWaitTimeoutOrEvent(unsigned long long value)
     return vhtInt.wait;
 }
 
-void VHT::absoluteTriggerEvent(unsigned long long value)
+void VHT::absoluteTrigger(unsigned long long value)
 {
     FastInterruptDisableLock dLock;
-    //base case: wakeup is not in this turn 
-    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
-    TIM4->CCER &=~TIM_CCER_CC4E;
-    TIM4->SR =~TIM_SR_CC4IF;  //reset interrupt flag channel 4
-    TIM4->CCR4=vhtWakeupWait & 0xFFFF;  //set match register channel 4
-    TIM4->DIER |= TIM_DIER_CC4IE;  
-    long long diff = vhtWakeupWait-((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0)) | TIM4->CNT);
-    //check if wakeup is in this turn
-    if(diff>0 && diff<= 0xFFFFll)
-    {
-        TIM4->CCER |= TIM_CCER_CC4E;
-    }
-    else
-    {
-        // else check if wakeup is in the past
-        if(diff<=0)
-        {
-            TIM4->DIER &=~TIM_DIER_CC4IE;
-            TIM4->CCER &=~TIM_CCER_CC4E;
-        }
-    }
-    FastInterruptEnableLock eLock(dLock);  
-}
-
-void VHT::absoluteWaitTriggerEvent(unsigned long long value)
-{
-    FastInterruptDisableLock dLock;
-    TIM4->CCMR2 |=TIM_CCMR2_OC4M_2 ;   //force inactive level
-    TIM4->CCMR2 &=~TIM_CCMR2_OC4M ;  //reset
     //base case: wakeup is not in this turn 
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
     TIM4->SR =~TIM_SR_CC4IF;  //reset interrupt flag channel 4
@@ -699,7 +661,7 @@ void VHT::absoluteWaitTriggerEvent(unsigned long long value)
     //check if wakeup is in this turn
     if(diff>0 && diff<= 0xFFFFll)
     {
-        TIM4->CCMR2 |=TIM_CCMR2_OC4M_0;
+        TIM4->CCMR2 |=TIM_CCMR2_OC4M_0; //active level on match
     }
     else
     {
@@ -708,7 +670,34 @@ void VHT::absoluteWaitTriggerEvent(unsigned long long value)
         {
             TIM4->DIER &=~TIM_DIER_CC4IE;
             vhtInt.trigger = true;
-            TIM4->CCMR2 &=~TIM_CCMR2_OC4M_0;
+            TIM4->CCMR2 &=~TIM_CCMR2_OC4M; //frozen mode
+        }
+    } 
+}
+
+void VHT::absoluteWaitTrigger(unsigned long long value)
+{
+    FastInterruptDisableLock dLock;
+    //base case: wakeup is not in this turn 
+    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
+    TIM4->SR =~TIM_SR_CC4IF;            //reset interrupt flag channel 4
+    TIM4->CCR4=vhtWakeupWait & 0xFFFF;  //set match register channel 4
+    TIM4->DIER |= TIM_DIER_CC4IE;  
+    vhtInt.trigger=false; 
+    long long diff = vhtWakeupWait-((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0)) | TIM4->CNT);
+    //check if wakeup is in this turn
+    if(diff>0 && diff<= 0xFFFFll)
+    {
+        TIM4->CCMR2 |=TIM_CCMR2_OC4M_0; //active level on match
+    }
+    else
+    {
+        // else check if wakeup is in the past
+        if(diff<=0)
+        {
+            TIM4->DIER &=~TIM_DIER_CC4IE;
+            vhtInt.trigger = true;
+            TIM4->CCMR2 &=~TIM_CCMR2_OC4M; //frozen mode
         }
     }
     while(!vhtInt.trigger)
@@ -844,12 +833,7 @@ VHT::VHT() : rtc(Rtc::instance()), vhtBase(0), offset(0)
     {
         FastInterruptDisableLock dLock;
         RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
-       // RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
     }
-    
-    //TIM4 PARTIAL REMAP (CH1/PB4, CH2/PB5, CH3/PB0, CH4/PB1)
-    //AFIO->MAPR = AFIO_MAPR_TIM3_REMAP_1;
-    
     TIM4->CNT=0;
     TIM4->PSC=vhtPrescaler;  //  24000000/24000000-1; //High frequency timer runs @24MHz
     TIM4->ARR=0xFFFF; //auto reload if counter register go in overflow

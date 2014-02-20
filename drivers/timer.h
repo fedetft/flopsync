@@ -90,22 +90,24 @@ public:
     
     /**
      * Set the timer interrupt to occur at an absolute value.
-     * when the timer interrupt will occur, the associated GPIO passes 
-     * from a low logic level to a high logic level.
+     * When the timer interrupt will occur, the associated GPIO passes 
+     * from a low logic level to a high logic level for few us. 
      * \param value absolute value when the interrupt will occur, expressed in 
      * number of tick of the count rate of timer.
      */
-    virtual void absoluteTriggerEvent(unsigned long long value)=0;
+    virtual void absoluteTrigger(unsigned long long value)=0;
     
     /**
      * Set the timer interrupt to occur at an absolute value and put the 
      * thread in wait of this. 
+     * When the timer interrupt will occur, the associated GPIO passes 
+     * from a low logic level to a high logic level for few us.
      * \param value absolute value when the interrupt will occur, expressed in 
      * number of tick of the count rate of timer.
      * If value of absolute time is in the past no waiting will be set
      * and function return immediately.
      */
-    virtual void absoluteWaitTriggerEvent(unsigned long long value)=0;
+    virtual void absoluteWaitTrigger(unsigned long long value)=0;
     
     /**
      * Put thread in wait for the specified relative time.
@@ -186,22 +188,23 @@ public:
     
     /**
      * Set the timer interrupt to occur at an absolute value.
-     * when the timer interrupt will occur, the associated GPIO passes 
-     * from a low logic level to a high logic level.
-     * \param value absolute value when the interrupt will occur, expressed in 
+     * When the timer interrupt will occur, the associated GPIO passes 
+     * from a low logic level to a high logic level for few us. 
      * number of tick of the count rate of timer.
      */
-    void absoluteTriggerEvent(unsigned long long value);
+    void absoluteTrigger(unsigned long long value);
     
     /**
      * Set the timer interrupt to occur at an absolute value and put the 
      * thread in wait of this. 
+     * When the timer interrupt will occur, the associated GPIO passes 
+     * from a low logic level to a high logic level for few us. 
      * \param value absolute value when the interrupt will occur, expressed in 
      * number of tick of the count rate of timer.
      * If value of absolute time is in the past no waiting will be set
      * and function return immediately.
      */
-    void absoluteWaitTriggerEvent(unsigned long long value);
+    void absoluteWaitTrigger(unsigned long long value);
     
     /**
      * Put thread in wait for the specified relative time.
@@ -296,22 +299,24 @@ public:
     
     /**
      * Set the timer interrupt to occur at an absolute value.
-     * when the timer interrupt will occur, the associated GPIO passes 
-     * from a low logic level to a high logic level.
+     * When the timer interrupt will occur, the associated GPIO passes 
+     * from a low logic level to a high logic level for few us.
      * \param value absolute value when the interrupt will occur, expressed in 
      * number of tick of the count rate of timer.
      */
-    void absoluteTriggerEvent(unsigned long long value);
+    void absoluteTrigger(unsigned long long value);
     
     /**
      * Set the timer interrupt to occur at an absolute value and put the 
      * thread in wait of this. 
+     * When the timer interrupt will occur, the associated GPIO passes 
+     * from a low logic level to a high logic level for few us.
      * \param value absolute value when the interrupt will occur, expressed in 
      * number of tick of the count rate of timer.
      * If value of absolute time is in the past no waiting will be set
      * and function return immediately.
      */
-    void absoluteWaitTriggerEvent(unsigned long long value);
+    void absoluteWaitTrigger(unsigned long long value);
     
     /**
      * Put thread in wait for the specified relative time.
