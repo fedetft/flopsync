@@ -78,9 +78,8 @@ bool FlooderSyncNode::synchronize()
     for(;;)
     {
         //timeout end of window
-        timeout = timer.absoluteWaitTimeoutOrEvent(computedFrameStart+receiverWindow-packetTime);
+        timeout = timer.absoluteWaitTimeoutOrEvent(computedFrameStart+receiverWindow+preamblePacketTime);
         measuredFrameStart=timer.getExtEventTimestamp()-preamblePacketTime;
-
         miosix::ledOff();
         if(timeout) break;
 
@@ -178,7 +177,7 @@ bool FlooderSyncNode::synchronize()
 }
 
 void FlooderSyncNode::resynchronize()
-{ 
+{
     #if FLOPSYNC_DEBUG >0
     puts("Resynchronize...");
     #endif//FLOPSYNC_DEBUG
@@ -207,7 +206,7 @@ void FlooderSyncNode::resynchronize()
         transceiver.isRxFrameDone();
         //Wait end of packet
         #ifndef SEND_TIMESTAMPS
-        //Empty frame not inizialized with lenght.
+        //Empty frame not initialized with length.
         syncFrame = new Frame(false,false,1);
         #else
         syncFrame = new Frame(false,true);
@@ -257,10 +256,6 @@ void FlooderSyncNode::resynchronize()
     #else// GLOSSY
     //FIXME
     #endif//GLOSSY
-    #if FLOPSYNC_DEBUG >0
-    puts("Synchronized");
-    #endif//FLOPSYNC_DEBUG
-    
 }
 
 FlooderSyncNode::~FlooderSyncNode()

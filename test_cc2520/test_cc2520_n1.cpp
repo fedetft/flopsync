@@ -32,12 +32,13 @@ int main(int argc, char** argv) {
 
     puts("---------------Test cc2520: node1 receiver---------------");
     
-    unsigned char packet[5];
+    unsigned char packet[2];
     
     Cc2520& cc2520 = Cc2520::instance();
     
     cc2520.setFrequency(2450);
     cc2520.setMode(Cc2520::RX);
+    cc2520.setAutoFCS(false);
     
     greenLed::high();
     blueLed::low();
@@ -47,8 +48,8 @@ int main(int argc, char** argv) {
         if(cc2520.isRxFrameDone()==1)
         {
             blueLed::high();
-            unsigned char len =1;
-            cc2520.readFrame(len,packet);
+            unsigned char len =2;
+            printf("readFrame ret: %d\n",cc2520.readFrame(len,packet));
             printf("Ho ricevuto: %x\n",*packet);
             blueLed::low(); 
         }

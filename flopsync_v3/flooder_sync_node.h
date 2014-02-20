@@ -115,7 +115,7 @@ private:
         syncFrame->setFCF(fcs);
         #endif //GLOSSY
         transceiver.writeFrame(*syncFrame);
-        timer.absoluteWaitTriggerEvent(value);
+        timer.absoluteWaitTrigger(value);
         miosix::ledOn();
         timer.absoluteWaitTimeoutOrEvent(value+preamblePacketTime+delaySendPacketTime);
         transceiver.isSFDRaised();

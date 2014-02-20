@@ -66,16 +66,20 @@ bool FlooderRootNode::synchronize()
     unsigned long long *payload=&frameStart;
     syncFrame->setPayload(payload);
     #endif //SEND_TIMESTAMPS
+    #if FLOPSYNC_DEBUG  >0
+    assert(transceiver.writeFrame(*syncFrame)==0);
+    #else//FLOPSYNC_DEBUG
     transceiver.writeFrame(*syncFrame);
-    // To minimize jitter in the packet transmission time caused by the
-    // variable time sleepAndWait() takes to restart the STM32 PLL an
-    // additional wait is done here to absorb the jitter.
+    #endif//FLOPSYNC_DEBUG
 
     #if FLOPSYNC_DEBUG  >0
     assert(timer.getValue()<frameStart-txTurnaroundTime);
     #endif//FLOPSYNC_DEBUG
     miosix::ledOn();
-    timer.absoluteWaitTriggerEvent(frameStart-txTurnaroundTime);
+    timer.absoluteWaitTrigger(frameStart-txTurnaroundTime);
+    timer.absoluteWait(frameStart);
+    pin15::high();
+    pin15::low();
     timer.absoluteWaitTimeoutOrEvent(frameStart+preamblePacketTime+delaySendPacketTime);
     transceiver.isSFDRaised();
     timer.absoluteWaitTimeoutOrEvent(frameStart+packetTime+delaySendPacketTime);

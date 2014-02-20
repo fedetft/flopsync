@@ -1,9 +1,10 @@
 
-#ifndef LOW_POWER_SETUP_H
-#define LOW_POWER_SETUP_H
+#ifndef BOARD_SETUP_H
+#define BOARD_SETUP_H
 
 #include <miosix.h>
 #include "flopsync_v3/protocol_constants.h"
+
 
 #if FLOPSYNC_DEBUG == 0
 //inline because it's called once
@@ -31,16 +32,16 @@ inline void lowPowerSetup()
     Gpio<GPIOA_BASE,14>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOA_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN);
     
-    //Gpio<GPIOB_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 GPIO3
-    //Gpio<GPIOB_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN); //send packet
+    Gpio<GPIOB_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN); 
+    Gpio<GPIOB_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN); 
     //Gpio<GPIOB_BASE,2>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 fifop_irq
     Gpio<GPIOB_BASE,3>::mode(Mode::INPUT_PULL_UP_DOWN);
-    //Gpio<GPIOB_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN); //RTC clock in
+    Gpio<GPIOB_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOB_BASE,5>::mode(Mode::INPUT_PULL_UP_DOWN); 
-    Gpio<GPIOB_BASE,6>::mode(Mode::INPUT_PULL_UP_DOWN);
+    //Gpio<GPIOB_BASE,6>::mode(Mode::INPUT_PULL_UP_DOWN); //TIM4 ch1 vhtSyncRtc
     Gpio<GPIOB_BASE,7>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOB_BASE,8>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOB_BASE,9>::mode(Mode::INPUT_PULL_UP_DOWN);
+    //Gpio<GPIOB_BASE,8>::mode(Mode::INPUT_PULL_UP_DOWN); //TIM4 ch3 wait
+    //Gpio<GPIOB_BASE,9>::mode(Mode::INPUT_PULL_UP_DOWN); //TIM4 ch4 trigger
     Gpio<GPIOB_BASE,10>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOB_BASE,11>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOB_BASE,12>::mode(Mode::INPUT_PULL_UP_DOWN);
@@ -66,6 +67,16 @@ inline void lowPowerSetup()
     //Gpio<GPIOC_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN);
 }
 #else 
+
+typedef miosix::Gpio<GPIOA_BASE,11> int_dis;
+typedef miosix::Gpio<GPIOB_BASE,10> wakeup;
+typedef miosix::Gpio<GPIOB_BASE,11> pll_boot;
+typedef miosix::Gpio<GPIOB_BASE,12> sync_vht;
+typedef miosix::Gpio<GPIOB_BASE,13> xosc_radio_boot;
+typedef miosix::Gpio<GPIOB_BASE,14> pin14;
+typedef miosix::Gpio<GPIOB_BASE,15> pin15;
+typedef miosix::Gpio<GPIOA_BASE,0> button;
+
 inline void lowPowerSetup()
 {
     using namespace miosix;
@@ -84,28 +95,30 @@ inline void lowPowerSetup()
     Gpio<GPIOA_BASE,8>::mode(Mode::INPUT_PULL_UP_DOWN);
     //Gpio<GPIOA_BASE,9>::mode(Mode::INPUT_PULL_UP_DOWN); //Serial port
     //Gpio<GPIOA_BASE,10>::mode(Mode::INPUT_PULL_UP_DOWN);
-    //Gpio<GPIOA_BASE,11>::mode(Mode::INPUT_PULL_UP_DOWN); //hw debug wakeup
-    //Gpio<GPIOA_BASE,12>::mode(Mode::INPUT_PULL_UP_DOWN); //hw debug pll
+    //Gpio<GPIOA_BASE,11>::mode(Mode::INPUT_PULL_UP_DOWN); //debug int_dis
+    Gpio<GPIOA_BASE,12>::mode(Mode::INPUT_PULL_UP_DOWN); 
     Gpio<GPIOA_BASE,13>::mode(Mode::INPUT_PULL_UP_DOWN); 
     Gpio<GPIOA_BASE,14>::mode(Mode::INPUT_PULL_UP_DOWN); 
     Gpio<GPIOA_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN); 
     
-    //Gpio<GPIOB_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 GPIO3
-    //Gpio<GPIOB_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN); //send packet
+    Gpio<GPIOB_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN); 
+    Gpio<GPIOB_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN); 
     //Gpio<GPIOB_BASE,2>::mode(Mode::INPUT_PULL_UP_DOWN); //cc2520 fifop_irq
     Gpio<GPIOB_BASE,3>::mode(Mode::INPUT_PULL_UP_DOWN);
-    //Gpio<GPIOB_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN); //RTC clock in
+    Gpio<GPIOB_BASE,4>::mode(Mode::INPUT_PULL_UP_DOWN); 
     Gpio<GPIOB_BASE,5>::mode(Mode::INPUT_PULL_UP_DOWN); 
-    Gpio<GPIOB_BASE,6>::mode(Mode::INPUT_PULL_UP_DOWN);
+    //Gpio<GPIOB_BASE,6>::mode(Mode::INPUT_PULL_UP_DOWN); //TIM4 ch1 vhtSyncRtc
     Gpio<GPIOB_BASE,7>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOB_BASE,8>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOB_BASE,9>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOB_BASE,10>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOB_BASE,11>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOB_BASE,12>::mode(Mode::INPUT_PULL_UP_DOWN);
-    Gpio<GPIOB_BASE,13>::mode(Mode::INPUT_PULL_UP_DOWN); //debugger
-    Gpio<GPIOB_BASE,14>::mode(Mode::INPUT_PULL_UP_DOWN); //debbuger
-    Gpio<GPIOB_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN);
+    
+    //Gpio<GPIOB_BASE,8>::mode(Mode::INPUT_PULL_UP_DOWN); //TIM4 ch3 wait
+    //Gpio<GPIOB_BASE,9>::mode(Mode::INPUT_PULL_UP_DOWN); //TIM4 ch4 trigger
+    
+    //Gpio<GPIOB_BASE,10>::mode(Mode::INPUT_PULL_UP_DOWN); //debug
+    //Gpio<GPIOB_BASE,11>::mode(Mode::INPUT_PULL_UP_DOWN); //debug
+    //Gpio<GPIOB_BASE,12>::mode(Mode::INPUT_PULL_UP_DOWN); //debug
+    //Gpio<GPIOB_BASE,13>::mode(Mode::INPUT_PULL_UP_DOWN); //debug
+    //Gpio<GPIOB_BASE,14>::mode(Mode::INPUT_PULL_UP_DOWN); //debug
+    //Gpio<GPIOB_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN); //debug
     
     Gpio<GPIOC_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOC_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN);
@@ -117,12 +130,22 @@ inline void lowPowerSetup()
     Gpio<GPIOC_BASE,7>::mode(Mode::INPUT_PULL_UP_DOWN);
     //Gpio<GPIOC_BASE,8>::mode(Mode::INPUT_PULL_UP_DOWN); //Led
     //Gpio<GPIOC_BASE,9>::mode(Mode::INPUT_PULL_UP_DOWN); //Led
-    //Gpio<GPIOC_BASE,10>::mode(Mode::INPUT_PULL_UP_DOWN); //hw debug syncVHT
-    //Gpio<GPIOC_BASE,11>::mode(Mode::INPUT_PULL_UP_DOWN); //hw debug xoscRadioBoot
-    //Gpio<GPIOC_BASE,12>::mode(Mode::INPUT_PULL_UP_DOWN); //hw debug jitterHW
+    Gpio<GPIOC_BASE,10>::mode(Mode::INPUT_PULL_UP_DOWN); 
+    Gpio<GPIOC_BASE,11>::mode(Mode::INPUT_PULL_UP_DOWN); 
+    Gpio<GPIOC_BASE,12>::mode(Mode::INPUT_PULL_UP_DOWN); 
     //Gpio<GPIOC_BASE,13>::mode(Mode::INPUT_PULL_UP_DOWN); //RTC clock out
     //Gpio<GPIOC_BASE,14>::mode(Mode::INPUT_PULL_UP_DOWN); //32KHz XTAL
     //Gpio<GPIOC_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN);
+    
+    button::mode(miosix::Mode::OUTPUT);
+    int_dis::mode(miosix::Mode::OUTPUT);
+    wakeup::mode(miosix::Mode::OUTPUT);
+    pll_boot::mode(miosix::Mode::OUTPUT);
+    sync_vht::mode(miosix::Mode::OUTPUT);
+    xosc_radio_boot::mode(miosix::Mode::OUTPUT);
+    pin14::mode(miosix::Mode::OUTPUT);
+    pin15::mode(miosix::Mode::OUTPUT);
 }
+
 #endif //FLOPSYNC_DEBUG
-#endif //LOW_POWER_SETUP_H
+#endif //BOARD_SETUP_H

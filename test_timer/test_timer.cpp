@@ -125,7 +125,7 @@ static void inline testRtcTriggerEvent()
     printf("Timestamp:  %016llX\n",rtc.getValue());
     for(;;)
     {        
-        rtc.absoluteTriggerEvent((0xFFFFFFFFll-5/2*rtcFreq) + (i*rtcFreq)); //1 secondo
+        rtc.absoluteTrigger((0xFFFFFFFFll-5/2*rtcFreq) + (i*rtcFreq)); //1 secondo
         printf("Timestamp:  %016llX\n",rtc.getValue());
         miosix::delayMs(1200);
         i++;
@@ -146,7 +146,7 @@ static void inline testRtcTriggerEventWait()
     printf("Timestamp:  %016llX\n",rtc.getValue());
     for(;;)
     {        
-        rtc.absoluteWaitTriggerEvent((0xFFFFFFFFll-5/2*rtcFreq) + (i*rtcFreq)); //1 secondo
+        rtc.absoluteWaitTrigger((0xFFFFFFFFll-5/2*rtcFreq) + (i*rtcFreq)); //1 secondo
         printf("Timestamp:  %016llX\n",rtc.getValue());
         i++;
     }
@@ -390,7 +390,7 @@ static void inline testVhtTriggerEvent()
     int i=1;
     for(;;)
     {        
-        vht.absoluteTriggerEvent(vhtFreq*i); //un secondo
+        vht.absoluteTrigger(vhtFreq*i); //un secondo
         miosix::delayMs(1200);
         printf("Timestamp:  %016llX\n",vht.getValue());
         i++;
@@ -411,7 +411,7 @@ static void inline testVhtWaitTriggerEvent()
     int i=1;
     for(;;)
     {        
-        vht.absoluteWaitTriggerEvent(vhtFreq*i); //un secondo
+        vht.absoluteWaitTrigger(vhtFreq*i); //un secondo
        
         printf("Timestamp:  %016llX\n",vht.getValue());
         i++;
@@ -433,7 +433,7 @@ static void inline testVhtTriggerEventOscilloscope()
     int i=1;
     for(;;)
     {        
-        vht.absoluteWaitTriggerEvent(0.005*vhtFreq*i); // 500 us
+        vht.absoluteWaitTrigger(0.005*vhtFreq*i); // 500 us
         i++;
     }
 }
