@@ -94,35 +94,13 @@ public:
      */
     unsigned int getRadioTimestamp() const
     {
-        return receivedTimestamp+preamblePacketTime; //Correct for packet lenght
+        return receivedTimestamp+preambleFrameTime; //Correct for packet length
     }
     #endif //SEND_TIMESTAMPS
 
     ~FlooderSyncNode();
     
 private:  
-    /**
-     * Resend the synchronization packet to let other hops synchronize
-     */
-    void inline rebroadcast(unsigned long long value)
-    {
-        transceiver.setAutoFCS(false);
-        transceiver.setMode(Cc2520::TX);  
-        #ifndef GLOSSY
-        const unsigned char packet[]={hop+1};
-        const unsigned char fcs[]={~(hop+1)};
-        syncFrame->setPayload(packet);
-        syncFrame->setFCF(fcs);
-        #endif //GLOSSY
-        transceiver.writeFrame(*syncFrame);
-        timer.absoluteWaitTrigger(value);
-        miosix::ledOn();
-        timer.absoluteWaitTimeoutOrEvent(value+preamblePacketTime+delaySendPacketTime);
-        transceiver.isSFDRaised();
-        timer.absoluteWaitTimeoutOrEvent(value+preamblePacketTime+payloadPacketTime+fcsPacketTime+delaySendPacketTime);
-        transceiver.isTxFrameDone();
-    }
-    
     Timer& timer;
     Cc2520& transceiver;
     Synchronizer& synchronizer;

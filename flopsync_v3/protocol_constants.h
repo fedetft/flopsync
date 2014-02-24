@@ -30,34 +30,30 @@
 
 // Define this to test the regulator performance with the relative clock model,
 // while comment it out to test the absolute clock model
-//#define RELATIVE_CLOCK //@@ Filled in by mkpackage.pl
-
-// This is to force a node to attach to the second tier in a multihop
-// configuration (legacy, not used)
-//#define SECOND_HOP //@@ Filled in by mkpackage.pl
+//#define RELATIVE_CLOCK
 
 // Defined if we're in a multi hop environment
 //#define MULTI_HOP //@@ Filled in by mkpackage.pl
 
 // Disables deep sleep in the root node to make it responsive to commands that
 // are sent from the command serial port
-//#define INTERACTIVE_ROOTNODE //@@ Filled in by mkpackage.pl
+//#define INTERACTIVE_ROOTNODE
 
 // Enables event timestamping
-//#define EVENT_TIMESTAMPING //@@ Filled in by mkpackage.pl
+//#define EVENT_TIMESTAMPING
 
 // Enables virtual high resolution timer
 //#define USE_VHT //@@ Filled in by mkpackage.pl
 
 //Synchronized nodes send temperature to root node
-//#define SENSE_TEMPERATURE //@@ Filled in by mkpackage.pl
+//#define SENSE_TEMPERATURE
 
 //Send timestamps in sync packets, used to make a comparison with existing
 //WSN sync schemes.
-//#define SEND_TIMESTAMPS //@@ Filled in by mkpackage.pl
+//#define SEND_TIMESTAMPS
 
 //Enable glossy flooding
-//#define GLOSSY //@@ Filled in by mkpackage.pl
+//#define GLOSSY
 
 ///This is for enable debug flopsync
 #define FLOPSYNC_DEBUG  1
@@ -82,26 +78,20 @@ const unsigned long long hz=16384;
 const unsigned long long hz=24000000;
 #endif //USE_VHT
 
+// Give a hop for this node
+const unsigned char node_hop=0; //@@ Filled in by mkpackage.pl
+
 //Sync period
 const unsigned long long nominalPeriod=static_cast<unsigned long long>(60*hz+0.5f); //@@ Filled in by mkpackage.pl
 
-//In a real implementation this should need to be computed randomly per node
-//(legacy, not used)
-#ifndef SECOND_HOP
-const unsigned long long retransmitPoint=static_cast<unsigned long long>(0.333f*nominalPeriod+0.5f);
-#else //SECOND_HOP
-const unsigned long long retransmitPoint=static_cast<unsigned long long>(0.667f*nominalPeriod+0.5f);
-#endif //SECOND_HOP
-
-
 //Sync window (fixed window), or maximum sync window (dynamic window)
-const unsigned long long w=static_cast<unsigned long long>(0.002f*hz+0.5f);
+const unsigned long long w=static_cast<unsigned long long>(0.005f*hz+0.5f);
 
 //Minimum sync window (dynamic window only)
 #ifndef USE_VHT
 const unsigned long long minw=static_cast<unsigned long long>(0.001f*hz+0.5f);
 #else //USE_VHT
-const unsigned long long minw=static_cast<unsigned long long>(0.00002f*hz+0.5f);
+const unsigned long long minw=static_cast<unsigned long long>(0.00003f*hz+0.5f);
 #endif //USE_VHT
 
 //Retransmit time for flopsync2 "Flooder" flooding scheme (252us)
@@ -118,8 +108,8 @@ const unsigned long long retransmitDelta=static_cast<unsigned long long>(0.00025
 //Transmission of preamble begins 192us after STXON
 const unsigned long long txTurnaroundTime=static_cast<unsigned long long>(0.000192*hz+0.5f); 
 
-//Receiver is ready 192us after RX are enabled
-const unsigned long long rxTurnaroundTime=static_cast<unsigned long long>(0.000192*hz+0.5f);
+//Receiver is ready 192us after RX are enabled but to eliminate jitterSoftware we set it to 250us
+const unsigned long long rxTurnaroundTime=static_cast<unsigned long long>(0.000250*hz+0.5f);
 
 //Time required to read the timestamp in the packet and overwrite the node's
 //hardware clock (38us), measured with an oscilloscope. Used if SEND_TIMESTAMPS
@@ -132,51 +122,54 @@ const unsigned long long jitterAbsorption=static_cast<unsigned long long>(0.005f
 #else //USE_VHT
 //Additional delay to absorb jitter (must be greater than pllBoot+radioBoot)
 //Also needs to account for vht resynchronization time
-const unsigned long long jitterAbsorption=static_cast<unsigned long long>(0.002f*hz+0.5f);  //FIXME
+const unsigned long long jitterAbsorption=static_cast<unsigned long long>(0.0015f*hz+0.5f);  //FIXME
 #endif //USE_VHT
 
+//Time measured with oscilloscope between sfd sender and sfd receiver is 3.4us +o- 100ns
+const unsigned long long trasmissionTime=static_cast<unsigned long long>(0.0000034f*hz+0.5f); 
+
 //Time to transfer a 4 preamble + 1 sfd byte on an 250Kbps channel
-const unsigned long long preamblePacketTime=static_cast<unsigned long long>((5*8*hz)/channelbps+0.5f); 
+const unsigned long long preambleFrameTime=static_cast<unsigned long long>((5*8*hz)/channelbps+0.5f); 
  
 #ifndef SEND_TIMESTAMPS
 //Time to transfer a 2byte of payload on an 250Kbps channel (1byte of LEN 1 payload)
-const unsigned long long payloadPacketTime=static_cast<unsigned long long>((2*8*hz)/channelbps+0.5f);
+const unsigned long long payloadFrameTime=static_cast<unsigned long long>((2*8*hz)/channelbps+0.5f);
 //Time to transfer a 1byte of fcs on an 250Kbps channel 
-const unsigned long long fcsPacketTime=static_cast<unsigned long long>((1*8*hz)/channelbps+0.5f);
+const unsigned long long fcsFrameTime=static_cast<unsigned long long>((1*8*hz)/channelbps+0.5f);
 //Time to transfer piggybacking
 const unsigned long long piggybackingTime=static_cast<unsigned long long>((0*8*hz)/channelbps+0.5f);
 //Time to transfer full packet
-const unsigned long long packetTime=static_cast<unsigned long long>((8*8*hz)/channelbps+0.5f);
+const unsigned long long frameTime=static_cast<unsigned long long>((8*8*hz)/channelbps+0.5f);
 #else //SEND_TIMESTAMPS
 //Time to transfer a 9byte of payload on an 250Kbps channel (1byte of LEN 8 payload)
-const unsigned long long payloadPacketTime=static_cast<unsigned long long>((9*8*hz)/channelbps+0.5f);
+const unsigned long long payloadFrameTime=static_cast<unsigned long long>((9*8*hz)/channelbps+0.5f);
 //Time to transfer a 2byte of fcs on an 250Kbps channel 
-const unsigned long long fcsPacketTime=static_cast<unsigned long long>((2*8*hz)/channelbps+0.5f);
+const unsigned long long fcsFrameTime=static_cast<unsigned long long>((2*8*hz)/channelbps+0.5f);
 //Time to transfer piggybacking
 const unsigned long long piggybackingTime=static_cast<unsigned long long>((0*8*hz)/channelbps+0.5f);
 //Time to transfer full packet
-const unsigned long long packetTime=static_cast<unsigned long long>((16*8*hz)/channelbps+0.5f);
+const unsigned long long frameTime=static_cast<unsigned long long>((16*8*hz)/channelbps+0.5f);
 #endif//SEND_TIMESTAMPS
 
 //Time to wait before forwarding the packet
-const unsigned long long delayRebroadcastTime=static_cast<unsigned long long>(0.0005f*hz+0.5f); //FIXME
+const unsigned long long delayRebroadcastTime=static_cast<unsigned long long>(0.001f*hz+0.5f); //FIXME
 
 //Waiting time over the reception of the nominal time of packet
-const unsigned long long delaySendPacketTime=static_cast<unsigned long long>(0.0001f*hz+0.5f);  //FIXME
-
+const unsigned long long delaySendPacketTime=static_cast<unsigned long long>(0.0001f*hz+0.5f);
 
 //New sync quality packet
 struct Packet
 {
-    short e;
-    short u;
-    short w;
+    int e;
+    int u;
+    int w;
     unsigned char miss;
     //if check & 0xf0==0x00 miss=1 if packet missed
     //if check & 0xf0==0x10 (miss | (check & 0xf)<<8)=raw temperature
     unsigned char check;
-    //unsigned short t;
 };
+
+const unsigned long long packetTime=static_cast<unsigned long long>(((sizeof(Packet)+8)*8*hz)/channelbps+0.5f);
 
 //Comb spacing, for intra-frame error measure
 const unsigned long long combSpacing=static_cast<unsigned long long>(0.5f*hz+0.5f);

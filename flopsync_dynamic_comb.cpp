@@ -51,17 +51,20 @@ int identifyNode()
     if(strstr(experimentName,"node0")) return 0;
     if(strstr(experimentName,"node1")) return 1;
     if(strstr(experimentName,"node2")) return 2;
-    return 3;
+    if(strstr(experimentName,"node3")) return 3;
+    if(strstr(experimentName,"node4")) return 4;
+    if(strstr(experimentName,"node5")) return 5;
+    if(strstr(experimentName,"node6")) return 6;
+    if(strstr(experimentName,"node7")) return 7;
+    if(strstr(experimentName,"node8")) return 8;
+    return 9;
 }
 
 int main()
 {
     lowPowerSetup();
     
-    //miosix::Gpio<GPIOC_BASE,0>::mode(miosix::Mode::INPUT_ANALOG);  
-
-    
-    blueLed::mode(miosix::Mode::INPUT);  //FIXME
+    blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setFrequency(2450);
@@ -86,7 +89,9 @@ int main()
     #ifndef MULTI_HOP
     FlooderSyncNode flooder(timer,*sync);
     #else //MULTI_HOP
-    FlooderSyncNode flooder(timer,*sync,node-1);
+    #ifndef GLOSSY
+    FlooderSyncNode flooder(timer,*sync,node_hop);
+    #endif//GLOSSY
     #endif //MULTI_HOP
 
     Clock *clock;
@@ -97,42 +102,42 @@ int main()
     {
         if(flooder.synchronize()) flooder.resynchronize();
         
-//        unsigned int start=node*combSpacing;
-//        for(unsigned int i=start;i<nominalPeriod-combSpacing/2;i+=3*combSpacing)
-//        {   
-//            #ifdef SENSE_TEMPERATURE
-//            unsigned short temperature=getDACTemperature();
-//            #endif //SENSE_TEMPERATURE
-//            
-//            unsigned int wakeupTime=clock->rootFrame2localAbsolute(i)-
-//                (jitterAbsorption+receiverTurnOn+preamblePacketTime);
-//            timer.setAbsoluteWakeupSleep(wakeupTime);
-//            timer.sleep();
-//            blueLed::high();
-//            timer.setAbsoluteTriggerEvent(wakeupTime+jitterAbsorption);
-//            transceiver.setMode(Cc2520::TX);
-//            transceiver.setAutoFCS(true);
-//            timer.setAbsoluteTimeout(0);
-//            Packet packet;
-//            packet.e=sync->getSyncError();
-//            packet.u=max<int>(numeric_limits<short>::min(),
-//                min<int>(numeric_limits<short>::max(),
-//                sync->getClockCorrection()));
-//            packet.w=sync->getReceiverWindow();
-//                  
-//            #ifndef SENSE_TEMPERATURE
-//            packet.miss=flooder.isPacketMissed() ? 1 : 0;
-//            packet.check=0;
-//            #else //SENSE_TEMPERATURE
-//            packet.miss=temperature & 0xff;
-//            packet.check=(temperature>>8) | 0x10;
-//            #endif //SENSE_TEMPERATURE
-//            unsigned char *data=reinterpret_cast<unsigned char*>(&packet);
-//            transceiver.writeFrame(data);
-//            timer.wait();
-//            while(!transceiver.isTxFrameDone()); //FIXME
-//            blueLed::low();
-//            transceiver.setMode(Cc2520::DEEP_SLEEP);
-//        }
+        unsigned long long start=node*combSpacing;
+        for(unsigned long long i=start;i<nominalPeriod-combSpacing/2;i+=9*combSpacing)
+        {   
+            #ifdef SENSE_TEMPERATURE
+            unsigned short temperature=getDACTemperature();
+            #endif //SENSE_TEMPERATURE
+            
+            unsigned long long wakeupTime=clock->rootFrame2localAbsolute(i)-
+                (jitterAbsorption+txTurnaroundTime);
+            timer.absoluteSleep(wakeupTime);
+            blueLed::high();
+            transceiver.setAutoFCS(true);
+            transceiver.setMode(Cc2520::TX);
+    
+            Packet packet;
+            packet.e=sync->getSyncError();
+            packet.u=sync->getClockCorrection();
+            packet.w=sync->getReceiverWindow();
+                  
+            #ifndef SENSE_TEMPERATURE
+            packet.miss=flooder.isPacketMissed() ? 1 : 0;
+            packet.check=0;
+            #else //SENSE_TEMPERATURE
+            packet.miss=temperature & 0xff;
+            packet.check=(temperature>>8) | 0x10;
+            #endif //SENSE_TEMPERATURE
+            unsigned char len=sizeof(Packet);
+            unsigned char *data=reinterpret_cast<unsigned char*>(&packet);
+            transceiver.writeFrame(len,data);
+            timer.absoluteWaitTrigger(wakeupTime+jitterAbsorption);
+            timer.absoluteWaitTimeoutOrEvent(wakeupTime+jitterAbsorption+txTurnaroundTime+preambleFrameTime+delaySendPacketTime);
+            transceiver.isSFDRaised();
+            timer.absoluteWaitTimeoutOrEvent(wakeupTime+jitterAbsorption+txTurnaroundTime+packetTime+delaySendPacketTime);
+            transceiver.isTxFrameDone();
+            blueLed::low();
+            transceiver.setMode(Cc2520::DEEP_SLEEP);
+        }
     }
 }

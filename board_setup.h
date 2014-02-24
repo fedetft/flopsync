@@ -68,13 +68,13 @@ inline void lowPowerSetup()
 }
 #else 
 
-typedef miosix::Gpio<GPIOA_BASE,11> int_dis;
-typedef miosix::Gpio<GPIOB_BASE,10> wakeup;
-typedef miosix::Gpio<GPIOB_BASE,11> pll_boot;
-typedef miosix::Gpio<GPIOB_BASE,12> sync_vht;
-typedef miosix::Gpio<GPIOB_BASE,13> xosc_radio_boot;
-typedef miosix::Gpio<GPIOB_BASE,14> pin14;
-typedef miosix::Gpio<GPIOB_BASE,15> pin15;
+typedef miosix::Gpio<GPIOA_BASE,11> probe_int_dis;
+typedef miosix::Gpio<GPIOB_BASE,10> probe_wakeup;
+typedef miosix::Gpio<GPIOB_BASE,11> probe_pll_boot;
+typedef miosix::Gpio<GPIOB_BASE,12> probe_sync_vht;
+typedef miosix::Gpio<GPIOB_BASE,13> probe_xosc_radio_boot;
+typedef miosix::Gpio<GPIOB_BASE,14> probe_pin14;
+typedef miosix::Gpio<GPIOB_BASE,15> probe_pin15;
 typedef miosix::Gpio<GPIOA_BASE,0> button;
 
 inline void lowPowerSetup()
@@ -138,13 +138,13 @@ inline void lowPowerSetup()
     //Gpio<GPIOC_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN);
     
     button::mode(miosix::Mode::OUTPUT);
-    int_dis::mode(miosix::Mode::OUTPUT);
-    wakeup::mode(miosix::Mode::OUTPUT);
-    pll_boot::mode(miosix::Mode::OUTPUT);
-    sync_vht::mode(miosix::Mode::OUTPUT);
-    xosc_radio_boot::mode(miosix::Mode::OUTPUT);
-    pin14::mode(miosix::Mode::OUTPUT);
-    pin15::mode(miosix::Mode::OUTPUT);
+    probe_int_dis::mode(miosix::Mode::OUTPUT);
+    probe_wakeup::mode(miosix::Mode::OUTPUT);
+    probe_pll_boot::mode(miosix::Mode::OUTPUT);
+    probe_sync_vht::mode(miosix::Mode::OUTPUT);
+    probe_xosc_radio_boot::mode(miosix::Mode::OUTPUT);
+    probe_pin14::mode(miosix::Mode::OUTPUT);
+    probe_pin15::mode(miosix::Mode::OUTPUT);
 }
 
 #endif //FLOPSYNC_DEBUG

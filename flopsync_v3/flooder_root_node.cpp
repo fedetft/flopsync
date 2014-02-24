@@ -77,24 +77,14 @@ bool FlooderRootNode::synchronize()
     #endif//FLOPSYNC_DEBUG
     miosix::ledOn();
     timer.absoluteWaitTrigger(frameStart-txTurnaroundTime);
-    timer.absoluteWait(frameStart);
-    pin15::high();
-    pin15::low();
-    timer.absoluteWaitTimeoutOrEvent(frameStart+preamblePacketTime+delaySendPacketTime);
+    timer.absoluteWaitTimeoutOrEvent(frameStart+preambleFrameTime+delaySendPacketTime);
     transceiver.isSFDRaised();
-    timer.absoluteWaitTimeoutOrEvent(frameStart+packetTime+delaySendPacketTime);
+    timer.absoluteWaitTimeoutOrEvent(frameStart+frameTime+delaySendPacketTime);
     transceiver.isTxFrameDone();
     miosix::ledOff(); //Falling edge signals synchronization packet sent
     
     transceiver.setMode(Cc2520::DEEP_SLEEP);
     wakeupTime+=nominalPeriod;
-    
-    #if FLOPSYNC_DEBUG>0
-    wakeup::low();
-    pll_boot::low();
-    sync_vht::low();
-    xosc_radio_boot::low();
-    #endif//FLOPSYNC_DEBUG
     
     return false; //Root node does not desynchronize
 }

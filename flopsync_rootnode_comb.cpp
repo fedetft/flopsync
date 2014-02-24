@@ -41,7 +41,7 @@ typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
 int main()
 {
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::INPUT); //FIXME
+    blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setFrequency(2450);
@@ -59,48 +59,54 @@ int main()
         puts("----");
         
         
-//        unsigned int frameStart=flooder.getMeasuredFrameStart();
-//        for(unsigned int i=combSpacing,j=0;i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
-//        {
-//            unsigned int wakeupTime=frameStart+i-
-//                (jitterAbsorption+receiverTurnOn+w+preamblePacketTime);
-//            timer.setAbsoluteWakeupSleep(wakeupTime);
-//            timer.sleep();
-//            timer.setAbsoluteWakeupWait(wakeupTime+jitterAbsorption);
-//            transceiver.setMode(Cc2520::RX);
-//            transceiver.setAutoFCS(true);
-//            timer.wait();
-//            timer.setAbsoluteTimeout(receiverTurnOn+2*w+preamblePacketTime);
-//            bool timeout;
-//            unsigned int measuredTime;
-//            Packet packet;
-//            for(;;)
-//            {
-//                timeout=timer.waitForExtEventOrTimeout();
-//                measuredTime=timer.getExtEventTimestamp();
-//                if(timeout) break;
-//                while(!transceiver.isRxFrameDone()); //FIXME
-//                unsigned char len=sizeof(packet);
-//                unsigned char *data=reinterpret_cast<unsigned char*>(&packet);
-//                transceiver.readFrame(len,data);
-//                
-//                if(packet.check==0 || (packet.check & 0xf0)==0x10) break;
-//            }
-//            transceiver.setMode(Cc2520::DEEP_SLEEP);
-//            if(timeout) printf("node%d timeout\n",(j % 3)+1);
-//            else {
-//                if(j<3) printf("e=%d u=%d w=%d%s\n",packet.e,packet.u,packet.w,
-//                    (packet.miss && packet.check==0) ? "(miss)" : "");
-//                printf("node%d.e=%d",(j % 3)+1,measuredTime-(frameStart+i));
-//                if(packet.check==0) printf("\n");
-//                else {
-//                    unsigned short temperature=packet.check & 0x0f;
-//                    temperature<<=8;
-//                    temperature|=packet.miss;
-//                    
-//                    printf(" t=%d\n",temperature);
-//                }
-//            }
-//        }
+        unsigned long long frameStart=flooder.getMeasuredFrameStart();
+        int j=0;
+        for(unsigned long long i=combSpacing; i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
+        {
+            unsigned long long wakeupTime=frameStart+i-
+                (jitterAbsorption+rxTurnaroundTime+w);
+            timer.absoluteSleep(wakeupTime);
+            blueLed::high();
+            transceiver.setMode(Cc2520::IDLE);
+            timer.absoluteWait(wakeupTime+jitterAbsorption);
+            transceiver.setAutoFCS(true);
+            transceiver.setMode(Cc2520::RX);
+            bool timeout;
+            unsigned long long measuredTime;
+            Packet packet;
+            for(;;)
+            {
+                timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+i+w+preambleFrameTime);
+                measuredTime=timer.getExtEventTimestamp()-preambleFrameTime;
+                if(timeout) break;
+                transceiver.isSFDRaised();
+                timer.absoluteWaitTimeoutOrEvent(measuredTime+packetTime+delaySendPacketTime);
+                transceiver.isRxFrameDone();
+                unsigned char len=sizeof(Packet);
+                unsigned char *data=reinterpret_cast<unsigned char*>(&packet);
+                if(transceiver.readFrame(len,data)!=1){
+                    timeout=true;
+                    break;
+                }
+                if(packet.check==0 || (packet.check & 0xf0)==0x10) break;
+            }
+            blueLed::low();
+            transceiver.setMode(Cc2520::DEEP_SLEEP);
+            if(timeout) printf("node%d timeout\n",(j % 9)+1);
+            else {
+                if(j<9) printf("e=%d u=%d w=%d%s\n",packet.e,packet.u,packet.w,
+                    (packet.miss && packet.check==0) ? "(miss)" : "");
+                int e=measuredTime-(frameStart+i);
+                printf("node%d.e=%d",(j % 9)+1,e);
+                if(packet.check==0) printf("\n");
+                else {
+                    unsigned short temperature=packet.check & 0x0f;
+                    temperature<<=8;
+                    temperature|=packet.miss;
+                    
+                    printf(" t=%d\n",temperature);
+                }
+            }
+        }
     }
 }
