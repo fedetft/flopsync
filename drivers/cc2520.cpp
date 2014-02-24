@@ -117,10 +117,10 @@ void Cc2520::setMode(Mode mode)
                     wait();
                     cc2520::cs::high();
                     initConfigureReg();
-                    commandStrobe(CC2520_INS_SFLUSHTX); //flush TX FIFO
-                   
+                    commandStrobe(CC2520_INS_SFLUSHTX); //flush TX FIFO         
                     #if CC2520_DEBUG>0
-                    xosc_radio_boot::high();
+                    probe_xosc_radio_boot::high();
+                    probe_xosc_radio_boot::low();
                     #endif//CC2520_DEBUG
                     break;
                 case IDLE:
@@ -167,7 +167,8 @@ void Cc2520::setMode(Mode mode)
                     status = commandStrobe(CC2520_INS_SRXON); //Receive mode
                     isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
                     #if CC2520_DEBUG>0
-                    xosc_radio_boot::high();
+                    probe_xosc_radio_boot::high();
+                    probe_xosc_radio_boot::low();
                     #endif//CC2520_DEBUG
                     break;
                 case IDLE:
@@ -175,6 +176,10 @@ void Cc2520::setMode(Mode mode)
                     isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
                     status = commandStrobe(CC2520_INS_SRXON); //Receive mode
                     isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
+                    #if CC2520_DEBUG>0
+                    probe_xosc_radio_boot::high();
+                    probe_xosc_radio_boot::low();
+                    #endif//CC2520_DEBUG
                     break;
             }
             break;
@@ -244,10 +249,6 @@ void Cc2520::setMode(Mode mode)
                     //wait until SO=1 (clock stable and running)
                     wait();
                     cc2520::cs::high();
-                    #if CC2520_DEBUG>0
-                    xosc_radio_boot::high();
-                    #endif//CC2520_DEBUG
-                    break;
                 case DEEP_SLEEP :
                     //reset device whit RESETn that automatically start crystal osc.
                     cc2520::reset::low(); //take low for 0.1ms     
@@ -259,6 +260,10 @@ void Cc2520::setMode(Mode mode)
                     wait();
                     cc2520::cs::high();
                     initConfigureReg();
+                    #if CC2520_DEBUG>0
+                    probe_xosc_radio_boot::high();
+                    probe_xosc_radio_boot::low();
+                    #endif//CC2520_DEBUG
                     break;
                 case IDLE:
                     break;

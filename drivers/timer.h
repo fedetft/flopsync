@@ -380,7 +380,7 @@ private:
  * so it should not allocate memory, print, or whatever is forbidden inside
  * an IRQ.
  */
-void setEventHandler(void (*handler)(unsigned int));
+//void setEventHandler(void (*handler)(unsigned int));
 
 
 struct typeVecInt{

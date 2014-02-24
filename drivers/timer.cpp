@@ -42,7 +42,7 @@ static volatile typeVecInt rtcInt;
 static volatile typeVecInt vhtInt;
 
 static volatile bool rtcTriggerEnable=false;
-static void (*eventHandler)(unsigned int)=0; ///< Called when event received
+//static void (*eventHandler)(unsigned int)=0; ///< Called when event received
 static unsigned long long vhtSyncPointRtc=0;     ///< Rtc time corresponding to vht time
 static volatile unsigned long long vhtSyncPointVht=0;     ///< Vht time corresponding to rtc time
 static volatile unsigned long long vhtOverflows=0;  //< counter VHT overflows
@@ -104,46 +104,80 @@ void __attribute__((used)) RTChandlerImpl()
 }
 
 /**
- * EXTI0 is connected to the cc2520 SFD pin, so this interrupt is fired
- * on an IRQ falling edge
+ * EXTI9_5 is connected to PB8, this for SFD, FRM_DONE interrupt
  */
-void __attribute__((naked)) EXTI0_IRQHandler()
-{
-	saveContext();
-	asm volatile("bl _Z20cc2520IrqhandlerImplv");
-	restoreContext();
-}
+//void __attribute__((naked)) EXTI9_5_IRQHandler()
+//{
+//	saveContext();
+//	asm volatile("bl _Z19eventIrqhandlerImplv");
+//	restoreContext();
+//}
 
 /**
- * cc2520 SFD actual implementation
+ * Interrupt SFD, FRM_DONE actual implementation
  */
-void __attribute__((used)) cc2520IrqhandlerImpl()
-{
-    EXTI->PR=EXTI_PR_PR0;
-    rtcInt.event=true;
-    if(!rtcWaiting) return;
-    rtcWaiting->IRQwakeup();
-	if(rtcWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
-		Scheduler::IRQfindNextThread();
-    rtcWaiting=0;
-}
+//void __attribute__((used)) eventIrqhandlerImpl()
+//{
+//     //Get a timestamp of the event
+//    unsigned int a,b;
+//    do {
+//        a=RTC->CNTL;
+//        b=RTC->CNTH;
+//    } while(a!=RTC->CNTL); //Ensure no updates in the middle
+//    timestampEvent=getRTC64bit(a|b<<16);
+//    
+//    EXTI->PR=EXTI_PR_PR8;
+//    EXTI->IMR &= ~EXTI_IMR_MR8;
+//    EXTI->RTSR &= ~EXTI_RTSR_TR8;
+//    rtcInt.event=true;
+//    if(!rtcWaiting) return;
+//    rtcWaiting->IRQwakeup();
+//	  if(rtcWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+//		Scheduler::IRQfindNextThread();
+//    rtcWaiting=0;
+//}
 
-/**
- * EXTI1 is the event input, for event timestamping
- */
-void EXTI1_IRQHandler()
-{
-    EXTI->PR=EXTI_PR_PR1;
+///**
+// * EXTI0 is connected to the cc2520 SFD pin, so this interrupt is fired
+// * on an IRQ falling edge
+// */
+//void __attribute__((naked)) EXTI0_IRQHandler()
+//{
+//	saveContext();
+//	asm volatile("bl _Z20cc2520IrqhandlerImplv");
+//	restoreContext();
+//}
+//
+///**
+// * cc2520 SFD actual implementation
+// */
+//void __attribute__((used)) cc2520IrqhandlerImpl()
+//{
+//    EXTI->PR=EXTI_PR_PR0;
+//    rtcInt.event=true;
+//    if(!rtcWaiting) return;
+//    rtcWaiting->IRQwakeup();
+//	if(rtcWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+//		Scheduler::IRQfindNextThread();
+//    rtcWaiting=0;
+//}
 
-    //Get a timestamp of the event
-    unsigned int a,b;
-    do {
-        a=RTC->CNTL;
-        b=RTC->CNTH;
-    } while(a!=RTC->CNTL); //Ensure no updates in the middle
-
-    if(eventHandler) eventHandler(a | b<<16);
-}
+///**
+// * EXTI1 is the event input, for event timestamping
+// */
+//void EXTI1_IRQHandler()
+//{
+//    EXTI->PR=EXTI_PR_PR1;
+//
+//    //Get a timestamp of the event
+//    unsigned int a,b;
+//    do {
+//        a=RTC->CNTL;
+//        b=RTC->CNTH;
+//    } while(a!=RTC->CNTL); //Ensure no updates in the middle
+//
+//    if(eventHandler) eventHandler(a | b<<16);
+//}
 
 /**
  * TIM4 is the vht timer
@@ -338,6 +372,9 @@ bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
         rtcInt.wait=false;
         rtcInt.event=false;
         while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
+        EXTI->IMR |= EXTI_IMR_MR8;
+        EXTI->RTSR |= EXTI_RTSR_TR8;
+        EXTI->PR=EXTI_PR_PR8; //Clear eventual pending IRQ 
         if(value > getValue())
         {
             while(!rtcInt.wait && !rtcInt.event)
@@ -355,6 +392,9 @@ bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
     else
     {
         FastInterruptDisableLock dLock;
+        EXTI->IMR |= EXTI_IMR_MR8;
+        EXTI->RTSR |= EXTI_RTSR_TR8;
+        EXTI->PR=EXTI_PR_PR8; //Clear eventual pending IRQ 
         rtcInt.event=false;
         while(!rtcInt.event)
         {
@@ -447,7 +487,8 @@ void Rtc::absoluteSleep(unsigned long long value)
         __WFE();
         
         #if TIMER_DEBUG>0
-        wakeup::high();
+        probe_wakeup::high();
+        probe_wakeup::low();
         #endif//TIMER_DEBUG
          
         SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
@@ -473,7 +514,8 @@ void Rtc::absoluteSleep(unsigned long long value)
         
         RTC->CRH &=~RTC_CRH_ALRIE;
         #if TIMER_DEBUG>0
-        pll_boot::high();
+        probe_pll_boot::high();
+        probe_pll_boot::low();
         #endif//TIMER_DEBUG
     }
 }
@@ -510,26 +552,32 @@ Rtc::Rtc()
     BKP->RTCCR=BKP_RTCCR_ASOS | BKP_RTCCR_ASOE; //Enable RTC clock out
     NVIC_SetPriority(RTC_IRQn,10); //Low priority
 	NVIC_EnableIRQ(RTC_IRQn);
+    
+    RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;         //enable AFIO reg
+    AFIO->EXTICR[2] |= AFIO_EXTICR3_EXTI8_PB;   //enable interrupt on PA6
+    NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
+    NVIC_SetPriority(EXTI9_5_IRQn,10); //low priority
+    NVIC_EnableIRQ(EXTI9_5_IRQn);
 }
 
-void setEventHandler(void (*handler)(unsigned int))
-{
-    Rtc::instance(); //Ensure the RTC is initialized
-    {
-        FastInterruptDisableLock dLock;
-        eventHandler=handler;
-
-        RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
-        AFIO->EXTICR[0] |= AFIO_EXTICR1_EXTI1_PB;
-        EXTI->IMR |= EXTI_IMR_MR1;
-        EXTI->EMR |= EXTI_EMR_MR1;
-        EXTI->RTSR |= EXTI_RTSR_TR1;
-        EXTI->PR=EXTI_PR_PR1; //Clear eventual pending IRQ
-    }
-    NVIC_ClearPendingIRQ(EXTI1_IRQn);
-    NVIC_SetPriority(EXTI1_IRQn,2); //High priority
-    NVIC_EnableIRQ(EXTI1_IRQn); 
-}
+//void setEventHandler(void (*handler)(unsigned int))
+//{
+//    Rtc::instance(); //Ensure the RTC is initialized
+//    {
+//        FastInterruptDisableLock dLock;
+//        eventHandler=handler;
+//
+//        RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
+//        AFIO->EXTICR[0] |= AFIO_EXTICR1_EXTI1_PB;
+//        EXTI->IMR |= EXTI_IMR_MR1;
+//        EXTI->EMR |= EXTI_EMR_MR1;
+//        EXTI->RTSR |= EXTI_RTSR_TR1;
+//        EXTI->PR=EXTI_PR_PR1; //Clear eventual pending IRQ
+//    }
+//    NVIC_ClearPendingIRQ(EXTI1_IRQn);
+//    NVIC_SetPriority(EXTI1_IRQn,2); //High priority
+//    NVIC_EnableIRQ(EXTI1_IRQn); 
+//}
 
 //
 // class VHT
@@ -729,7 +777,8 @@ void VHT::absoluteSleep(unsigned long long value)
     rtc.absoluteSleep(conversion);
     synchronizeWithRtc();
     #if TIMER_DEBUG>0
-    sync_vht::high();
+    probe_sync_vht::high();
+    probe_sync_vht::low();
     #endif
 }
 

@@ -139,8 +139,8 @@ public:
      *       -1 invalid length parameter;
      *        0 the size of pframe is lower than that of the read frame in 
      *          the buffer (only lenght bytes are returned, the rest are lost)
-     *        1 the size of pFrame is greater than or equal to that of the read 
-     *          frame in the buffer. The length parameter is updated to the 
+     *        1 the size of pFrame is greater than or equal to that one read 
+     *          in the frame buffer. The length parameter is updated to the 
      *          actual size of pFrame;
      *        2 exception in read buffer operation: BUFFER_UNDERFLOW;
      *        3 FCS doesn't match; the frame contents is still returned;
