@@ -33,6 +33,7 @@ using namespace miosix;
 
 #ifdef _BOARD_STM32VLDISCOVERY
 
+#define delay_oc 5 //the OCREF go hight 5 tick after real time
 
 static Thread *rtcWaiting=0;        ///< Thread waiting for the RTC interrupt
 static Thread *vhtWaiting=0;        ///< Thread waiting on VHT
@@ -700,7 +701,7 @@ void VHT::absoluteTrigger(unsigned long long value)
 {
     FastInterruptDisableLock dLock;
     //base case: wakeup is not in this turn 
-    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
+    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset-delay_oc;
     TIM4->SR =~TIM_SR_CC4IF;  //reset interrupt flag channel 4
     TIM4->CCR4=vhtWakeupWait & 0xFFFF;  //set match register channel 4
     TIM4->DIER |= TIM_DIER_CC4IE;  
@@ -727,7 +728,7 @@ void VHT::absoluteWaitTrigger(unsigned long long value)
 {
     FastInterruptDisableLock dLock;
     //base case: wakeup is not in this turn 
-    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset;
+    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-offset-delay_oc;
     TIM4->SR =~TIM_SR_CC4IF;            //reset interrupt flag channel 4
     TIM4->CCR4=vhtWakeupWait & 0xFFFF;  //set match register channel 4
     TIM4->DIER |= TIM_DIER_CC4IE;  
