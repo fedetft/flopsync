@@ -603,6 +603,15 @@ void Cc2520::setAutoFCS(bool fcs)
             writeReg(CC2520_FRMCTRL0,0x40*fcs);
 }
 
+int Cc2520::stxcal()
+{
+    if(this->mode != TX && this->mode != RX) return -1;
+    //unsigned char status=commandStrobe(CC2520_INS_STXCAL);
+    //timer.wait(static_cast<unsigned long long> (0.0002f*vhtFreq+0.5f));
+    //return !isExcRaised(CC2520_EXC_RX_FRM_ABORTED, status);
+    commandStrobe(CC2520_INS_STXCAL);
+    return 1;
+}
 
 bool Cc2520::writeReg(Cc2520FREG reg, unsigned char data) const
 {
@@ -779,18 +788,11 @@ void Cc2520::initConfigureReg()
     writeReg(CC2520_FREQCTRL,this->frequency-2394); //set frequency
     writeReg(CC2520_FRMCTRL0,0x40*autoFCS); //automatically add FCS
     writeReg(CC2520_FRMCTRL1,0x2); //ignore tx underflow exception
-    writeReg(CC2520_TXPOWER,0x32); //TX power 0 dBm
     writeReg(CC2520_FIFOPCTRL,0x7F); //fifop threshold
     
     //No 12 symbol timeout after frame reception has ended. (192us)
     writeReg(CC2520_FSMCTRL,0x0);
     
-    //10   2 zero simbols
-    //0    Lock average level after preamble match
-    //0010 4 leading zero bytes of preamble length in TX
-    //0    Normal TX filtering
-    writeReg(CC2520_MDMCTRL0,0x85); //controls modem
-    writeReg(CC2520_MDMCTRL1,0x14); //controls modem
     writeReg(CC2520_FRMFILT0,0x00); //disable frame filtering
     writeReg(CC2520_FRMFILT1,0x00); //disable frame filtering
     writeReg(CC2520_SRCMATCH,0x00); //disable source matching
@@ -809,7 +811,11 @@ void Cc2520::initConfigureReg()
     writeReg(CC2520_EXCMASKB1,CC2520_EXC_RX_FRM_DONE | CC2520_EXC_SFD);
     writeReg(CC2520_EXCMASKB2,0X00);
     
-    //Register that need to update from their default value
+    //Register that need to update from their default value (as recommended datasheet)
+    writeReg(CC2520_TXPOWER,0x32); //TX power 0 dBm
+    writeReg(CC2520_CCACTRL0,0xF8);
+    writeReg(CC2520_MDMCTRL0,0x85); //controls modem
+    writeReg(CC2520_MDMCTRL1,0x14); //controls modem
     writeReg(CC2520_RXCTRL,0x3f);
     writeReg(CC2520_FSCTRL,0x5a);
     writeReg(CC2520_FSCAL1,0x2b);

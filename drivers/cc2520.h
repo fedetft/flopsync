@@ -233,8 +233,16 @@ public:
      */
     void setAutoFCS(bool fcs);
     
+    /**
+     * Start rx/tx calibration, this operation take 192us about
+     * \return integer code status number:
+     *          -1 error not in TX state 
+     *           0 exception raised frame aborted
+     *           1 calibration done
+     */ 
+    int stxcal();
     
-
+    
 private:
     /**
      * Constructor
