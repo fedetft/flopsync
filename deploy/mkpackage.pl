@@ -17,9 +17,13 @@ while(<$file>)
 close($file);
 my @configkeys=('experiment_name','experiment_time','sync_period',
 				'relative_clock','interactive_rootnode','event_timestamping',
-				'vht','sense_temperature','send_timestamps','glossy','node0_file',
-				'node0_second_hop','node1_file','node1_second_hop','node2_file',
-				'node2_second_hop','node3_file','node3_second_hop');
+				'vht','sense_temperature','send_timestamps','glossy','multi_hop',
+				'sync_by_wire','comb',
+				'node0_file','node0_hop','node1_file','node1_hop',
+				'node2_file','node2_hop','node3_file','node3_hop',
+				'node4_file','node4_hop','node5_file','node5_hop',
+				'node6_file','node6_hop','node7_file','node7_hop',
+				'node8_file','node8_hop','node9_file','node9_hop');
 @configkeys=sort(@configkeys);
 my @sortedconfig=sort(keys(%config));
 #  If arrays not equal, some coniguration parameters are missing
@@ -34,7 +38,7 @@ mkdir $config{'experiment_name'} or die 'experiment_name: directory exists';
 # secondhop=wheter or not the program needs #define SECOND_HOP
 sub build
 {
-	my ($srcfile, $binfile, $elffile, $secondhop)=@_;
+	my ($srcfile, $binfile, $elffile, $hop)=@_;
 
 	# Step 1: create a Makefile with 'SRC := $srcfile \'
 	# Note that all the lines but 'SRC :=' are not modified, so there
@@ -64,13 +68,6 @@ sub build
 		{
 			print $outfile '//' unless($config{'relative_clock'});
 			print $outfile "#define RELATIVE_CLOCK\n";
-		} elsif(/#define SECOND_HOP/) {
-			print $outfile '//' unless($secondhop);
-			print $outfile "#define SECOND_HOP\n";
-		} elsif(/#define MULTI_HOP/) {
-			my $mh=$config{'node1_second_hop'} || $config{'node2_second_hop'};
-			print $outfile '//' unless($mh);
-			print $outfile "#define MULTI_HOP\n";
 		} elsif(/#define INTERACTIVE_ROOTNODE/) {
 			print $outfile '//' unless($config{'interactive_rootnode'});
 			print $outfile "#define INTERACTIVE_ROOTNODE\n";
@@ -89,12 +86,30 @@ sub build
 		} elsif(/#define GLOSSY/) {
 			print $outfile '//' unless($config{'glossy'});
 			print $outfile "#define GLOSSY\n";
-		} elsif(/^#define experimentName/) {
+		}elsif(/#define MULTI_HOP/) {
+			print $outfile '//' unless($config{'multi_hop'});
+			print $outfile "#define MULTI_HOP\n";
+		}elsif(/#define SYNC_BY_WIRE/) {
+			print $outfile '//' unless($config{'sync_by_wire'});
+			print $outfile "#define SYNC_BY_WIRE\n";
+		}elsif(/#define COMB/) {
+			print $outfile '//' unless($config{'comb'});
+			print $outfile "#define COMB\n";
+		}elsif(/^#define experimentName/) {
 			my $n="#define experimentName \"$config{experiment_name}#$binfile";
 			$n.='#'.localtime();
-			$n.='#secondhop' if($secondhop);
+			$n.='#hop' unless($config{'multi_hop'});
 			print $outfile "$n\"\n";
-		} elsif(/^(const unsigned int nominalPeriod=static_cast<int>\().*(\*hz\+0.5f\);)/) {
+		} elsif(/^(const unsigned char node_hop=).*(;)/) {
+			if($config{'multi_hop'} && !$config{'send_timestamps'})
+			{
+			    print $outfile "$1$hop$2\n";
+			}
+			else 
+			{
+			    print $outfile "$1'0'$2\n";
+			}
+		} elsif(/^(const unsigned long long nominalPeriod=static_cast<unsigned long long>\().*(\*hz\+0.5f\);)/) {
 			print $outfile "$1$config{sync_period}$2\n";
 		} else { print $outfile $_; }
 	}
@@ -122,10 +137,16 @@ sub build
 
 # Build files for all three nodes
 `make clean 1>/dev/null 2>/dev/null`; # Make sure the build directory is clean
-build($config{'node0_file'},'node0.bin','node0.elf',$config{'node0_second_hop'});
-build($config{'node1_file'},'node1.bin','node1.elf',$config{'node1_second_hop'});
-build($config{'node2_file'},'node2.bin','node2.elf',$config{'node2_second_hop'});
-build($config{'node3_file'},'node3.bin','node3.elf',$config{'node3_second_hop'});
+build($config{'node0_file'},'node0.bin','node0.elf',$config{'node0_hop'});
+build($config{'node1_file'},'node1.bin','node1.elf',$config{'node1_hop'});
+#build($config{'node2_file'},'node2.bin','node2.elf',$config{'node2_hop'});
+#build($config{'node3_file'},'node3.bin','node3.elf',$config{'node3_hop'});
+#build($config{'node4_file'},'node4.bin','node4.elf',$config{'node4_hop'});
+#build($config{'node5_file'},'node5.bin','node5.elf',$config{'node5_hop'});
+#build($config{'node6_file'},'node6.bin','node6.elf',$config{'node6_hop'});
+#build($config{'node7_file'},'node7.bin','node7.elf',$config{'node7_hop'});
+#build($config{'node8_file'},'node8.bin','node8.elf',$config{'node8_hop'});
+#build($config{'node9_file'},'node9.bin','node9.elf',$config{'node9_hop'});
 
 # Fixup runexp.sh to set the experimen duration
 open(my $infile, '<', 'deploy/runexp.sh');
