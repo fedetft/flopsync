@@ -249,13 +249,13 @@ private:
 
 /**
  * Virtual high resolution timer
- * Timer used: TIM3 with 4 channel for I/O capture compare
+ * Timer used: TIM4 with 4 channel for I/O capture compare
  * Channel: 2 used as Output compare for implement wait function
  *          4 used as Output compare for start send packet
  *          3 used as Input capture for timestamping SFD
  *          1 used as Input capture for synchronize function (input rtc clock)
  * Note:
- * do not use channel 1 or 2 for output compare in non frozen mode because
+ * do not use channel 1 or 2 of TIM3 for output compare in non frozen mode because
  * doesn't work.
  */
 class VHT : public Timer
@@ -368,7 +368,6 @@ private:
     VHT();
     
     Rtc& rtc; //The underlying rtc
-    long long offset; //Only for setting the RTC value
 };
 
 /**
