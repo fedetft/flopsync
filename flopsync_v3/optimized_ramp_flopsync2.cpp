@@ -91,9 +91,9 @@ pair<int,int> OptimizedRampFlopsync2::computeCorrection(int e)
 
 pair<int,int> OptimizedRampFlopsync2::lostPacket()
 {
-    if(init==2)
+    if(init==1)
     {
-        init=3;
+        init=2;
         eo=0;
         uo/=2;
     }
