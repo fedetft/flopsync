@@ -37,35 +37,17 @@ OptimizedRampFlopsync2::OptimizedRampFlopsync2() { reset(); }
 
 pair<int,int> OptimizedRampFlopsync2::computeCorrection(int e)
 {
-//    //Controller preinit, for fast boot convergence
-//    switch(init)
-//    {
-//        case 0:
-//            init=1;
-//            eo=e;
-//            uo=2*512*e;
-//            uoo=512*e;
-//            return make_pair(2*e,w); //One step of a deadbeat controller
-//        case 1:
-//            init=2;
-//            eo=0;
-//            uo/=2;
-//    }
-    
     //Controller preinit, for fast boot convergence
     switch(init)
     {
         case 0:
             init=1;
-            return make_pair(e,w);
-        case 1:
-            init=2;
             eo=e;
             uo=2*512*e;
             uoo=512*e;
             return make_pair(2*e,w); //One step of a deadbeat controller
-        case 2:
-            init=3;
+        case 1:
+            init=2;
             eo=0;
             uo/=2;
     }
@@ -116,8 +98,8 @@ pair<int,int> OptimizedRampFlopsync2::lostPacket()
         uo/=2;
     }
     //Double receiver window on packet loss, still clamped to max value
-    //dw=min<int>(2*dw,w/scaleFactor);
-    dw=w/scaleFactor;
+    dw=min<int>(4*dw,w/scaleFactor);
+    //dw=w/scaleFactor;
     return make_pair(getClockCorrection(),scaleFactor*dw);
 }
 
