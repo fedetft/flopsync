@@ -368,7 +368,6 @@ private:
     VHT();
     
     Rtc& rtc; //The underlying rtc
-    unsigned long long vhtBase;
     long long offset; //Only for setting the RTC value
 };
 
