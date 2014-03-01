@@ -32,6 +32,7 @@
 
 using namespace std;
 
+#ifndef SYNC_BY_WIRE
 //
 // class FlooderRootNode
 //
@@ -53,7 +54,7 @@ bool FlooderRootNode::synchronize()
     assert(timer.getValue()<wakeupTime);
     #endif//FLOPSYNC_DEBUG
     timer.absoluteSleep(wakeupTime);
-    frameStart=wakeupTime+jitterAbsorption+txTurnaroundTime;
+    frameStart=wakeupTime+jitterAbsorption+txTurnaroundTime+trasmissionTime;
     transceiver.setMode(Cc2520::TX);
     #ifndef SEND_TIMESTAMPS
     transceiver.setAutoFCS(false);
@@ -73,13 +74,13 @@ bool FlooderRootNode::synchronize()
     #endif//FLOPSYNC_DEBUG
 
     #if FLOPSYNC_DEBUG  >0
-    assert(timer.getValue()<frameStart-txTurnaroundTime);
+    assert(timer.getValue()<frameStart-txTurnaroundTime-trasmissionTime);
     #endif//FLOPSYNC_DEBUG
     miosix::ledOn();
-    timer.absoluteWaitTrigger(frameStart-txTurnaroundTime);
-    timer.absoluteWaitTimeoutOrEvent(frameStart+preambleFrameTime+delaySendPacketTime);
+    timer.absoluteWaitTrigger(frameStart-txTurnaroundTime-trasmissionTime);
+    timer.absoluteWaitTimeoutOrEvent(frameStart-trasmissionTime+preambleFrameTime+delaySendPacketTime);
     transceiver.isSFDRaised();
-    timer.absoluteWaitTimeoutOrEvent(frameStart+frameTime+delaySendPacketTime);
+    timer.absoluteWaitTimeoutOrEvent(frameStart-trasmissionTime+frameTime+delaySendPacketTime);
     transceiver.isTxFrameDone();
     miosix::ledOff(); //Falling edge signals synchronization packet sent
     
@@ -93,3 +94,38 @@ FlooderRootNode::~FlooderRootNode()
 {
     delete syncFrame;
 }
+
+#else//SYNC_BY_WIRE
+
+//**********************************************************
+//*              Synchronization by Wire                   *
+//**********************************************************
+//
+// class FlooderSyncNode
+//
+
+FlooderRootNode::FlooderRootNode(Timer& timer) : timer(timer),
+        transceiver(Cc2520::instance()),frameStart(0), 
+        wakeupTime(timer.getValue()+nominalPeriod) {}
+
+bool FlooderRootNode::synchronize()
+{
+    #if FLOPSYNC_DEBUG  >0
+    assert(timer.getValue()<wakeupTime);
+    #endif//FLOPSYNC_DEBUG
+    timer.absoluteSleep(wakeupTime);
+    frameStart=wakeupTime+jitterAbsorption;
+
+    #if FLOPSYNC_DEBUG  >0
+    assert(timer.getValue()<frameStart);
+    #endif//FLOPSYNC_DEBUG
+    miosix::ledOn();
+    timer.absoluteWaitTrigger(frameStart);
+    miosix::ledOff(); //Falling edge signals synchronization packet sent
+    wakeupTime+=nominalPeriod;
+    return false; //Root node does not desynchronize
+}
+
+FlooderRootNode::~FlooderRootNode()
+{}
+#endif//SYNC_BY_WIRE

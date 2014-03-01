@@ -13,7 +13,7 @@ SUBDIRS := miosix
 ##
 ## List here subdirectories which contains source files
 ##
-SRC_DIR := drivers flopsync_v2
+SRC_DIR := drivers flopsync_v3
 
 ##
 ## List here your source files (both .s, .c and .cpp)

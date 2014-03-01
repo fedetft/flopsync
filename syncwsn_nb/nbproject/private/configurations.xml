@@ -27,65 +27,6 @@
         <df name="prova">
         </df>
       </df>
-      <df name="Flopsync_Testing">
-      </df>
-      <df name="flopsync_v1">
-        <df name="clocksync">
-          <df name="dataset4">
-          </df>
-        </df>
-        <df name="simulator">
-        </df>
-        <in>clocksync.cpp</in>
-        <in>clocksync.h</in>
-        <in>flopsync_controllers.cpp</in>
-        <in>flopsync_controllers.h</in>
-        <in>flopsync_dummy.cpp</in>
-        <in>flopsync_dynamic_multihop.cpp</in>
-        <in>flopsync_dynamic_multihop_aggregation.cpp</in>
-        <in>flopsync_dynamic_singlehop.cpp</in>
-        <in>flopsync_dynamic_singlehop_aggregation.cpp</in>
-        <in>flopsync_fixed_multihop.cpp</in>
-        <in>flopsync_fixed_singlehop.cpp</in>
-        <in>flopsync_rootnode.cpp</in>
-        <in>flopsync_rootnode_aggregation.cpp</in>
-        <in>flopsync_rootnode_stepresponse.cpp</in>
-        <in>protocol_constants.h</in>
-        <in>variance_estimator.h</in>
-      </df>
-      <df name="flopsync_v2">
-        <in>clock.cpp</in>
-        <in>clock.h</in>
-        <in>controller_flopsync.cpp</in>
-        <in>controller_flopsync.h</in>
-        <in>critical_section.cpp</in>
-        <in>critical_section.h</in>
-        <in>dummy_synchronizer.cpp</in>
-        <in>dummy_synchronizer.h</in>
-        <in>dummy_synchronizer2.cpp</in>
-        <in>dummy_synchronizer2.h</in>
-        <in>fbs.cpp</in>
-        <in>fbs.h</in>
-        <in>flooder_root_node.cpp</in>
-        <in>flooder_root_node.h</in>
-        <in>flooder_sync_node.cpp</in>
-        <in>flooder_sync_node.h</in>
-        <in>flooding_scheme.cpp</in>
-        <in>flooding_scheme.h</in>
-        <in>ftsp.cpp</in>
-        <in>ftsp.h</in>
-        <in>monotonic_clock.cpp</in>
-        <in>monotonic_clock.h</in>
-        <in>non_monotonic_clock.cpp</in>
-        <in>non_monotonic_clock.h</in>
-        <in>optimized_ramp_flopsync.cpp</in>
-        <in>optimized_ramp_flopsync.h</in>
-        <in>optimized_ramp_flopsync2.cpp</in>
-        <in>optimized_ramp_flopsync2.h</in>
-        <in>protocol_constants.h</in>
-        <in>synchronizer.cpp</in>
-        <in>synchronizer.h</in>
-      </df>
       <df name="flopsync_v3">
         <in>clock.cpp</in>
         <in>clock.h</in>
@@ -119,20 +60,9 @@
         <in>synchronizer.cpp</in>
         <in>synchronizer.h</in>
       </df>
-      <df name="legacy">
-        <in>cc2520_mapping.cpp</in>
-        <in>cc2520_mapping.h</in>
-        <in>flopsync2.cpp</in>
-        <in>flopsync2.h</in>
-        <in>flopsync_dynamic_comb.cpp</in>
-        <in>flopsync_rootnode_comb.cpp</in>
-        <in>nrf24l01.cpp</in>
-        <in>nrf24l01.h</in>
-        <in>nrf24l01_config.h</in>
-        <in>rtc.cpp</in>
-        <in>rtc.h</in>
-        <in>transceiver.cpp</in>
-        <in>transceiver.h</in>
+      <df name="log">
+        <df name="Osc_delay_triggerTX-sfdRX">
+        </df>
       </df>
       <df name="miosix">
         <df name="arch">
@@ -455,6 +385,8 @@
       </df>
       <df name="syncwsn_nb">
       </df>
+      <df name="Test comb">
+      </df>
       <df name="test_cc2520">
         <df name="testFrame">
           <in>testFrame.cpp</in>
@@ -465,13 +397,19 @@
         <in>test_cc2520_n1.cpp</in>
         <in>test_config.h</in>
       </df>
+      <df name="Test_comb_wirless">
+      </df>
+      <df name="Test_Flopsync">
+      </df>
       <df name="test_timer">
         <in>test_config.h</in>
         <in>test_timer.cpp</in>
       </df>
+      <df name="UsageFault">
+      </df>
+      <in>board_setup.h</in>
       <in>flopsync_dynamic_comb.cpp</in>
       <in>flopsync_rootnode_comb.cpp</in>
-      <in>low_power_setup.h</in>
     </df>
   </logicalFolder>
   <projectmakefile>miosix_np_2-Makefile.mk</projectmakefile>

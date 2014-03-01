@@ -185,7 +185,7 @@ static void inline testVhtSleep()
     greenLed::high();
     Timer& vht=VHT::instance();
     
-    vht.setValue(vhtFreq*1/20); //mezzo secondo 
+    vht.setValue(vhtFreq*1/2); //mezzo secondo 
     printf("Timestamp:  %016llX\n",vht.getValue());
     for(;;)
     {    
@@ -481,7 +481,56 @@ static void inline testOutputCompare()
     }
 }
 
+static void inline testMeasureDriftRtcVHT()
+{
+    puts("---------------Test timer drift rtc-vht----------------");
+    lowPowerSetup();
+    blueLed::mode(miosix::Mode::INPUT);
+    greenLed::mode(miosix::Mode::OUTPUT);
+    userButton::mode(miosix::Mode::OUTPUT);
+    greenLed::high();
+    Timer& vht=VHT::instance();
+    Timer& rtc=Rtc::instance();
+    
+    int i=1;
+    for(;;)
+    {
+        vht.absoluteWait(1*vhtFreq*i);
+        miosix::FastInterruptDisableLock dLock;
+        unsigned long long rtcTime = rtc.getValue();
+        unsigned long long vhtTime = vht.getValue();
+        miosix::FastInterruptEnableLock eLock(dLock);
+        rtcTime *= vhtFreq;
+        rtcTime += vhtFreq;
+        rtcTime /= rtcFreq;
+        int drift = rtcTime-vhtTime;
+        printf("Drift:  %d\n",drift);
+        miosix::delayMs(10);
+        i++;
+    }
+}
 
+static void inline testOutputCompareDelay()
+{
+    puts("---------------Test timer output compare delay----------------");
+    lowPowerSetup();
+    blueLed::mode(miosix::Mode::INPUT);
+    greenLed::mode(miosix::Mode::OUTPUT);
+    userButton::mode(miosix::Mode::OUTPUT);
+    greenLed::high();
+    Timer& vht=VHT::instance();
+    
+    int i=1;
+    for(;;)
+    {
+        vht.absoluteTrigger(2*vhtFreq*i);
+        vht.absoluteWaitTimeoutOrEvent(0);
+        int delay=vht.getExtEventTimestamp()-2*vhtFreq*i;
+        printf("Delay:  %d\n",delay);
+        miosix::delayMs(10);
+        i++;
+    }
+}
 
 /*
  * 
@@ -494,7 +543,7 @@ int main() {
     //testRtcTriggerEventWait();
     //testRtcWaitExtEventOrTimeout();
     //testVhtSleep();
-    //testVhtAbsoluteSleep();
+    testVhtAbsoluteSleep();
     //testVhtEvent();
     //testVhtGetEventTimestamp();
     //testVhtTriggerEvent();
@@ -504,7 +553,9 @@ int main() {
     //testVhtWaitExtEvent();
     //testVhtWaitExtEventOrTimeout();
     //testVhtMonotonic();
-    testVhtTriggerEventOscilloscope();
+    //testVhtTriggerEventOscilloscope();
     //testOutputCompare();
     //generetCasualEvent();
+    //testMeasureDriftRtcVHT();
+    //testOutputCompareDelay();
 }

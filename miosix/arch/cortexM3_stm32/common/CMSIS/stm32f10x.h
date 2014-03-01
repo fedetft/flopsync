@@ -1013,7 +1013,7 @@ typedef struct
   __IO uint32_t BSRR;
   __IO uint32_t BRR;
   __IO uint32_t LCKR;
-} GPIO_TypeDef;
+}  GPIO_TypeDef;
 
 /** 
   * @brief Alternate Function I/O

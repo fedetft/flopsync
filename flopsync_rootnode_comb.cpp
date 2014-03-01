@@ -58,13 +58,17 @@ int main()
         
         puts("----");
         
+        #ifdef COMB
         
+        #ifndef SYNC_BY_WIRE
+//        timer.absoluteSleep(flooder.getMeasuredFrameStart()+nominalPeriod/2 -jitterAbsorption);
+//        timer.absoluteWaitTrigger(flooder.getMeasuredFrameStart()+nominalPeriod/2);
         unsigned long long frameStart=flooder.getMeasuredFrameStart();
-        int j=0;
+        unsigned int j=0;
         for(unsigned long long i=combSpacing; i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
         {
             unsigned long long wakeupTime=frameStart+i-
-                (jitterAbsorption+rxTurnaroundTime+w);
+                (jitterAbsorption+rxTurnaroundTime+minw);
             timer.absoluteSleep(wakeupTime);
             blueLed::high();
             transceiver.setMode(Cc2520::IDLE);
@@ -76,7 +80,7 @@ int main()
             Packet packet;
             for(;;)
             {
-                timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+i+w+preambleFrameTime);
+                timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+i+minw+preambleFrameTime);
                 measuredTime=timer.getExtEventTimestamp()-preambleFrameTime;
                 if(timeout) break;
                 transceiver.isSFDRaised();
@@ -94,9 +98,12 @@ int main()
             transceiver.setMode(Cc2520::DEEP_SLEEP);
             if(timeout) printf("node%d timeout\n",(j % 9)+1);
             else {
-                if(j<9) printf("e=%d u=%d w=%d%s\n",packet.e,packet.u,packet.w,
+                if(j<9)
+                { 
+                    printf("e=%d u=%d w=%d%s\n",packet.e,packet.u,packet.w,
                     (packet.miss && packet.check==0) ? "(miss)" : "");
-                int e=measuredTime-(frameStart+i);
+                }
+                int e=frameStart+i-measuredTime;
                 printf("node%d.e=%d",(j % 9)+1,e);
                 if(packet.check==0) printf("\n");
                 else {
@@ -108,5 +115,34 @@ int main()
                 }
             }
         }
+        #else//SYNC_BY_WIRE
+        unsigned long long frameStart=flooder.getMeasuredFrameStart();
+        unsigned int j=0;
+        for(unsigned long long i=combSpacing; i<nominalPeriod-combSpacing/2;i+=2*combSpacing,j++)
+        {
+            unsigned long long wakeupTime=frameStart+i-(jitterAbsorption+minw);
+            timer.absoluteSleep(wakeupTime);
+            blueLed::high();
+            bool timeout;
+            unsigned long long measuredTime;
+            Packet packet;
+            for(;;)
+            {
+                timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+i+minw);
+                measuredTime=timer.getExtEventTimestamp();
+                break;
+            }
+            blueLed::low();
+            if(timeout) 
+                printf("node1 timeout\n");
+            else 
+            {
+                int e=frameStart+i-measuredTime;
+                printf("node1.e=%d\n",e);
+            }
+        }
+    
+        #endif//SYNC_BY_WIRE
+        #endif//COMB
     }
 }

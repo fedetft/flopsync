@@ -36,6 +36,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <string.h>
+#include "../../board_setup.h" //FIXME
 
 /*
 Used by assembler context switch macros
@@ -104,6 +105,7 @@ void disableInterrupts()
     miosix_private::doDisableInterrupts();
     if(interruptDisableNesting==0xff) errorHandler(NESTING_OVERFLOW);
     interruptDisableNesting++;
+    probe_int_dis::high(); //FIXME
 }
 
 void enableInterrupts()
@@ -118,6 +120,7 @@ void enableInterrupts()
     {
         miosix_private::doEnableInterrupts();
     }
+    probe_int_dis::low(); //FIXME
 }
 
 void pauseKernel()

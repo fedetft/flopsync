@@ -68,7 +68,6 @@ int main()
     puts(experimentName);
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setFrequency(2450);
-    const int node=identifyNode();
     #ifndef USE_VHT
     Timer& timer=Rtc::instance();
     #else //USE_VHT
@@ -80,7 +79,7 @@ int main()
     sync=new OptimizedRampFlopsync2; 
     monotonic=true;
 //     //For comparison between sincnrfhronization schemes
-//     switch(node)
+//     switch(identifyNode())
 //     {
 //         case 1: sync=new OptimizedRampFlopsync2; monotonic=true; break;
 //         case 2: sync=new FBS(rtc); break;
@@ -102,15 +101,21 @@ int main()
     {
         if(flooder.synchronize()) flooder.resynchronize();
         
-        unsigned long long start=node*combSpacing;
+//        timer.absoluteSleep(clock->localTime(nominalPeriod/2)-jitterAbsorption);
+//        timer.absoluteWaitTrigger(clock->localTime(nominalPeriod/2));
+        #ifdef COMB
+        
+        #ifndef SYNC_BY_WIRE
+        unsigned long long start=identifyNode()*combSpacing;
         for(unsigned long long i=start;i<nominalPeriod-combSpacing/2;i+=9*combSpacing)
         {   
             #ifdef SENSE_TEMPERATURE
             unsigned short temperature=getDACTemperature();
             #endif //SENSE_TEMPERATURE
             
-            unsigned long long wakeupTime=clock->rootFrame2localAbsolute(i)-
-                (jitterAbsorption+txTurnaroundTime);
+            unsigned long long wakeupTime=clock->localTime(i)-
+                (jitterAbsorption+txTurnaroundTime+trasmissionTime);
+            unsigned long long frameStart=wakeupTime+jitterAbsorption+txTurnaroundTime+trasmissionTime;
             timer.absoluteSleep(wakeupTime);
             blueLed::high();
             transceiver.setAutoFCS(true);
@@ -131,13 +136,27 @@ int main()
             unsigned char len=sizeof(Packet);
             unsigned char *data=reinterpret_cast<unsigned char*>(&packet);
             transceiver.writeFrame(len,data);
-            timer.absoluteWaitTrigger(wakeupTime+jitterAbsorption);
-            timer.absoluteWaitTimeoutOrEvent(wakeupTime+jitterAbsorption+txTurnaroundTime+preambleFrameTime+delaySendPacketTime);
+            timer.absoluteWaitTrigger(frameStart-txTurnaroundTime-trasmissionTime);
+            timer.absoluteWaitTimeoutOrEvent(frameStart-trasmissionTime+preambleFrameTime+delaySendPacketTime);
             transceiver.isSFDRaised();
-            timer.absoluteWaitTimeoutOrEvent(wakeupTime+jitterAbsorption+txTurnaroundTime+packetTime+delaySendPacketTime);
+            timer.absoluteWaitTimeoutOrEvent(frameStart-trasmissionTime+packetTime+delaySendPacketTime);
             transceiver.isTxFrameDone();
             blueLed::low();
             transceiver.setMode(Cc2520::DEEP_SLEEP);
         }
+        #else//SYNC_BY_WIRE
+        unsigned long long start=identifyNode()*combSpacing;
+        unsigned int j=0;
+        for(unsigned long long i=start;i<nominalPeriod-combSpacing/2;i+=2*combSpacing)
+        {   
+            unsigned long long wakeupTime=clock->localTime(i)-jitterAbsorption-j*w;
+            unsigned long long frameStart=wakeupTime+jitterAbsorption+j*w;
+            timer.absoluteSleep(wakeupTime);
+            blueLed::high();
+            timer.absoluteWaitTrigger(frameStart);
+            blueLed::low();
+        }
+        #endif//SYNC_BY_WIRE
+        #endif//COMB
     }
 }

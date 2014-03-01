@@ -34,17 +34,49 @@ using namespace std;
 // class MonotonicClock
 //
 
-unsigned long long MonotonicClock::rootFrame2localAbsolute(unsigned int root)
+// ti=tie(k) + (t-t(k)) * (T+ui(k))/T = tie(k) + sgt +sgt*ui(k)/T 
+// slotGlobalTime =(t-t(k)) 
+unsigned long long MonotonicClock::localTime(unsigned long long slotGlobalTime)
 {
     #ifdef SEND_TIMESTAMPS
     //Can't have a monotonic clock with a sync scheme that overwrites the RTC
     assert(sync.overwritesHardwareClock()==false);
-    #endif //SEND_TIMESTAMPS
-    int signedRoot=root; //Conversion unsigned to signed is *required*
-    int period=nominalPeriod;
-    long long correction=signedRoot;
-    correction*=sync.getClockCorrection();
-    int sign=correction>=0 ? 1 : -1; //Round towards closest
-    int dividedCorrection=(correction+(sign*period/2))/period;
-    return flood.getComputedFrameStart()+max(0,signedRoot+dividedCorrection);
+    #endif //SEND_TIMESTAMP
+
+    long long signSlotGlobalTime = slotGlobalTime; //Conversion unsigned to signed is *required*
+    long long T=nominalPeriod; //Conversion unsigned to signed is *required*
+    int ui=sync.getClockCorrection();
+    unsigned long long tie=flood.getComputedFrameStart();
+    //Round towards closest
+    long long correction = slotGlobalTime*ui;
+    int sign=correction>=0 ? 1 : -1; 
+    long long dividedCorrection=(correction+(sign*T/2))/T; //Round towards closest
+    return (tie + max(0ll,signSlotGlobalTime+dividedCorrection)); 
+    
+    
+//    long long signSlotGlobalTime = slotGlobalTime; //Conversion unsigned to signed is *required*
+//    long long T=nominalPeriod; //Conversion unsigned to signed is *required*
+//    int ui=sync.getClockCorrection();
+//    int ei=flood.getMeasuredFrameStart()-flood.getComputedFrameStart();
+//    unsigned long long tia=flood.getMeasuredFrameStart();
+//    //Round towards closest
+//    long long correction = slotGlobalTime*(ui-ei);
+//    int sign=correction>=0 ? 1 : -1; 
+//    long long dividedCorrection=(correction+(sign*T/2))/T; //Round towards closest
+//    return (tia + max(0ll,signSlotGlobalTime+dividedCorrection)); 
+    
+}
+//t=t(k)+(ti-tie(k))*T/(T+ui(k))
+//slotLocalTime =(ti-tie(k))
+unsigned long long MonotonicClock::globalTime(unsigned long long slotLocalTime)
+{
+//    #ifdef SEND_TIMESTAMPS
+//    Can't have a monotonic clock with a sync scheme that overwrites the RTC
+//    assert(sync.overwritesHardwareClock()==false);
+//    #endif //SEND_TIMESTAMPS
+//    unsigned long long T=nominalPeriod;
+//    int ui=sync.getClockCorrection();
+//    unsigned long long t=flood.getMeasuredFrameStart(); //FIXME
+//    return (t + (slotLocalTime * T)/(T+ui));
+    return 0;
 }

@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     
     cc2520.setFrequency(2450);
     cc2520.setMode(Cc2520::TX);
-    cc2520.setAutoFCS(false);
+    cc2520.setAutoFCS(true);
     
     greenLed::high();
     blueLed::low();
@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
 //        }
 //        //delayMs(500);
 //    }
-    pFrame = new Frame(1,false,false,1);
+    pFrame = new Frame(1,false,true);
     unsigned int i=1;
     unsigned char packet[2];
     for(;;)
@@ -72,12 +72,12 @@ int main(int argc, char** argv) {
        //MemoryProfiling::print();
         cont++;
         pFrame->setPayload(pCont);
-        pFrame->setFCS(pCont);
         printf("writeFrame ret: %d\n",cc2520.writeFrame(*pFrame));
         //packet[0]=cont;
         //packet[1]=cont;
         //cc2520.writeFrame(2,packet);
-        timer.absoluteWaitTriggerEvent(1*vhtFreq*i);
+        cc2520.stxcal();
+        timer.absoluteWaitTrigger(1*vhtFreq*i);
         blueLed::high();
         i++;
         while(!cc2520.isTxFrameDone()) printf("TX busy\n"); //Wait

@@ -44,7 +44,9 @@ public:
      * \param root a frame time (0 to nominalPeriod-1) referenced to the root node
      * \return the local absolute time time corresponding to the given root time
      */
-    virtual unsigned long long rootFrame2localAbsolute(unsigned int root)=0;
+    virtual unsigned long long localTime(unsigned long long slotGlobalTime)=0;
+    
+    virtual unsigned long long globalTime(unsigned long long slotLocalTime)=0;
 
     /**
      * Destructor

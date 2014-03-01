@@ -88,7 +88,7 @@ private:
     unsigned char dw;
     char init;
     
-    static const int numSamples=64; //Number of samples for variance compuation
+    static const int numSamples=8; //Number of samples for variance compuation
     static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
     #ifndef USE_VHT
     static const int scaleFactor=1;
@@ -100,7 +100,7 @@ private:
     //(to save RAM). This requires a higher scale factor, of about w/255, or 12.
     //However, this requires more iterations to approximate the square root,
     //so we're using a scale factor of 30.
-    static const int scaleFactor=300;
+    static const int scaleFactor=480;
     #endif //USE_VHT
 };
 

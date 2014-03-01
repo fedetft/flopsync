@@ -97,8 +97,8 @@ sub build
 			print $outfile "#define COMB\n";
 		}elsif(/^#define experimentName/) {
 			my $n="#define experimentName \"$config{experiment_name}#$binfile";
+			$n.='#hop.'.$hop if($config{'multi_hop'});
 			$n.='#'.localtime();
-			$n.='#hop' unless($config{'multi_hop'});
 			print $outfile "$n\"\n";
 		} elsif(/^(const unsigned char node_hop=).*(;)/) {
 			if($config{'multi_hop'} && !$config{'send_timestamps'})

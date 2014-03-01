@@ -34,11 +34,11 @@ using namespace std;
 // class NonMonotonicClock
 //
 
-unsigned long long NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
+unsigned long long NonMonotonicClock::localTime(unsigned long long slotGlobalTime)
 {
-    int signedRoot=root; //Conversion unsigned to signed is *required*
-    int period=nominalPeriod;
-    long long correction=signedRoot;
+    long long signedSlotGlobalTime=slotGlobalTime; //Conversion unsigned to signed is *required*
+    long long T=nominalPeriod;
+    long long correction=signedSlotGlobalTime;
     #ifndef SEND_TIMESTAMPS
     correction*=sync.getClockCorrection()-sync.getSyncError();
     #else //SEND_TIMESTAMPS
@@ -46,16 +46,24 @@ unsigned long long NonMonotonicClock::rootFrame2localAbsolute(unsigned int root)
     else correction*=sync.getClockCorrection()-sync.getSyncError();
     #endif //SEND_TIMESTAMPS
     int sign=correction>=0 ? 1 : -1; //Round towards closest
-    int dividedCorrection=(correction+(sign*period/2))/period;
+    long long dividedCorrection=(correction+(sign*T/2))/T;
     #ifndef SEND_TIMESTAMPS
-    return flood.getMeasuredFrameStart()+max(0,signedRoot+dividedCorrection);
+    return flood.getMeasuredFrameStart()+max(0ll,signedSlotGlobalTime+dividedCorrection);
     #else //SEND_TIMESTAMPS
     const FTSP *ftsp=dynamic_cast<const FTSP*>(&sync);
     if(ftsp) return ftsp->rootFrame2localAbsolute(root);
     
     return (sync.overwritesHardwareClock() ?
         flood.getRadioTimestamp() : flood.getMeasuredFrameStart()) +
-        max(0,signedRoot+dividedCorrection);
+        max(0ll,signedSlotGlobalTime+dividedCorrection);
     #endif //SEND_TIMESTAMPS
+    
+    //return flood.getMeasuredFrameStart()+slotGlobalTime;
+}
+
+unsigned long long NonMonotonicClock::globalTime(unsigned long long slotLocalTime)
+{
+    //TODO
+    return 0;
 }
 

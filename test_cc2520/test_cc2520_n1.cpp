@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     
     cc2520.setFrequency(2450);
     cc2520.setMode(Cc2520::RX);
-    cc2520.setAutoFCS(false);
+    cc2520.setAutoFCS(true);
     
     greenLed::high();
     blueLed::low();
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
         if(cc2520.isRxFrameDone()==1)
         {
             blueLed::high();
-            unsigned char len =2;
+            unsigned char len =1;
             printf("readFrame ret: %d\n",cc2520.readFrame(len,packet));
             printf("Ho ricevuto: %x\n",*packet);
             blueLed::low(); 

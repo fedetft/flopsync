@@ -30,30 +30,36 @@
 
 // Define this to test the regulator performance with the relative clock model,
 // while comment it out to test the absolute clock model
-//#define RELATIVE_CLOCK
+//#define RELATIVE_CLOCK //@@ Filled in by mkpackage.pl
 
 // Defined if we're in a multi hop environment
 //#define MULTI_HOP //@@ Filled in by mkpackage.pl
 
 // Disables deep sleep in the root node to make it responsive to commands that
 // are sent from the command serial port
-//#define INTERACTIVE_ROOTNODE
+//#define INTERACTIVE_ROOTNODE //@@ Filled in by mkpackage.pl
 
 // Enables event timestamping
-//#define EVENT_TIMESTAMPING
+//#define EVENT_TIMESTAMPING //@@ Filled in by mkpackage.pl
 
 // Enables virtual high resolution timer
 //#define USE_VHT //@@ Filled in by mkpackage.pl
 
 //Synchronized nodes send temperature to root node
-//#define SENSE_TEMPERATURE
+//#define SENSE_TEMPERATURE //@@ Filled in by mkpackage.pl
 
 //Send timestamps in sync packets, used to make a comparison with existing
 //WSN sync schemes.
-//#define SEND_TIMESTAMPS
+//#define SEND_TIMESTAMPS //@@ Filled in by mkpackage.pl
 
 //Enable glossy flooding
-//#define GLOSSY
+//#define GLOSSY //@@ Filled in by mkpackage.pl
+
+//Enable synchronization by wire
+//#define SYNC_BY_WIRE //@@ Filled in by mkpackage
+
+//Enable comb
+//#define COMB //@@ Filled in by mkpackage
 
 ///This is for enable debug flopsync
 #define FLOPSYNC_DEBUG  1
@@ -125,8 +131,9 @@ const unsigned long long jitterAbsorption=static_cast<unsigned long long>(0.005f
 const unsigned long long jitterAbsorption=static_cast<unsigned long long>(0.0015f*hz+0.5f);  //FIXME
 #endif //USE_VHT
 
-//Time measured with oscilloscope between sfd sender and sfd receiver is 3.4us +o- 100ns
-const unsigned long long trasmissionTime=static_cast<unsigned long long>(0.0000034f*hz+0.5f); 
+//Time measured with oscilloscope between sfd sender and sfd receiver is on 
+//average 3.37376us with a standard deviation of 0.0420027 us
+const unsigned long long trasmissionTime=static_cast<unsigned long long>(0.00000337376f*hz+0.5f); 
 
 //Time to transfer a 4 preamble + 1 sfd byte on an 250Kbps channel
 const unsigned long long preambleFrameTime=static_cast<unsigned long long>((5*8*hz)/channelbps+0.5f); 
