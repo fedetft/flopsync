@@ -106,6 +106,8 @@ void __attribute__((used)) RTChandlerImpl()
     rtcWaiting=0;
 }
 
+//Commented because EXTI9_5_IRQHandler() is implemented also in the cc2520.
+//I can not implement the same Handler in two classes.
 /**
  * EXTI9_5 is connected to PB8, this for SFD, FRM_DONE interrupt
  */
@@ -140,47 +142,6 @@ void __attribute__((used)) RTChandlerImpl()
 //    rtcWaiting=0;
 //}
 
-///**
-// * EXTI0 is connected to the cc2520 SFD pin, so this interrupt is fired
-// * on an IRQ falling edge
-// */
-//void __attribute__((naked)) EXTI0_IRQHandler()
-//{
-//	saveContext();
-//	asm volatile("bl _Z20cc2520IrqhandlerImplv");
-//	restoreContext();
-//}
-//
-///**
-// * cc2520 SFD actual implementation
-// */
-//void __attribute__((used)) cc2520IrqhandlerImpl()
-//{
-//    EXTI->PR=EXTI_PR_PR0;
-//    rtcInt.event=true;
-//    if(!rtcWaiting) return;
-//    rtcWaiting->IRQwakeup();
-//	if(rtcWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
-//		Scheduler::IRQfindNextThread();
-//    rtcWaiting=0;
-//}
-
-///**
-// * EXTI1 is the event input, for event timestamping
-// */
-//void EXTI1_IRQHandler()
-//{
-//    EXTI->PR=EXTI_PR_PR1;
-//
-//    //Get a timestamp of the event
-//    unsigned int a,b;
-//    do {
-//        a=RTC->CNTL;
-//        b=RTC->CNTH;
-//    } while(a!=RTC->CNTL); //Ensure no updates in the middle
-//
-//    if(eventHandler) eventHandler(a | b<<16);
-//}
 
 /**
  * TIM4 is the vht timer
@@ -245,7 +206,6 @@ void __attribute__((used)) tim4handlerImpl()
             //less than 100 clock cycles)
             if(old_diff>100 && diff>100)
             {
-                probe_pin15::high();
                 if(TIM4->DIER & TIM_DIER_CC4IE)
                 {
                     TIM4->CCR4=vhtWakeupWait; 
@@ -256,7 +216,6 @@ void __attribute__((used)) tim4handlerImpl()
                     }
                 }
                 TIM4->CCR2=vhtWakeupWait; //also updates if not enabled
-                probe_pin15::low();
             }
             else
             {
@@ -640,24 +599,6 @@ Rtc::Rtc()
     NVIC_EnableIRQ(EXTI9_5_IRQn);
 }
 
-//void setEventHandler(void (*handler)(unsigned int))
-//{
-//    Rtc::instance(); //Ensure the RTC is initialized
-//    {
-//        FastInterruptDisableLock dLock;
-//        eventHandler=handler;
-//
-//        RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
-//        AFIO->EXTICR[0] |= AFIO_EXTICR1_EXTI1_PB;
-//        EXTI->IMR |= EXTI_IMR_MR1;
-//        EXTI->EMR |= EXTI_EMR_MR1;
-//        EXTI->RTSR |= EXTI_RTSR_TR1;
-//        EXTI->PR=EXTI_PR_PR1; //Clear eventual pending IRQ
-//    }
-//    NVIC_ClearPendingIRQ(EXTI1_IRQn);
-//    NVIC_SetPriority(EXTI1_IRQn,2); //High priority
-//    NVIC_EnableIRQ(EXTI1_IRQn); 
-//}
 
 //
 // class VHT

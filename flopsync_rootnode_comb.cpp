@@ -68,7 +68,7 @@ int main()
         for(unsigned long long i=combSpacing; i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
         {
             unsigned long long wakeupTime=frameStart+i-
-                (jitterAbsorption+rxTurnaroundTime+minw);
+                (jitterAbsorption+rxTurnaroundTime+w);
             timer.absoluteSleep(wakeupTime);
             blueLed::high();
             transceiver.setMode(Cc2520::IDLE);
@@ -80,7 +80,7 @@ int main()
             Packet packet;
             for(;;)
             {
-                timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+i+minw+preambleFrameTime);
+                timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+i+w+preambleFrameTime);
                 measuredTime=timer.getExtEventTimestamp()-preambleFrameTime;
                 if(timeout) break;
                 transceiver.isSFDRaised();
@@ -120,7 +120,7 @@ int main()
         unsigned int j=0;
         for(unsigned long long i=combSpacing; i<nominalPeriod-combSpacing/2;i+=2*combSpacing,j++)
         {
-            unsigned long long wakeupTime=frameStart+i-(jitterAbsorption+minw);
+            unsigned long long wakeupTime=frameStart+i-(jitterAbsorption+w);
             timer.absoluteSleep(wakeupTime);
             blueLed::high();
             bool timeout;
@@ -128,7 +128,7 @@ int main()
             Packet packet;
             for(;;)
             {
-                timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+i+minw);
+                timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+i+w);
                 measuredTime=timer.getExtEventTimestamp();
                 break;
             }

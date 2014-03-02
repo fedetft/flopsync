@@ -248,7 +248,12 @@ private:
 };
 
 /**
- * Virtual high resolution timer
+ * Virtual high resolution timer. 
+ * This timer uses the RTC and a secondary quartz to create a virtual timer with
+ * higher resolution, combining with the advantages of the RTC (active in sleep,
+ * low power consumption, good accuracy) and those of a high-resolution timer.
+ * The RTC should not be used if a VHT is instantiated because it uses the same 
+ * inside.
  * Timer used: TIM4 with 4 channel for I/O capture compare
  * Channel: 2 used as Output compare for implement wait function
  *          4 used as Output compare for start send packet
@@ -369,16 +374,6 @@ private:
     
     Rtc& rtc; //The underlying rtc
 };
-
-/**
- * \param handler a function pointer that will be called when an event is
- * received. Its unsigned int parameter is the timestamp of the event.
- * If NULL is passed, the event handling is disabled. The event handler
- * will be called from within an interrupt or with interrupts disabled,
- * so it should not allocate memory, print, or whatever is forbidden inside
- * an IRQ.
- */
-//void setEventHandler(void (*handler)(unsigned int));
 
 
 struct typeVecInt{
