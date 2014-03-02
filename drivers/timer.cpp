@@ -196,29 +196,24 @@ void __attribute__((naked)) TIM4_IRQHandler()
  * TIM4 irq actual implementation
  */
 void __attribute__((used)) tim4handlerImpl()
-{ 
+{   
     //vhtSyncRtc input capture channel 1
     if((TIM4->SR & TIM_SR_CC1IF) && (TIM4->DIER & TIM_DIER_CC1IE))
-    {
-//        TIM4->SR =~TIM_SR_CC1IF;
-//        TIM4->DIER&=~TIM_DIER_CC1IE;
-//        vhtInt.sync=true;
-//        unsigned short timeCapture=TIM4->CCR1;
-//        vhtSyncPointVht=vhtOverflows|timeCapture;
-//        //check if overflow interrupt happened before IC1 interrupt
-//        if((TIM4->SR & TIM_SR_UIF) && (timeCapture <= TIM4->CNT))
-//            vhtSyncPointVht+=1<<16;
-        
-        //update vhtWakeupWait
+    { 
+        if(vhtInt.flag) 
+        {
+            vhtInt.sync=true;
+            vhtInt.flag=false;
+        }
         unsigned long long old_vhtBase = vhtBase;
         unsigned long long old_vhtSyncPointVht=vhtSyncPointVht;
+        unsigned long long old_vhtWakeupWait=vhtWakeupWait;
         
         TIM4->SR =~TIM_SR_CC1IF;
-        vhtInt.sync=true;
-        unsigned short timeCapture=TIM4->CCR1;
-        vhtSyncPointVht=vhtOverflows|timeCapture;
+        
+        vhtSyncPointVht=vhtOverflows|TIM4->CCR1;
         //check if overflow interrupt happened before IC1 interrupt
-        if((TIM4->SR & TIM_SR_UIF) && (timeCapture <= TIM4->CNT))
+        if((TIM4->SR & TIM_SR_UIF) && ((vhtSyncPointVht & 0xFFFFll) <= TIM4->CNT))
             vhtSyncPointVht+=1<<16;
         
         //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
@@ -228,20 +223,48 @@ void __attribute__((used)) tim4handlerImpl()
         //64bit numbers for intermendiate results. If the main XTAL was
         //8.388608MHz instead of 8MHz a simple bitmask operation on 32bit
         //numbers would suffice.
-        unsigned long long conversion=vhtSyncPointRtc;
-        conversion*=vhtFreq;
-        conversion+=rtcFreq/2; //Round to nearest
-        conversion/=rtcFreq;
-        vhtBase=conversion;
+        {
+            unsigned long long conversion=vhtSyncPointRtc;
+            conversion*=vhtFreq;
+            conversion+=rtcFreq/2; //Round to nearest
+            conversion/=rtcFreq;
+            vhtBase=conversion;
+        }
         
-        //Update vhtWakeupWait.
-        //This operation is totally transparent to the operations capture compare. 
-        //If the register of the capture/compare has already been set, then the 
-        //update of the variable vhtWakeupWait will have no effect on the operations 
-        //of capture/compare instead otherwise improve the accuracy of the operations 
-        //of capture/compare.
-        vhtWakeupWait+=old_vhtBase-old_vhtSyncPointVht-vhtBase+vhtSyncPointVht;
+        //Update output compare channel if enabled
+        if((TIM4->DIER & TIM_DIER_CC2IE) || (TIM4->DIER & TIM_DIER_CC4IE))
+        {
+            vhtWakeupWait+=old_vhtBase-old_vhtSyncPointVht-vhtBase+vhtSyncPointVht;
+            unsigned long long time = (vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0)) | TIM4->CNT;
+            long long diff = vhtWakeupWait-time;
+            long long old_diff = old_vhtWakeupWait-time;
+            
+            //Update only if the event are at least 100 tick in the future.
+            //100 is calibrate for avoid miss event (it is assumed that the following
+            //instructions which set the registers of the output compare employing 
+            //less than 100 clock cycles)
+            if(old_diff>100 && diff>100)
+            {
+                probe_pin15::high();
+                if(TIM4->DIER & TIM_DIER_CC4IE)
+                {
+                    TIM4->CCR4=vhtWakeupWait; 
+                    //check if wakeup is in this turn
+                    if(diff>0 && diff<= 0xFFFFll)
+                    {
+                        TIM4->CCMR2 |=TIM_CCMR2_OC4M_0; //active level on match
+                    }
+                }
+                TIM4->CCR2=vhtWakeupWait; //also updates if not enabled
+                probe_pin15::low();
+            }
+            else
+            {
+                vhtWakeupWait = old_vhtWakeupWait;
+            }
+        }
         
+        //set next resync vht
         vhtSyncPointRtc+=syncVhtRtcPeriod;
         RTC->CRL |= RTC_CRL_CNF; //configuration mode
         RTC->ALRL=vhtSyncPointRtc;
@@ -362,7 +385,7 @@ void Rtc::setValue(unsigned long long value)
 {
     rtcOverflows=value>>32;
     RTC->CRL |= RTC_CRL_CNF;
-    RTC->CNTL=value & 0xffff;
+    RTC->CNTL=value;
     RTC->CNTH=value>>16 ;
     RTC->CRL &= ~RTC_CRL_CNF;
     while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
@@ -385,7 +408,7 @@ void Rtc::absoluteWait(unsigned long long value)
     RTC->CRL =~RTC_CRL_ALRF;
     RTC->CRH |= RTC_CRH_ALRIE;
     RTC->CRL |= RTC_CRL_CNF;
-    RTC->ALRL=value & 0xffff;
+    RTC->ALRL=value;
     RTC->ALRH=value>>16;
     RTC->CRL &= ~RTC_CRL_CNF;
     rtcInt.wait=false;
@@ -403,17 +426,19 @@ void Rtc::absoluteWait(unsigned long long value)
         }
     }
     RTC->CRH &=~ RTC_CRH_ALRIE;
+    rtcInt.wait=false;
 }
 
 bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
 {
+    bool result=false;
     if(value!=0)
     {
         FastInterruptDisableLock dLock;
         RTC->CRL |= RTC_CRL_CNF;
         RTC->CRL =~RTC_CRL_ALRF;
         RTC->CRH |= RTC_CRH_ALRIE;
-        RTC->ALRL=value & 0xffff;
+        RTC->ALRL=value;
         RTC->ALRH=value>>16;
         RTC->CRL &= ~RTC_CRL_CNF;
         rtcInt.wait=false;
@@ -434,6 +459,9 @@ bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
                 }
             }
             RTC->CRH &=~RTC_CRH_ALRIE;
+            result=rtcInt.wait;
+            rtcInt.wait=false;
+            rtcInt.event=false;
         }
     }
     else
@@ -452,8 +480,10 @@ bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
                 Thread::yield();
             }
         }
+        rtcInt.event=false;
+        return true;
     }
-    return rtcInt.wait;
+    return result;
 }
 
 void Rtc::absoluteTrigger(unsigned long long value)
@@ -463,7 +493,7 @@ void Rtc::absoluteTrigger(unsigned long long value)
     RTC->CRL =~RTC_CRL_ALRF;
     RTC->CRH |= RTC_CRH_ALRIE;
     RTC->CRL |= RTC_CRL_CNF;
-    RTC->ALRL=value & 0xffff;
+    RTC->ALRL=value;
     RTC->ALRH=value>>16;
     RTC->CRL &= ~RTC_CRL_CNF;
     rtcTriggerEnable=true;
@@ -480,7 +510,7 @@ void Rtc::absoluteWaitTrigger(unsigned long long value)
     RTC->CRL =~RTC_CRL_ALRF;
     RTC->CRH |= RTC_CRH_ALRIE;
     RTC->CRL |= RTC_CRL_CNF;
-    RTC->ALRL=value & 0xffff;
+    RTC->ALRL=value;
     RTC->ALRH=value>>16;
     RTC->CRL &= ~RTC_CRL_CNF;
     rtcInt.trigger=false;
@@ -500,6 +530,7 @@ void Rtc::absoluteWaitTrigger(unsigned long long value)
     }
     rtcTriggerEnable=false;
     RTC->CRH &=~RTC_CRH_ALRIE;
+    rtcInt.trigger=false;
 }
 
 void Rtc::wait(unsigned long long value)
@@ -514,12 +545,16 @@ void Rtc::absoluteSleep(unsigned long long value)
     RTC->CRL =~RTC_CRL_ALRF;
     RTC->CRH |= RTC_CRH_ALRIE;
     RTC->CRL |= RTC_CRL_CNF;
-    RTC->ALRL=value & 0xffff;
+    RTC->ALRL=value;
     RTC->ALRH=value>>16;
     RTC->CRL &= ~RTC_CRL_CNF;
     rtcInt.wait=false;
     while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
     EXTI->PR=EXTI_PR_PR17; //Clear eventual pending IRQ
+    #if TIMER_DEBUG >0
+    assert(getValue()<value); 
+    #endif //TIMER_DEBUG
+    if(getValue()>value) return;
     
     while(Console::txComplete()==false) ;
     {
@@ -672,7 +707,7 @@ void VHT::absoluteWait(unsigned long long value)
     FastInterruptDisableLock dLock;
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset;
     TIM4->SR =~TIM_SR_CC2IF;           //reset interrupt flag channel 2
-    TIM4->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
+    TIM4->CCR2=vhtWakeupWait;  //set match register channel 2
     TIM4->DIER |= TIM_DIER_CC2IE;       //enable interrupt channel 2
     //Check that wakeup is not in the past.
     if(vhtWakeupWait > 
@@ -690,17 +725,19 @@ void VHT::absoluteWait(unsigned long long value)
         }
     }
     TIM4->DIER &=~TIM_DIER_CC2IE;
+    vhtInt.wait=false;
 }
 
 bool VHT::absoluteWaitTimeoutOrEvent(unsigned long long value)
 {
+    bool result=false;
     FastInterruptDisableLock dLock;
     if(value!=0)
     {
         vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset;
         TIM4->SR =~(TIM_SR_CC2IF |         //reset interrupt flag channel 2
                      TIM_SR_CC3IF);         //reset interrupt flag channel 3
-        TIM4->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
+        TIM4->CCR2=vhtWakeupWait;  //set match register channel 2
         TIM4->DIER |= TIM_DIER_CC2IE        //Enable interrupt channel 2
                    |  TIM_DIER_CC3IE;       //Enable interrupt channel 3
         //Check that wakeup is not in the past.
@@ -720,12 +757,15 @@ bool VHT::absoluteWaitTimeoutOrEvent(unsigned long long value)
             }
         }
         TIM4->DIER &=~ (TIM_DIER_CC2IE |  TIM_DIER_CC3IE); 
+        result = vhtInt.wait;
+        vhtInt.wait=false;
+        vhtInt.event=false;
     }
     else
     {
         TIM4->SR =~TIM_SR_CC3IF;           //reset interrupt flag channel 3
         TIM4->DIER |=TIM_DIER_CC3IE;       //Enable interrupt channel 3
-        vhtInt.event=0;
+        vhtInt.event=false;
         while(!vhtInt.event)
         {
             vhtWaiting=Thread::IRQgetCurrentThread();
@@ -736,9 +776,10 @@ bool VHT::absoluteWaitTimeoutOrEvent(unsigned long long value)
             }
         }
         TIM4->DIER &=~ TIM_DIER_CC3IE;
+        vhtInt.event=false;
         return false;
     }
-    return vhtInt.wait;
+    return result;
 }
 
 void VHT::absoluteTrigger(unsigned long long value)
@@ -747,7 +788,7 @@ void VHT::absoluteTrigger(unsigned long long value)
     //base case: wakeup is not in this turn 
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset-delay_oc;
     TIM4->SR =~TIM_SR_CC4IF;  //reset interrupt flag channel 4
-    TIM4->CCR4=vhtWakeupWait & 0xFFFF;  //set match register channel 4
+    TIM4->CCR4=vhtWakeupWait;  //set match register channel 4
     TIM4->DIER |= TIM_DIER_CC4IE;  
     vhtInt.trigger=false; 
     long long diff = vhtWakeupWait-((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0)) | TIM4->CNT);
@@ -774,7 +815,7 @@ void VHT::absoluteWaitTrigger(unsigned long long value)
     //base case: wakeup is not in this turn 
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset-delay_oc;
     TIM4->SR =~TIM_SR_CC4IF;            //reset interrupt flag channel 4
-    TIM4->CCR4=vhtWakeupWait & 0xFFFF;  //set match register channel 4
+    TIM4->CCR4=vhtWakeupWait;  //set match register channel 4
     TIM4->DIER |= TIM_DIER_CC4IE;  
     vhtInt.trigger=false; 
     long long diff = vhtWakeupWait-((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0)) | TIM4->CNT);
@@ -802,11 +843,12 @@ void VHT::absoluteWaitTrigger(unsigned long long value)
             Thread::yield();
         }
     }
+    TIM4->DIER &=~ TIM_DIER_CC4IE;
+    vhtInt.trigger=false;
 }
 
 void VHT::absoluteSleep(unsigned long long value)
 {
-    FastInterruptDisableLock dLock;
     long long t = value - vhtOffset;
     //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
     //while the other timer run at a submultiple of 24MHz, 24MHz in
@@ -821,30 +863,9 @@ void VHT::absoluteSleep(unsigned long long value)
     conversion+=vhtFreq/2; //Round to nearest
     conversion/=vhtFreq;
     BKP->RTCCR=0; //disable RTC alarm out
-    assert(rtc.getValue()<conversion);
     rtc.absoluteSleep(conversion);
     BKP->RTCCR=BKP_RTCCR_ASOE; //Enable RTC alarm out
-    //synchronizeWithRtc();
-    vhtSyncPointRtc = rtc.getValue() + 3;
-    RTC->CRL |= RTC_CRL_CNF; //configuration mode
-    RTC->ALRL=vhtSyncPointRtc;
-    RTC->ALRH=vhtSyncPointRtc >>16;
-    RTC->CRL &= ~RTC_CRL_CNF;
-    while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
-    vhtInt.sync=false;
-    while(!vhtInt.sync)
-    {
-        vhtWaiting=Thread::IRQgetCurrentThread();
-        Thread::IRQwait();
-        {
-            FastInterruptEnableLock eLock(dLock);
-            Thread::yield();
-        }
-    }     
-    #if TIMER_DEBUG>0
-    probe_sync_vht::high();
-    probe_sync_vht::low();
-    #endif
+    synchronizeWithRtc();   
 }
 
 void VHT::sleep(unsigned long long value)
@@ -867,7 +888,7 @@ void VHT::wait(unsigned long long value)
     vhtWakeupWait=(vhtOverflows|vhtCnt)+value;
     
     TIM4->SR =~TIM_SR_CC2IF;           //reset interrupt flag channel 2
-    TIM4->CCR2=vhtWakeupWait & 0xFFFF;  //set match register channel 2
+    TIM4->CCR2=vhtWakeupWait;  //set match register channel 2
     TIM4->DIER |= TIM_DIER_CC2IE;       //enable interrupt channel 2
     
     if(vhtWakeupWait > ((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0)) | TIM4->CNT))
@@ -884,60 +905,37 @@ void VHT::wait(unsigned long long value)
         }
     }
     TIM4->DIER &=~TIM_DIER_CC2IE;
+    vhtInt.wait=false;
 }
 
 void VHT::synchronizeWithRtc()
 {
+    FastInterruptDisableLock dLock;
+    //at least 2 tick is necessary for resynchronize becouse rtc alarm 
+    //enable tamper in the previous cycle of match between counter register and
+    //alarm register
+    vhtSyncPointRtc = rtc.getValue()+2;
+    RTC->CRL |= RTC_CRL_CNF; //configuration mode
+    RTC->ALRL=vhtSyncPointRtc;
+    RTC->ALRH=vhtSyncPointRtc>>16;
+    RTC->CRL &= ~RTC_CRL_CNF;
+    while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
+    vhtInt.sync=false;
+    vhtInt.flag=true;
+    while(!vhtInt.sync)
     {
-        FastInterruptDisableLock dLock;    //interrupt disable
-        TIM4->CNT=0;
-        TIM4->EGR=TIM_EGR_UG;
-        
-        //These two wait make sure the next code is run exactly after
-        //the falling edge of the 16KHz clock
-//        while(clockin::value()==0) ;
-//        while(clockin::value()==1) ;
-        
-        //This delay is extremely important. There appears to be some
-        //kind of resynchronization between clock domains happening
-        //and reading the RTC registers immediately after the falling
-        //edge sometimes returns the old value, and sometimes the new
-        //one. This jitter is unacceptable, and the delay fixes it.
-        delayUs(18);
-        //Get RTC value
-        unsigned int a,b;
-        a=RTC->CNTL;
-        b=RTC->CNTH;
-     
-        TIM4->SR =~TIM_SR_CC1IF;     //Disable interrupt flag on channel 1
-        TIM4->DIER |= TIM_DIER_CC1IE; //Enable interrupt on channel 1
-        
-        vhtSyncPointRtc=getRTC64bit(a | b<<16);
-        vhtInt.sync=false;
-        while(!vhtInt.sync)
+        vhtWaiting=Thread::IRQgetCurrentThread();
+        Thread::IRQwait();
         {
-            vhtWaiting=Thread::IRQgetCurrentThread();
-            Thread::IRQwait();
-            {
-                FastInterruptEnableLock eLock(dLock);
-                Thread::yield();
-            }
+            FastInterruptEnableLock eLock(dLock);
+            Thread::yield();
         }
-        TIM4->DIER &=~TIM_DIER_CC1IE;
     }
-    //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
-    //while the other timer run at a submultiple of 24MHz, 1MHz in
-    //the current setting, and since 1MHz is not a multiple of 16384
-    //the conversion is a little complex and requires the use of
-    //64bit numbers for intermendiate results. If the main XTAL was
-    //8.388608MHz instead of 8MHz a simple bitmask operation on 32bit
-    //numbers would suffice.
-    
-    unsigned long long conversion=vhtSyncPointRtc;
-    conversion*=vhtFreq;
-    conversion+=rtcFreq/2; //Round to nearest
-    conversion/=rtcFreq;
-    vhtBase=conversion;
+    vhtInt.sync=false;
+    #if TIMER_DEBUG>0
+    probe_sync_vht::high();
+    probe_sync_vht::low();
+    #endif
 }
 
 VHT::VHT() : rtc(Rtc::instance())
@@ -968,25 +966,8 @@ VHT::VHT() : rtc(Rtc::instance())
     NVIC_ClearPendingIRQ(TIM4_IRQn);
     NVIC_EnableIRQ(TIM4_IRQn);
     
-    //synchronizeWithRtc();
-    //BKP->RTCCR=BKP_RTCCR_ASOE; //Enable RTC alarm out
-    FastInterruptDisableLock dLock;
-    vhtSyncPointRtc = rtc.getValue()+3;
-    RTC->CRL |= RTC_CRL_CNF; //configuration mode
-    RTC->ALRL=vhtSyncPointRtc;
-    RTC->ALRH=vhtSyncPointRtc>>16;
-    RTC->CRL &= ~RTC_CRL_CNF;
-    while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
-    vhtInt.sync=false;
-    while(!vhtInt.sync)
-    {
-        vhtWaiting=Thread::IRQgetCurrentThread();
-        Thread::IRQwait();
-        {
-            FastInterruptEnableLock eLock(dLock);
-            Thread::yield();
-        }
-    }
+    synchronizeWithRtc();
+    
 }
 #else //_BOARD_STM32VLDISCOVERY
 #error "rtc.cpp not implemented for the selected board"

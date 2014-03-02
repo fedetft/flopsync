@@ -163,7 +163,7 @@ static void inline testVhtAbsoluteSleep()
     Timer& vht=VHT::instance();
     
     int i=1;
-    vht.setValue(vhtFreq*1/20); //mezzo secondo 
+    vht.setValue(vhtFreq*1/2); //mezzo secondo 
     printf("Timestamp:  %016llX\n",vht.getValue());
     for(;;)
     {    
@@ -224,7 +224,7 @@ static void inline testVhtAbsoluteWait()
     greenLed::high();
     Timer& vht=VHT::instance();
     
-    vht.setValue(vhtFreq*1/20); //mezzo secondo 
+    vht.setValue(vhtFreq*1/2); //mezzo secondo 
     printf("Timestamp:  %016llX\n",vht.getValue());
     int i=1;
     for(;;)
@@ -543,13 +543,13 @@ int main() {
     //testRtcTriggerEventWait();
     //testRtcWaitExtEventOrTimeout();
     //testVhtSleep();
-    testVhtAbsoluteSleep();
+    //testVhtAbsoluteSleep();
     //testVhtEvent();
     //testVhtGetEventTimestamp();
     //testVhtTriggerEvent();
     //testVhtWaitTriggerEvent();
     //testVhtWait();
-    //testVhtAbsoluteWait();
+    testVhtAbsoluteWait();
     //testVhtWaitExtEvent();
     //testVhtWaitExtEventOrTimeout();
     //testVhtMonotonic();

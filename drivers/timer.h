@@ -386,39 +386,7 @@ struct typeVecInt{
     unsigned char trigger : 1;
     unsigned char event   : 1;
     unsigned char sync    : 1;
-
-    typeVecInt(bool wait =0, int trigger =0, bool event=0, bool sync=0) :
-                            wait(wait), trigger(trigger), event(event), sync(sync)
-    {}
-
-    typeVecInt operator=(const typeVecInt& a)
-    {
-        wait = a.wait;
-        trigger = a.trigger;
-        event = a.event;
-        sync = a.sync;
-        return *this;
-    }
-
-    bool operator==(const typeVecInt & a) const
-    {
-        if (wait == a.wait &&
-            trigger == a.trigger &&
-            event == a.event &&
-            sync == a.sync ) return true;
-        else
-            return false;
-    }
-
-    bool operator!=(const typeVecInt& a) const
-    {
-        if (wait == a.wait &&
-            trigger == a.trigger &&
-            event == a.event &&
-            sync == a.sync ) return false;
-        else
-            return true;
-    }
+    unsigned char flag    : 1;
 };
 
 
