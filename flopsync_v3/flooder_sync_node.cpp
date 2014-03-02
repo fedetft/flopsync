@@ -304,10 +304,6 @@ bool FlooderSyncNode::synchronize()
     miosix::ledOn();
     for(;;)
     {
-        //When I enter for the first time in the cycle is safe that SFD and FRM_DONE 
-        //are reset because I have rxTurnaraoundTime before the transceiver go in 
-        //RX mode. In the other case if SFD arrive in the middle between isSFDRaised() 
-        //and absoluteWaitTimeoutOrEvent() than we are going in timeout.
         timeout = timer.absoluteWaitTimeoutOrEvent(computedFrameStart+receiverWindow);
         measuredFrameStart=timer.getExtEventTimestamp();
         miosix::ledOff();

@@ -418,6 +418,14 @@ bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
                 }
             }
             RTC->CRH &=~RTC_CRH_ALRIE;
+            if(rtcInt.wait && rtcInt.event)
+            {
+                (timestampEvent<=value)? result=false:result=true;
+            }
+            else
+            {
+                result = rtcInt.wait;
+            }
             result=rtcInt.wait;
             rtcInt.wait=false;
             rtcInt.event=false;
@@ -698,7 +706,14 @@ bool VHT::absoluteWaitTimeoutOrEvent(unsigned long long value)
             }
         }
         TIM4->DIER &=~ (TIM_DIER_CC2IE |  TIM_DIER_CC3IE); 
-        result = vhtInt.wait;
+        if(vhtInt.wait && vhtInt.event)
+        {
+            (timestampEvent<=value)? result=false:result=true;
+        }
+        else
+        {
+            result = vhtInt.wait;
+        }
         vhtInt.wait=false;
         vhtInt.event=false;
     }
