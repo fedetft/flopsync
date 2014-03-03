@@ -112,11 +112,7 @@ bool FlooderSyncNode::synchronize()
                 break;
                 #endif//GLOSSY
 
-            }
-            else 
-            {
-                delete syncFrame;
-            }
+            }                
             #else //SEND_TIMESTAMPS
             unsigned char payload[syncFrame->getSizePayload()];
             unsigned char *ts=reinterpret_cast<unsigned char*>(&receivedTimestamp);
@@ -128,6 +124,7 @@ bool FlooderSyncNode::synchronize()
                 break;
             }
             #endif //SEND_TIMESTAMPS
+            delete syncFrame;
         }
         transceiver.flushRxFifoBuffer();
         miosix::ledOn();
@@ -136,20 +133,29 @@ bool FlooderSyncNode::synchronize()
     if(!timeout)
     {
         //rebroadcast
-        #if defined(MULTI_HOP) && ! defined(SEND_TIMESTAMP)
+        #ifdef MULTI_HOP
+        transceiver.setMode(Cc2520::TX);
+        transceiver.setAutoFCS(false);
         unsigned long long rebreoadcastStart=measuredFrameStart+payloadFrameTime+piggybackingTime+fcsFrameTime+delayRebroadcastTime;
         unsigned char payload[syncFrame->getSizePayload()];
         unsigned char fcs[syncFrame->getSizeFCS()];
-        payload[0]= hop+1;
-        fcs[0]=~(payload[0]);
+        payload[0]=(hop+1);
+        fcs[0]=~payload[0];
         syncFrame->setPayload(payload);
-        syncFrame->setFCF(fcs);
+        syncFrame->setFCS(fcs);
+        #if FLOPSYNC_DEBUG  >0
+        assert(transceiver.writeFrame(*syncFrame)==0);
+        #else//FLOPSYNC_DEBUG
         transceiver.writeFrame(*syncFrame);
+        #endif//FLOPSYNC_DEBUG
+        #if FLOPSYNC_DEBUG > 0   
+        assert(timer.getValue()<rebreoadcastStart-txTurnaroundTime-trasmissionTime);
+        #endif//FLOPSYNC_DEBUG
         timer.absoluteWaitTrigger(rebreoadcastStart-txTurnaroundTime-trasmissionTime);
         miosix::ledOn();
-        timer.absoluteWaitTimeoutOrEvent(rebreoadcastStart+preambleFrameTime+delaySendPacketTime);
+        timer.absoluteWaitTimeoutOrEvent(rebreoadcastStart-trasmissionTime+preambleFrameTime+delaySendPacketTime);
         transceiver.isSFDRaised();
-        timer.absoluteWaitTimeoutOrEvent(rebreoadcastStart+frameTime+delaySendPacketTime);
+        timer.absoluteWaitTimeoutOrEvent(rebreoadcastStart-trasmissionTime+frameTime+delaySendPacketTime);
         transceiver.isTxFrameDone();
         miosix::ledOff();
         #endif //MULTI_HOP
@@ -238,10 +244,6 @@ void FlooderSyncNode::resynchronize()
                 break;
                 #endif//GLOSSY
             }
-            else
-            {
-                delete syncFrame;
-            }
             #else //SEND_TIMESTAMPS
             unsigned char payload[syncFrame->getSizePayload()];
             unsigned char *ts=reinterpret_cast<unsigned char*>(&receivedTimestamp);
@@ -253,6 +255,7 @@ void FlooderSyncNode::resynchronize()
                 break;
             }
             #endif //SEND_TIMESTAMPS
+            delete syncFrame;
         }
     }
     miosix::ledOff();
