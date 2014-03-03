@@ -33,6 +33,7 @@
 #include "flopsync_v3/flooder_root_node.h"
 #include "flopsync_v3/synchronizer.h"
 #include "board_setup.h"
+#include <cassert>
 
 using namespace std;
 
@@ -72,6 +73,9 @@ int main()
             timer.absoluteSleep(wakeupTime);
             blueLed::high();
             transceiver.setMode(Cc2520::IDLE);
+            #if FLOPSYNC_DEBUG > 0   
+            assert(timer.getValue()<wakeupTime+jitterAbsorption);
+            #endif//FLOPSYNC_DEBUG
             timer.absoluteWait(wakeupTime+jitterAbsorption);
             transceiver.setAutoFCS(true);
             transceiver.setMode(Cc2520::RX);

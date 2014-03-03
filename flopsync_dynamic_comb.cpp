@@ -41,6 +41,7 @@
 #include "flopsync_v3/non_monotonic_clock.h"
 #include "flopsync_v3/critical_section.h"
 #include "board_setup.h"
+#include <cassert>
 
 using namespace std;
 
@@ -110,7 +111,7 @@ int main()
         for(unsigned long long i=start;i<nominalPeriod-combSpacing/2;i+=9*combSpacing)
         {   
             #ifdef SENSE_TEMPERATURE
-            unsigned short temperature=getDACTemperature();
+            unsigned short temperature=getADCTemperature();
             #endif //SENSE_TEMPERATURE
             
             unsigned long long wakeupTime=clock->localTime(i)-
@@ -136,6 +137,9 @@ int main()
             unsigned char len=sizeof(Packet);
             unsigned char *data=reinterpret_cast<unsigned char*>(&packet);
             transceiver.writeFrame(len,data);
+            #if FLOPSYNC_DEBUG  >0
+            assert(timer.getValue()<frameStart-txTurnaroundTime-trasmissionTime);
+            #endif//FLOPSYNC_DEBUG
             timer.absoluteWaitTrigger(frameStart-txTurnaroundTime-trasmissionTime);
             timer.absoluteWaitTimeoutOrEvent(frameStart-trasmissionTime+preambleFrameTime+delaySendPacketTime);
             transceiver.isSFDRaised();
