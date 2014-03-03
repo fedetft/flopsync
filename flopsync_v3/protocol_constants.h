@@ -111,8 +111,8 @@ const unsigned long long retransmitDelta=static_cast<unsigned long long>(0.00025
 //Time for cc2520 to start its clock oscillator (1.5ms)
 //const unsigned long long radioBoot=static_cast<unsigned long long>(0.001f*hz+0.5f); 
 
-//Transmission of preamble begins 192us after STXON
-const unsigned long long txTurnaroundTime=static_cast<unsigned long long>(0.000192*hz+0.5f); 
+//Transmission of preamble begins 192.333us after STXON (estimated with oscilloscope)
+const unsigned long long txTurnaroundTime=static_cast<unsigned long long>(0.000192333*hz+0.5f); 
 
 //Receiver is ready 192us after RX are enabled but to eliminate jitterSoftware we set it to 250us
 const unsigned long long rxTurnaroundTime=static_cast<unsigned long long>(0.000250*hz+0.5f);

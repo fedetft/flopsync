@@ -29,7 +29,7 @@
 #include <../miosix/kernel/scheduler/scheduler.h>
 #include "timer.h"
 
-#define syncVhtRtcPeriod 20
+
 
 using namespace miosix;
 
@@ -41,7 +41,7 @@ static Thread *rtcWaiting=0;        ///< Thread waiting for the RTC interrupt
 static Thread *vhtWaiting=0;        ///< Thread waiting on VHT
 
 static volatile typeVecInt rtcInt;
-
+static unsigned int  syncVhtRtcPeriod=20;
 static volatile typeVecInt vhtInt;
 static volatile unsigned long long vhtBase=0;
 static volatile unsigned long long vhtOffset=0;
@@ -370,6 +370,7 @@ void Rtc::absoluteWait(unsigned long long value)
     RTC->ALRL=value;
     RTC->ALRH=value>>16;
     RTC->CRL &= ~RTC_CRL_CNF;
+    vhtSyncPointRtc=value;
     rtcInt.wait=false;
     while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
     if(value > getValue())
@@ -400,6 +401,7 @@ bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
         RTC->ALRL=value;
         RTC->ALRH=value>>16;
         RTC->CRL &= ~RTC_CRL_CNF;
+        vhtSyncPointRtc=value;
         rtcInt.wait=false;
         rtcInt.event=false;
         while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
@@ -463,6 +465,7 @@ void Rtc::absoluteTrigger(unsigned long long value)
     RTC->ALRL=value;
     RTC->ALRH=value>>16;
     RTC->CRL &= ~RTC_CRL_CNF;
+    vhtSyncPointRtc=value;
     rtcTriggerEnable=true;
     while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
     if(value <= getValue()) 
@@ -480,6 +483,7 @@ void Rtc::absoluteWaitTrigger(unsigned long long value)
     RTC->ALRL=value;
     RTC->ALRH=value>>16;
     RTC->CRL &= ~RTC_CRL_CNF;
+    vhtSyncPointRtc=value;
     rtcInt.trigger=false;
     rtcTriggerEnable=true;
     while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
@@ -818,10 +822,8 @@ void VHT::absoluteSleep(unsigned long long value)
     conversion*=rtcFreq;
     conversion+=vhtFreq/2; //Round to nearest
     conversion/=vhtFreq;
-    BKP->RTCCR=0; //disable RTC alarm out
     rtc.absoluteSleep(conversion);
-    BKP->RTCCR=BKP_RTCCR_ASOE; //Enable RTC alarm out
-    synchronizeWithRtc();   
+    syncWithRtc();   
 }
 
 void VHT::sleep(unsigned long long value)
@@ -864,12 +866,14 @@ void VHT::wait(unsigned long long value)
     vhtInt.wait=false;
 }
 
-void VHT::synchronizeWithRtc()
+void VHT::syncWithRtc()
 {
     FastInterruptDisableLock dLock;
-    //at least 2 tick is necessary for resynchronize becouse rtc alarm 
+    //at least 2 tick is necessary for resynchronize because rtc alarm 
     //enable tamper in the previous cycle of match between counter register and
     //alarm register
+    TIM4->SR =~TIM_SR_CC1IF; 
+    TIM4->DIER|=TIM_DIER_CC1IE; 
     vhtSyncPointRtc = rtc.getValue()+2;
     RTC->CRL |= RTC_CRL_CNF; //configuration mode
     RTC->ALRL=vhtSyncPointRtc;
@@ -887,6 +891,7 @@ void VHT::synchronizeWithRtc()
             Thread::yield();
         }
     }
+    if(!autoSync)  TIM4->DIER&=~TIM_DIER_CC1IE; 
     vhtInt.sync=false;
     #if TIMER_DEBUG>0
     probe_sync_vht::high();
@@ -894,7 +899,37 @@ void VHT::synchronizeWithRtc()
     #endif
 }
 
-VHT::VHT() : rtc(Rtc::instance())
+void VHT::enableAutoSyncWhitRtc(unsigned int period)
+{
+    FastInterruptDisableLock dLock;
+    if(period == syncVhtRtcPeriod && autoSync) return;
+    autoSync=true;
+    if (period<2) syncVhtRtcPeriod = 2;
+    TIM4->SR =~TIM_SR_CC1IF; 
+    TIM4->DIER|=TIM_DIER_CC1IE; 
+    vhtSyncPointRtc = rtc.getValue()+syncVhtRtcPeriod;
+    RTC->CRL |= RTC_CRL_CNF; //configuration mode
+    RTC->ALRL=vhtSyncPointRtc;
+    RTC->ALRH=vhtSyncPointRtc>>16;
+    RTC->CRL &= ~RTC_CRL_CNF;
+    while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
+}
+
+void VHT::disableAutoSyncWithRtc()
+{
+    autoSync=false;
+    TIM4->SR =~TIM_SR_CC1IF; 
+    TIM4->DIER&=~TIM_DIER_CC1IE;
+}
+
+bool VHT::isAutoSync()
+{
+    return autoSync;
+}
+
+
+
+VHT::VHT() : rtc(Rtc::instance()), autoSync(true)
 {
     trigger::mode(Mode::ALTERNATE);
     resyncVHTout::mode(Mode::OUTPUT);
@@ -916,13 +951,13 @@ VHT::VHT() : rtc(Rtc::instance())
     TIM4->CCMR2=TIM_CCMR2_CC3S_0  //CC3 connected to input 3 (cc2520 SFD)
               | TIM_CCMR2_IC3F_0;  //Sample at 24MHz, resynchronize with 2 samples
     TIM4->CCER= TIM_CCER_CC1E|TIM_CCER_CC3E|TIM_CCER_CC4E ;  //enable channel
-    TIM4->DIER=TIM_DIER_UIE | TIM_DIER_CC1IE;  //Enable interrupt event @ end of time to set flag
+    TIM4->DIER=TIM_DIER_UIE;  //Enable interrupt event @ end of time to set flag
     TIM4->CR1|=TIM_CR1_CEN;
     NVIC_SetPriority(TIM4_IRQn,5); //Low priority
     NVIC_ClearPendingIRQ(TIM4_IRQn);
     NVIC_EnableIRQ(TIM4_IRQn);
     
-    synchronizeWithRtc();
+    syncWithRtc();
     
 }
 #else //_BOARD_STM32VLDISCOVERY

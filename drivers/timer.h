@@ -360,7 +360,24 @@ public:
     /**
      * Synchronize the VHT timer with the low frequency RTC
      */
-    void synchronizeWithRtc();
+    void syncWithRtc();
+    
+    /**
+     * Allows you to set a periodic synchronization of the VHT with the rtc.
+     * @param period number of tick of rtc at least 2 or more.
+     */
+    void enableAutoSyncWhitRtc(unsigned int period=20);
+    
+    /**
+     * Stop the clocks synchronization with the periodic VHT rtc possibly activated.
+     */
+    void disableAutoSyncWithRtc();
+    
+    /**
+     * 
+     * @return true if auto-syncronize with rtc is enabled false otherwise;
+     */
+    bool isAutoSync();
     
     #if TIMER_DEBUG==4
     typeTimer getInfo()const;
@@ -373,6 +390,7 @@ private:
     VHT();
     
     Rtc& rtc; //The underlying rtc
+    bool autoSync;
 };
 
 
