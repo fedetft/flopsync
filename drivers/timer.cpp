@@ -631,13 +631,8 @@ VHT& VHT::instance()
 
 unsigned long long VHT::getValue() const
 {
-    unsigned long long a;
-    unsigned short vhtCnt;
-    do {
-        a=vhtOverflows;
-        vhtCnt=TIM4->CNT;
-    } while(a!=vhtOverflows); //Ensure no updates in the middle
-    return (vhtOverflows|vhtCnt)-vhtSyncPointVht+vhtBase+vhtOffset;
+    FastInterruptDisableLock dLock;
+    return ((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0))|TIM4->CNT)-vhtSyncPointVht+vhtBase+vhtOffset;
 }
 
 void VHT::setValue(unsigned long long value)
