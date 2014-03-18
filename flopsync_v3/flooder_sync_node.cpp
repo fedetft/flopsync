@@ -83,7 +83,7 @@ bool FlooderSyncNode::synchronize()
         measuredFrameStart=timer.getExtEventTimestamp()-preambleFrameTime;
         miosix::ledOff();
         if(timeout) break;
-
+        
         
         transceiver.isSFDRaised();
         //Wait end of packet
@@ -124,8 +124,8 @@ bool FlooderSyncNode::synchronize()
                 break;
             }
             #endif //SEND_TIMESTAMPS
-            delete syncFrame;
         }
+        delete syncFrame;
         transceiver.flushRxFifoBuffer();
         miosix::ledOn();
     }
@@ -135,8 +135,13 @@ bool FlooderSyncNode::synchronize()
         //rebroadcast
         #ifdef MULTI_HOP
         transceiver.setMode(Cc2520::TX);
+        #if FLOPSYNC_DEBUG>0
+        probe_pin15::high();
+        probe_pin15::low();
+        #endif//FLOPSYNC_DEBUG
+        
         transceiver.setAutoFCS(false);
-        unsigned long long rebreoadcastStart=measuredFrameStart+payloadFrameTime+piggybackingTime+fcsFrameTime+delayRebroadcastTime;
+        unsigned long long rebreoadcastStart=measuredFrameStart+frameTime+piggybackingTime+delayRebroadcastTime;
         unsigned char payload[syncFrame->getSizePayload()];
         unsigned char fcs[syncFrame->getSizeFCS()];
         payload[0]=(hop+1);
@@ -150,6 +155,10 @@ bool FlooderSyncNode::synchronize()
         #endif//FLOPSYNC_DEBUG
         #if FLOPSYNC_DEBUG > 0   
         assert(timer.getValue()<rebreoadcastStart-txTurnaroundTime-trasmissionTime);
+        #endif//FLOPSYNC_DEBUG
+        #if FLOPSYNC_DEBUG>0
+        probe_pin15::high();
+        probe_pin15::low();
         #endif//FLOPSYNC_DEBUG
         timer.absoluteWaitTrigger(rebreoadcastStart-txTurnaroundTime-trasmissionTime);
         miosix::ledOn();
@@ -185,8 +194,10 @@ bool FlooderSyncNode::synchronize()
     receiverWindow=r.second;
     int e = measuredFrameStart-computedFrameStart;
     
+    #if FLOPSYNC_DEBUG
     timeout? printf("e=%d u=%d w=%d ---> miss\n",e,clockCorrection,receiverWindow):
                     printf("e=%d u=%d w=%d\n",e,clockCorrection,receiverWindow);
+    #endif//FLOPSYNC_DEBUG
     
     //Correct frame start considering hops
     measuredFrameStart-=hop*retransmitDelta;
@@ -255,8 +266,8 @@ void FlooderSyncNode::resynchronize()
                 break;
             }
             #endif //SEND_TIMESTAMPS
-            delete syncFrame;
         }
+        delete syncFrame;
     }
     miosix::ledOff();
     transceiver.setMode(Cc2520::DEEP_SLEEP);

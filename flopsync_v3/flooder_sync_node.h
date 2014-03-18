@@ -92,9 +92,9 @@ public:
     /**
      * \return the timestamp received through the radio
      */
-    unsigned int getRadioTimestamp() const
+    unsigned long long getRadioTimestamp() const
     {
-        return receivedTimestamp+preambleFrameTime; //Correct for packet length
+        return receivedTimestamp;
     }
     #endif //SEND_TIMESTAMPS
 
