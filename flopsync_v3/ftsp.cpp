@@ -35,29 +35,24 @@ using namespace std;
 // class FTSP
 //
 
-FTSP::FTSP() : overflowCounterLocal(0), overflowCounterGlobal(0) { reset(); }
+FTSP::FTSP() { reset(); }
 
-void FTSP::timestamps(unsigned int globalTime, unsigned int localTime)
+#ifdef SEND_TIMESTAMPS
+void FTSP::timestamps(unsigned long long globalTime, unsigned long long localTime)
 {
     if(!filling || dex>0)
     {
         //Just to have a measure of e(t(k)-)
-        offset=rootFrame2localAbsolute(globalTime-this->globalTime);
-        offset=(int)localTime-offset;
+        offset=localTime-rootFrame2localAbsolute(globalTime-this->globalTime);;
     }
     
-    if(this->localTime>localTime) overflowCounterLocal++;
-    if(this->globalTime>globalTime) overflowCounterGlobal++;
     this->globalTime=globalTime;
     this->localTime=localTime;
     
     unsigned long long ovr_local_rtc_base=reg_local_rtcs[dex];
-    unsigned long long temp=overflowCounterLocal;
-    temp<<=32;
-    temp|=localTime;
-    reg_local_rtcs[dex]=temp;
+    reg_local_rtcs[dex]=localTime;
     reg_rtc_offs[dex]=(int)localTime-(int)globalTime;
-    if(filling && dex==0) local_rtc_base=temp;
+    if(filling && dex==0) local_rtc_base=localTime;
     if(!filling) local_rtc_base=ovr_local_rtc_base;
     if(filling) num_reg_data=dex+1;
     else num_reg_data=regression_entries;
@@ -69,9 +64,10 @@ void FTSP::timestamps(unsigned int globalTime, unsigned int localTime)
     {
         a=(double)localTime-(double)globalTime;
         b=0;
-        printf("+ b=%e a=%f localTime=%u globalTime=%u\n",b,a,localTime,globalTime);
+        printf("+ b=%e a=%f localTime=%llu globalTime=%llu\n",b,a,localTime,globalTime);
     }
 }
+#endif//SEND_TIMESTAMPS
 
 pair<int,int> FTSP::computeCorrection(int e)
 {
@@ -96,7 +92,7 @@ pair<int,int> FTSP::computeCorrection(int e)
     long long n=num_reg_data;
     b=(double)(n*sum_ot-sum_o*sum_t)/(double)(n*sum_t2-sum_t*sum_t);
     a=((double)sum_o-b*(double)sum_t)/(double)n;
-    printf("b=%e a=%f localTime=%u globalTime=%u\n",b,a,localTime,globalTime);
+    printf("b=%e a=%f localTime=%llu globalTime=%llu\n",b,a,localTime,globalTime);
     
     return make_pair(e,w);
 }
@@ -116,11 +112,9 @@ void FTSP::reset()
     memset(reg_rtc_offs,0,sizeof(reg_rtc_offs));
 }
 
-unsigned int FTSP::rootFrame2localAbsolute(unsigned int time) const
+unsigned long long FTSP::rootFrame2localAbsolute(unsigned long long time) const
 {
-    unsigned long long temp=overflowCounterGlobal;
-    temp<<=32;
-    temp|=globalTime;
+    unsigned long long temp=globalTime;
     temp+=time;
     double global=temp;
     //printf("timeBefore=%u ",temp);
@@ -131,12 +125,11 @@ unsigned int FTSP::rootFrame2localAbsolute(unsigned int time) const
     
     // local=(global+lastOffset-b*lastSyncPoint)/(1.0-b);
     double lastOffset=(int)localTime-(int)globalTime;
-    unsigned long long temp2=overflowCounterLocal;
-    temp2<<=32;
-    temp2|=localTime;
+
+    unsigned long long temp2=localTime;
     double lastSyncPoint=temp2;
     unsigned long long result=(global+lastOffset-b*lastSyncPoint)/(1.0-b);
     
     //printf(" timeAfter=%u\n",result);
-    return result & 0xffffffff;
+    return result;
 }

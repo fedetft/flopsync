@@ -49,7 +49,7 @@ inline void lowPowerSetup()
     Gpio<GPIOB_BASE,14>::mode(Mode::INPUT_PULL_UP_DOWN); //debbuger
     Gpio<GPIOB_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN);
     
-    Gpio<GPIOC_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN);
+    //Gpio<GPIOC_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN); //ADC TMP35
     Gpio<GPIOC_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOC_BASE,2>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOC_BASE,3>::mode(Mode::INPUT_PULL_UP_DOWN);
@@ -120,7 +120,7 @@ inline void lowPowerSetup()
     //Gpio<GPIOB_BASE,14>::mode(Mode::INPUT_PULL_UP_DOWN); //debug
     //Gpio<GPIOB_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN); //debug
     
-    Gpio<GPIOC_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN);
+    Gpio<GPIOC_BASE,0>::mode(Mode::INPUT_PULL_UP_DOWN); //ADC TMP35
     Gpio<GPIOC_BASE,1>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOC_BASE,2>::mode(Mode::INPUT_PULL_UP_DOWN);
     Gpio<GPIOC_BASE,3>::mode(Mode::INPUT_PULL_UP_DOWN);

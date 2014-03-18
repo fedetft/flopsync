@@ -25,39 +25,26 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
-#ifndef FBS_H
-#define	FBS_H
+#ifndef OPTIMIZED_RAMP_FLOPSYNC_2_H
+#define	OPTIMIZED_RAMP_FLOPSYNC_2_H
 
 #include "protocol_constants.h"
 #include "synchronizer.h"
-#include "../drivers/timer.h"
 
 /**
- * A PI controller feeded with timestamps
+ * A new flopsync controller that can reach zero steady-state error both
+ * with step-like and ramp-like disturbances.
+ * It provides better synchronization under temperature changes, that occur
+ * so slowly with respect to the controller operation to look like ramp
+ * changes in clock skew.
  */
-class FBS : public Synchronizer
+class FLOPSYNC2 : public Synchronizer
 {
 public:
     /**
      * Constructor
      */
-    FBS(Timer& timer);
-
-    #ifdef SEND_TIMESTAMPS
-    /**
-     * Must be called before computeCorrection() if timestamp transmission is
-     * enabled
-     * \param globalTime time received in timestamp
-     * \param localTime local time when packet received
-     */
-    void timestamps(unsigned long globalTime, unsigned long long localTime);
-
-    /**
-     * \return true of the synchronization scheme alters the node's hardware
-     * clock. In this case, monotonic clocks are impossible to implement.
-     */
-    bool overwritesHardwareClock() const { return true; }
-    #endif//SEND_TIMESTAMPS
+    FLOPSYNC2();
     
     /**
      * Compute clock correction and receiver window given synchronization error
@@ -80,26 +67,41 @@ public:
     /**
      * \return the synchronization error e(k)
      */
-    int getSyncError() const { return offset; }
+    int getSyncError() const { return eo; }
     
     /**
      * \return the clock correction u(k)
      */
-    int getClockCorrection() const { return u; }
+    int getClockCorrection() const;
     
     /**
      * \return the receiver window (w)
      */
-    int getReceiverWindow() const { return w; }
+    int getReceiverWindow() const { return scaleFactor*dw; }
     
 private:
-    static const float kp=0.7847f;//0.35f;
-    static const float ki=0.7847f;//0.05f;
+    int uo, uoo;
+    int sum;
+    int squareSum;
+    short eo, eoo;
+    unsigned char count;
+    unsigned char dw;
+    char init;
     
-    Timer& timer;
-    int offset,offseto;
-    float u;
-    bool first;
+    static const int numSamples=8; //Number of samples for variance compuation
+    static const int fp=64; //Fixed point, log2(fp) bits are the decimal part
+    #ifndef USE_VHT
+    static const int scaleFactor=1;
+    #else //USE_VHT
+    //The maximum value that can enter the window computation algorithm without
+    //without causing overflows is around 700, resulting in a scaleFactor of
+    //5 when the vht resolution is 1us, and w is 3ms. That however would cause
+    //overflow when writing the result to dw, which is just an unsigned char
+    //(to save RAM). This requires a higher scale factor, of about w/255, or 12.
+    //However, this requires more iterations to approximate the square root,
+    //so we're using a scale factor of 30.
+    static const int scaleFactor=480;
+    #endif //USE_VHT
 };
 
-#endif //FBS_H
+#endif //OPTIMIZED_RAMP_FLOPSYNC_2_H

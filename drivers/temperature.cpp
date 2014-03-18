@@ -26,7 +26,7 @@ unsigned short getRawTemperature()
     return result;
 }
 
-unsigned short getDACTemperature()
+unsigned short getADCTemperature()
 {
     {
         miosix::FastInterruptDisableLock dLock;

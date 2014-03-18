@@ -42,19 +42,21 @@ public:
      */
     FTSP();
 
+    #ifdef SEND_TIMESTAMPS
     /**
      * Must be called before computeCorrection() if timestamp transmission is
      * enabled
      * \param globalTime time received in timestamp
      * \param localTime local time when packet received
      */
-    void timestamps(unsigned int globalTime, unsigned int localTime);
+    void timestamps(unsigned long long globalTime, unsigned long long localTime);
 
     /**
      * \return true of the synchronization scheme alters the node's hardware
      * clock. In this case, monotonic clocks are impossible to implement.
      */
     bool overwritesHardwareClock() const { return false; }
+    #endif//SEND_TIMESTAMPS
     
     /**
      * Compute clock correction and receiver window given synchronization error
@@ -89,11 +91,10 @@ public:
      */
     int getReceiverWindow() const { return w; }
     
-    unsigned int rootFrame2localAbsolute(unsigned int time) const;
+    unsigned long long rootFrame2localAbsolute(unsigned long long time) const;
     
 private:
-    unsigned int globalTime,localTime;
-    unsigned int overflowCounterLocal,overflowCounterGlobal; 
+    unsigned long long globalTime,localTime;
     int e,offset;
     
     static const int regression_entries=8;

@@ -34,12 +34,14 @@ using namespace std;
 
 FBS::FBS(Timer& timer) : timer(timer) { reset(); }
 
-void FBS::timestamps(unsigned int globalTime, unsigned int localTime)
+#ifdef SEND_TIMESTAMPS
+void FBS::timestamps(unsigned long globalTime, unsigned long long localTime)
 {
     timer.setValue(globalTime+overwriteClockTime);
     if(!first) offset=(int)localTime-(int)globalTime-u;
     first=false;
 }
+#endif
 
 std::pair<int,int> FBS::computeCorrection(int e)
 {

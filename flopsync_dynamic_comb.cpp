@@ -35,13 +35,16 @@
 #include "flopsync_v3/protocol_constants.h"
 #include "flopsync_v3/flooder_sync_node.h"
 #include "flopsync_v3/synchronizer.h"
-#include "flopsync_v3/optimized_ramp_flopsync2.h"
+#include "flopsync_v3/flopsync2.h"
+#include "flopsync_v3/fbs.h"
+#include "flopsync_v3/ftsp.h"
 #include "flopsync_v3/clock.h"
 #include "flopsync_v3/monotonic_clock.h"
 #include "flopsync_v3/non_monotonic_clock.h"
 #include "flopsync_v3/critical_section.h"
 #include "board_setup.h"
 #include <cassert>
+#define numb_nodes 9
 
 using namespace std;
 
@@ -76,23 +79,27 @@ int main()
     #endif //USE_VHT
     Synchronizer *sync;
     bool monotonic=false;
-    //For multi hop experiments
-    sync=new OptimizedRampFlopsync2; 
-    monotonic=true;
-//     //For comparison between sincnrfhronization schemes
-//     switch(identifyNode())
-//     {
-//         case 1: sync=new OptimizedRampFlopsync2; monotonic=true; break;
-//         case 2: sync=new FBS(rtc); break;
-//         case 3: sync=new FTSP; break;
-//     }
+    //For comparison between sincnrfhronization schemes
+    switch(controller)
+    {
+     case 1: 
+         sync=new FLOPSYNC2; 
+         monotonic=true; 
+         break;
+     case 2: 
+         sync=new FBS(timer); 
+         break;
+     case 3: 
+         sync=new FTSP; 
+         break;
+    }
     #ifndef MULTI_HOP
     FlooderSyncNode flooder(timer,*sync);
-    #else //MULTI_HOP
-    #ifndef GLOSSY
+    #elif defined(GLOSSY)
+    FlooderSyncNode flooder(timer,*sync);
+    #else
     FlooderSyncNode flooder(timer,*sync,node_hop);
-    #endif//GLOSSY
-    #endif //MULTI_HOP
+    #endif//MULTI_HOP
 
     Clock *clock;
     if(monotonic) clock=new MonotonicClock(*sync,flooder);
@@ -102,13 +109,11 @@ int main()
     {
         if(flooder.synchronize()) flooder.resynchronize();
         
-//        timer.absoluteSleep(clock->localTime(nominalPeriod/2)-jitterAbsorption);
-//        timer.absoluteWaitTrigger(clock->localTime(nominalPeriod/2));
         #ifdef COMB
         
         #ifndef SYNC_BY_WIRE
         unsigned long long start=identifyNode()*combSpacing;
-        for(unsigned long long i=start;i<nominalPeriod-combSpacing/2;i+=9*combSpacing)
+        for(unsigned long long i=start;i<nominalPeriod-combSpacing/2;i+=numb_nodes*combSpacing)
         {   
             #ifdef SENSE_TEMPERATURE
             unsigned short temperature=getADCTemperature();
@@ -151,7 +156,7 @@ int main()
         #else//SYNC_BY_WIRE
         unsigned long long start=identifyNode()*combSpacing;
         unsigned int j=0;
-        for(unsigned long long i=start;i<nominalPeriod-combSpacing/2;i+=2*combSpacing)
+        for(unsigned long long i=start;i<nominalPeriod-combSpacing/2;i+=combSpacing)
         {   
             unsigned long long wakeupTime=clock->localTime(i)-jitterAbsorption-j*w;
             unsigned long long frameStart=wakeupTime+jitterAbsorption+j*w;

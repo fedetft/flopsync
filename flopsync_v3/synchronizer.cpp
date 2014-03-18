@@ -32,7 +32,7 @@
 //
 
 #ifdef SEND_TIMESTAMPS
-void Synchronizer::timestamps(unsigned int globalTime, unsigned int localTime) {}
+void Synchronizer::timestamps(unsigned long long globalTime, unsigned long long localTime) {}
 
 bool Synchronizer::overwritesHardwareClock() const { return false; }
 #endif //SEND_TIMESTAMPS

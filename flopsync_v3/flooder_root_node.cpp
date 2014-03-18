@@ -82,10 +82,10 @@ bool FlooderRootNode::synchronize()
     transceiver.isSFDRaised();
     timer.absoluteWaitTimeoutOrEvent(frameStart-trasmissionTime+frameTime+delaySendPacketTime);
     transceiver.isTxFrameDone();
-    miosix::ledOff(); //Falling edge signals synchronization packet sent
     
     transceiver.setMode(Cc2520::DEEP_SLEEP);
     wakeupTime+=nominalPeriod;
+    miosix::ledOff(); //Falling edge signals synchronization packet sent
     
     return false; //Root node does not desynchronize
 }

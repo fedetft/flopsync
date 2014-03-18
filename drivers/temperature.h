@@ -19,6 +19,6 @@ unsigned short getRawTemperature();
  * Adc resolution is 12 bit, and reference voltage is ~3V on battery
  * powered nodes, and 3.3V on USB powered ones
  */
-unsigned short getDACTemperature();
+unsigned short getADCTemperature();
 
 #endif //TEMPERATURE_H

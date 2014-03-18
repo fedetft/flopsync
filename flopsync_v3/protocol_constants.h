@@ -87,6 +87,10 @@ const unsigned long long hz=24000000;
 // Give a hop for this node
 const unsigned char node_hop=0; //@@ Filled in by mkpackage.pl
 
+// Define controller
+const unsigned char controller=1; //@@ Filled in by mkpackage.pl
+
+
 //Sync period
 const unsigned long long nominalPeriod=static_cast<unsigned long long>(60*hz+0.5f); //@@ Filled in by mkpackage.pl
 
@@ -111,8 +115,9 @@ const unsigned long long retransmitDelta=static_cast<unsigned long long>(0.00025
 //Time for cc2520 to start its clock oscillator (1.5ms)
 //const unsigned long long radioBoot=static_cast<unsigned long long>(0.001f*hz+0.5f); 
 
-//Transmission of preamble begins 192.333us after STXON (estimated with oscilloscope)
-const unsigned long long txTurnaroundTime=static_cast<unsigned long long>(0.000192333*hz+0.5f); 
+//Transmission of preamble begins 192.3704us after STXON (estimated with frequencymeter) stdev 4.8948652684167 ns
+
+const unsigned long long txTurnaroundTime=static_cast<unsigned long long>(0.0001923704*hz+0.5f); 
 
 //Receiver is ready 192us after RX are enabled but to eliminate jitterSoftware we set it to 250us
 const unsigned long long rxTurnaroundTime=static_cast<unsigned long long>(0.000250*hz+0.5f);
@@ -124,11 +129,11 @@ const unsigned long long overwriteClockTime=static_cast<unsigned long long>(0.00
 
 #ifndef USE_VHT
 //Additional delay to absorb jitter (must be greater than pllBoot+radioBoot)
-const unsigned long long jitterAbsorption=static_cast<unsigned long long>(0.005f*hz+0.5f); //FIXME
+const unsigned long long jitterAbsorption=static_cast<unsigned long long>(0.005f*hz+0.5f); 
 #else //USE_VHT
 //Additional delay to absorb jitter (must be greater than pllBoot+radioBoot)
 //Also needs to account for vht resynchronization time
-const unsigned long long jitterAbsorption=static_cast<unsigned long long>(0.0015f*hz+0.5f);  //FIXME
+const unsigned long long jitterAbsorption=static_cast<unsigned long long>(0.0015f*hz+0.5f); 
 #endif //USE_VHT
 
 //Time measured with oscilloscope between sfd sender and sfd receiver is on 
@@ -159,7 +164,7 @@ const unsigned long long frameTime=static_cast<unsigned long long>((16*8*hz)/cha
 #endif//SEND_TIMESTAMPS
 
 //Time to wait before forwarding the packet
-const unsigned long long delayRebroadcastTime=static_cast<unsigned long long>(0.001f*hz+0.5f); //FIXME
+const unsigned long long delayRebroadcastTime=static_cast<unsigned long long>(0.001f*hz+0.5f); 
 
 //Waiting time over the reception of the nominal time of packet
 const unsigned long long delaySendPacketTime=static_cast<unsigned long long>(0.0001f*hz+0.5f);

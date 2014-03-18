@@ -540,13 +540,16 @@ void Rtc::absoluteSleep(unsigned long long value)
         // remains pending and the WFI becomes a nop, and the device never goes
         // in sleep mode. WFE events are latched in a separate pending register
         // so interrupts do not interfere with them       
+        #if TIMER_DEBUG>0
+        probe_pin14::high();
+        probe_pin14::low();
+        #endif//TIMER_DEBUG
         __WFE();
-        EXTI->EMR &=~ EXTI_EMR_MR17; //disable event for wakeup
         #if TIMER_DEBUG>0
         probe_wakeup::high();
         probe_wakeup::low();
         #endif//TIMER_DEBUG
-         
+        EXTI->EMR &=~ EXTI_EMR_MR17; //disable event for wakeup
         SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
         PWR->CR &= ~PWR_CR_LPDS;
         
@@ -817,7 +820,9 @@ void VHT::absoluteSleep(unsigned long long value)
     conversion*=rtcFreq;
     conversion+=vhtFreq/2; //Round to nearest
     conversion/=vhtFreq;
+    BKP->RTCCR &=~BKP_RTCCR_ASOE; //Enable RTC alarm out
     rtc.absoluteSleep(conversion);
+    BKP->RTCCR |=BKP_RTCCR_ASOE; //Enable RTC alarm out
     syncWithRtc();   
 }
 
@@ -888,10 +893,6 @@ void VHT::syncWithRtc()
     }
     if(!autoSync)  TIM4->DIER&=~TIM_DIER_CC1IE; 
     vhtInt.sync=false;
-    #if TIMER_DEBUG>0
-    probe_sync_vht::high();
-    probe_sync_vht::low();
-    #endif
 }
 
 void VHT::enableAutoSyncWhitRtc(unsigned int period)

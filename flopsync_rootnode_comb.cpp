@@ -35,6 +35,7 @@
 #include "board_setup.h"
 #include <cassert>
 
+#define numb_nodes 9
 using namespace std;
 
 typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
@@ -56,8 +57,10 @@ int main()
     for(;;)
     {
         flooder.synchronize();
-        
+        #if TIMER_DEBUG>0
         puts("----");
+        #endif//TIMER_DEBUG
+        
         
         #ifdef COMB
         
@@ -100,15 +103,15 @@ int main()
             }
             blueLed::low();
             transceiver.setMode(Cc2520::DEEP_SLEEP);
-            if(timeout) printf("node%d timeout\n",(j % 9)+1);
+            if(timeout) printf("node%d timeout\n",(j % numb_nodes)+1);
             else {
-                if(j<9)
+                if(j<numb_nodes)
                 { 
                     printf("e=%d u=%d w=%d%s\n",packet.e,packet.u,packet.w,
                     (packet.miss && packet.check==0) ? "(miss)" : "");
                 }
                 int e=frameStart+i-measuredTime;
-                printf("node%d.e=%d",(j % 9)+1,e);
+                printf("node%d.e=%d",(j % numb_nodes)+1,e);
                 if(packet.check==0) printf("\n");
                 else {
                     unsigned short temperature=packet.check & 0x0f;
@@ -122,7 +125,7 @@ int main()
         #else//SYNC_BY_WIRE
         unsigned long long frameStart=flooder.getMeasuredFrameStart();
         unsigned int j=0;
-        for(unsigned long long i=combSpacing; i<nominalPeriod-combSpacing/2;i+=2*combSpacing,j++)
+        for(unsigned long long i=combSpacing; i<nominalPeriod-combSpacing/2;i+=combSpacing,j++)
         {
             unsigned long long wakeupTime=frameStart+i-(jitterAbsorption+w);
             timer.absoluteSleep(wakeupTime);
