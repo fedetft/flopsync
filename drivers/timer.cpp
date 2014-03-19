@@ -644,7 +644,7 @@ void VHT::setValue(unsigned long long value)
     //is a bit complicated, so we translate between the two times at
     //the boundary of this class.
     FastInterruptDisableLock dLock;
-    vhtOffset=value-(((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0))|TIM4->CNT)-vhtSyncPointVht+vhtBase+vhtOffset);
+    vhtOffset+=value-(((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0))|TIM4->CNT)-vhtSyncPointVht+vhtBase+vhtOffset);
 }
     
 unsigned long long VHT::getExtEventTimestamp() const
