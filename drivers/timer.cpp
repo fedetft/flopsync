@@ -44,7 +44,7 @@ static volatile typeVecInt rtcInt;
 static unsigned int  syncVhtRtcPeriod=20;
 static volatile typeVecInt vhtInt;
 static volatile unsigned long long vhtBase=0;
-static volatile unsigned long long vhtOffset=0;
+static volatile long long vhtOffset=0;
 static volatile bool rtcTriggerEnable=false;
 //static void (*eventHandler)(unsigned int)=0; ///< Called when event received
 static unsigned long long vhtSyncPointRtc=0;     ///< Rtc time corresponding to vht time
@@ -643,9 +643,8 @@ void VHT::setValue(unsigned long long value)
     //We don't actually overwrite the RTC in this case, as the VHT
     //is a bit complicated, so we translate between the two times at
     //the boundary of this class.
-    unsigned long long signedNowOld=getValue();
-    unsigned long long signedNowNew=value;
-    vhtOffset=(signedNowNew-signedNowOld);
+    FastInterruptDisableLock dLock;
+    vhtOffset=value-(((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0))|TIM4->CNT)-vhtSyncPointVht+vhtBase+vhtOffset);
 }
     
 unsigned long long VHT::getExtEventTimestamp() const
@@ -820,7 +819,7 @@ void VHT::absoluteSleep(unsigned long long value)
     conversion*=rtcFreq;
     conversion+=vhtFreq/2; //Round to nearest
     conversion/=vhtFreq;
-    BKP->RTCCR &=~BKP_RTCCR_ASOE; //Enable RTC alarm out
+    BKP->RTCCR &=~BKP_RTCCR_ASOE; //Disable RTC alarm out
     rtc.absoluteSleep(conversion);
     BKP->RTCCR |=BKP_RTCCR_ASOE; //Enable RTC alarm out
     syncWithRtc();   
