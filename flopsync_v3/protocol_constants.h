@@ -107,7 +107,7 @@ const unsigned long long minw=static_cast<unsigned long long>(0.00003f*hz+0.5f);
 //Retransmit time for flopsync2 "Flooder" flooding scheme (252us)
 //Note that this is the time needed to rebroadcast a packet as soon as it's
 //received, measured with an oscilloscope
-const unsigned long long retransmitDelta=static_cast<unsigned long long>(0.000252f*hz+0.5f);
+//const unsigned long long retransmitDelta=static_cast<unsigned long long>(0.000252f*hz+0.5f);
 
 //Time for STM32 PLL startup (500us)
 //const unsigned long long pllBoot=static_cast<unsigned long long>(0.0005f*hz+0.5f);
@@ -124,7 +124,7 @@ const unsigned long long rxTurnaroundTime=static_cast<unsigned long long>(0.0002
 
 //Time required to read the timestamp in the packet and overwrite the node's
 //hardware clock (38us), measured with an oscilloscope. Used if SEND_TIMESTAMPS
-const unsigned long long overwriteClockTime=static_cast<unsigned long long>(0.000038f*hz+0.5f);
+const unsigned long long overwriteClockTime=static_cast<unsigned long long>(0.000617f*hz+0.5f);
 
 
 #ifndef USE_VHT
@@ -164,7 +164,7 @@ const unsigned long long frameTime=static_cast<unsigned long long>((16*8*hz)/cha
 #endif//SEND_TIMESTAMPS
 
 //Time to wait before forwarding the packet
-const unsigned long long delayRebroadcastTime=static_cast<unsigned long long>(0.001f*hz+0.5f); 
+const unsigned long long delayRebroadcastTime=static_cast<unsigned long long>(0.0005f*hz+0.5f); 
 
 //Waiting time over the reception of the nominal time of packet
 const unsigned long long delaySendPacketTime=static_cast<unsigned long long>(0.0001f*hz+0.5f);

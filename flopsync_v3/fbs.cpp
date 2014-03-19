@@ -35,7 +35,7 @@ using namespace std;
 FBS::FBS(Timer& timer) : timer(timer) { reset(); }
 
 #ifdef SEND_TIMESTAMPS
-void FBS::timestamps(unsigned long globalTime, unsigned long long localTime)
+void FBS::timestamps(unsigned long long globalTime, unsigned long long localTime)
 {
     timer.setValue(globalTime+overwriteClockTime);
     if(!first) offset=(int)localTime-(int)globalTime-u;

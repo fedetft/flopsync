@@ -43,7 +43,7 @@ void FTSP::timestamps(unsigned long long globalTime, unsigned long long localTim
     if(!filling || dex>0)
     {
         //Just to have a measure of e(t(k)-)
-        offset=localTime-rootFrame2localAbsolute(globalTime-this->globalTime);;
+        offset=localTime-rootFrame2localAbsolute(globalTime-this->globalTime);
     }
     
     this->globalTime=globalTime;
@@ -51,7 +51,7 @@ void FTSP::timestamps(unsigned long long globalTime, unsigned long long localTim
     
     unsigned long long ovr_local_rtc_base=reg_local_rtcs[dex];
     reg_local_rtcs[dex]=localTime;
-    reg_rtc_offs[dex]=(int)localTime-(int)globalTime;
+    reg_rtc_offs[dex]=(long long)localTime-(long long)globalTime;
     if(filling && dex==0) local_rtc_base=localTime;
     if(!filling) local_rtc_base=ovr_local_rtc_base;
     if(filling) num_reg_data=dex+1;
@@ -62,9 +62,9 @@ void FTSP::timestamps(unsigned long long globalTime, unsigned long long localTim
     
     if(num_reg_data<2)
     {
-        a=(double)localTime-(double)globalTime;
+        a=(long double)localTime-(long double)globalTime;
         b=0;
-        printf("+ b=%e a=%f localTime=%llu globalTime=%llu\n",b,a,localTime,globalTime);
+        printf("+ b=%Le a=%Lf localTime=%llu globalTime=%llu\n",b,a,localTime,globalTime);
     }
 }
 #endif//SEND_TIMESTAMPS
@@ -89,10 +89,10 @@ pair<int,int> FTSP::computeCorrection(int e)
         sum_ot+=o*t;
         sum_t2+=t*t;
     }
-    long long n=num_reg_data;
-    b=(double)(n*sum_ot-sum_o*sum_t)/(double)(n*sum_t2-sum_t*sum_t);
-    a=((double)sum_o-b*(double)sum_t)/(double)n;
-    printf("b=%e a=%f localTime=%llu globalTime=%llu\n",b,a,localTime,globalTime);
+    int n=num_reg_data;
+    b=(long double)(n*sum_ot-sum_o*sum_t)/(long double)(n*sum_t2-sum_t*sum_t);
+    a=((long double)sum_o-b*(long double)sum_t)/(long double)n;
+    printf("b=%Le a=%Lf localTime=%llu globalTime=%llu\n",b,a,localTime,globalTime);
     
     return make_pair(e,w);
 }
@@ -114,22 +114,9 @@ void FTSP::reset()
 
 unsigned long long FTSP::rootFrame2localAbsolute(unsigned long long time) const
 {
-    unsigned long long temp=globalTime;
-    temp+=time;
-    double global=temp;
-    //printf("timeBefore=%u ",temp);
-    
-//     // local=(global+a-b*local_rtc_base)/(1-b)
-//     double lr=local_rtc_base;
-//     unsigned long long result=(global+a-b*lr)/(1.0-b);
-    
-    // local=(global+lastOffset-b*lastSyncPoint)/(1.0-b);
-    double lastOffset=(int)localTime-(int)globalTime;
-
-    unsigned long long temp2=localTime;
-    double lastSyncPoint=temp2;
+    long double global=globalTime+time;
+    long double lastOffset=(long double)localTime-(long double)globalTime;
+    long double lastSyncPoint=localTime;
     unsigned long long result=(global+lastOffset-b*lastSyncPoint)/(1.0-b);
-    
-    //printf(" timeAfter=%u\n",result);
     return result;
 }

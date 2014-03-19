@@ -32,6 +32,7 @@
 #include "clock.h"
 #include "synchronizer.h"
 #include "flooding_scheme.h"
+#include <cassert>
 
 /**
  * A clock that is guaranteed to be monotonic

@@ -50,7 +50,7 @@ public:
      * \param globalTime time received in timestamp
      * \param localTime local time when packet received
      */
-    void timestamps(unsigned long globalTime, unsigned long long localTime);
+    void timestamps(unsigned long long globalTime, unsigned long long localTime);
 
     /**
      * \return true of the synchronization scheme alters the node's hardware

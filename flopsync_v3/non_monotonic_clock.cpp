@@ -51,7 +51,7 @@ unsigned long long NonMonotonicClock::localTime(unsigned long long slotGlobalTim
     return flood.getMeasuredFrameStart()+max(0ll,signedSlotGlobalTime+dividedCorrection);
     #else //SEND_TIMESTAMPS
     const FTSP *ftsp=dynamic_cast<const FTSP*>(&sync);
-    if(ftsp) return ftsp->rootFrame2localAbsolute(root);
+    if(ftsp) return ftsp->rootFrame2localAbsolute(slotGlobalTime);
     
     return (sync.overwritesHardwareClock() ?
         flood.getRadioTimestamp() : flood.getMeasuredFrameStart()) +

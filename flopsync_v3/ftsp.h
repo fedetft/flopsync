@@ -102,9 +102,9 @@ private:
     int num_reg_data;
     bool filling;
     unsigned long long reg_local_rtcs[regression_entries];
-    int reg_rtc_offs[regression_entries];
+    long long reg_rtc_offs[regression_entries];
     unsigned long long local_rtc_base;
-    double a,b;  
+    long double a,b;  
 };
 
 #endif //FTSP_H

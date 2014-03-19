@@ -32,6 +32,7 @@
 #include "clock.h"
 #include "synchronizer.h"
 #include "flooding_scheme.h"
+#include "ftsp.h"
 
 /**
  * A non-monotonic clock
