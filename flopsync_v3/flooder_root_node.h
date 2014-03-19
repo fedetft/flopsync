@@ -72,7 +72,7 @@ public:
     /**
      * \return the timestamp received through the radio
      */
-    unsigned int getRadioTimestamp() const { return frameStart; }
+    unsigned long long getRadioTimestamp() const { return frameStart; }
     #endif //SEND_TIMESTAMPS
 
     ~FlooderRootNode();

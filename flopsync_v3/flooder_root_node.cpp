@@ -64,7 +64,7 @@ bool FlooderRootNode::synchronize()
     syncFrame->setFCS(fcs);
     #else //SEND_TIMESTAMPS
     transceiver.setAutoFCS(true);
-    unsigned long long *payload=&frameStart;
+    unsigned char *payload=reinterpret_cast<unsigned char*>(&frameStart);
     syncFrame->setPayload(payload);
     #endif //SEND_TIMESTAMPS
     #if FLOPSYNC_DEBUG  >0

@@ -36,6 +36,7 @@
 #include "flooding_scheme.h"
 #include <miosix.h>
 #include "../board_setup.h"
+#include <cstring>
 
 /**
  * A very simple flooding scheme, synchronized node implementation
@@ -80,7 +81,7 @@ public:
     unsigned long long getComputedFrameStart() const
     {
         //Correct frame start considering hops
-        return computedFrameStart-hop*retransmitDelta;
+        return computedFrameStart-hop*(frameTime+piggybackingTime+delayRebroadcastTime);
     }
     
     /**

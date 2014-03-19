@@ -120,7 +120,7 @@ bool FlooderSyncNode::synchronize()
             if(syncFrame->getSizePayload()>=8)
             {
                 memcpy(ts,payload,8);
-                synchronizer.timestamps(getRadioTimestamp(),measuredFrameStart);
+                synchronizer.timestamps(getRadioTimestamp(),measuredFrameStart);  
                 break;
             }
             #endif //SEND_TIMESTAMPS
@@ -200,7 +200,7 @@ bool FlooderSyncNode::synchronize()
     #endif//FLOPSYNC_DEBUG
     
     //Correct frame start considering hops
-    measuredFrameStart-=hop*retransmitDelta;
+    measuredFrameStart-=hop*(frameTime+piggybackingTime+delayRebroadcastTime);
     return false;
 }
 
@@ -276,7 +276,7 @@ void FlooderSyncNode::resynchronize()
     receiverWindow=w;
     missPackets=0;
     //Correct frame start considering hops
-    measuredFrameStart-=hop*retransmitDelta;
+    measuredFrameStart-=hop*(frameTime+piggybackingTime+delayRebroadcastTime);
 }
 
 FlooderSyncNode::~FlooderSyncNode()
@@ -351,7 +351,7 @@ bool FlooderSyncNode::synchronize()
                     printf("e=%d u=%d w=%d\n",e,clockCorrection,receiverWindow);
     
     //Correct frame start considering hops
-    measuredFrameStart-=hop*retransmitDelta;
+    measuredFrameStart-=hop*(frameTime+piggybackingTime+delayRebroadcastTime);
     return false;
 }
 
@@ -375,7 +375,7 @@ void FlooderSyncNode::resynchronize()
     receiverWindow=w;
     missPackets=0;
     //Correct frame start considering hops
-    measuredFrameStart-=hop*retransmitDelta;
+    measuredFrameStart-=hop*(frameTime+piggybackingTime+delayRebroadcastTime);
 }
 
 FlooderSyncNode::~FlooderSyncNode(){}
