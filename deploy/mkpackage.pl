@@ -131,7 +131,7 @@ sub build
 	#copy('flopsync_v3/protocol_constants.h',"$e/$binfile.protocol_constants");
 
 	# Step 3: build the binary
-	system('make 1>/dev/null');
+	system('make -j4 1>/dev/null');
 	copy('main.bin',"$config{'experiment_name'}/$binfile")
 		or print "perl: cannot find main.bin\n";
 	copy('main.elf',"$config{'experiment_name'}/$elffile")

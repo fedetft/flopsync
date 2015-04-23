@@ -26,6 +26,7 @@
  ***************************************************************************/
 
 #include <cassert>
+#include <sys/ioctl.h>
 #include <../miosix/kernel/scheduler/scheduler.h>
 #include "timer.h"
 
@@ -511,6 +512,8 @@ void Rtc::wait(unsigned long long value)
 
 void Rtc::absoluteSleep(unsigned long long value)
 {
+    ioctl(STDOUT_FILENO,IOCTL_SYNC,0);
+
     FastInterruptDisableLock dLock;
     
     RTC->CRL =~RTC_CRL_ALRF;
@@ -527,7 +530,6 @@ void Rtc::absoluteSleep(unsigned long long value)
     #endif //TIMER_DEBUG
     if(getValue()>value) return;
     
-    while(Console::txComplete()==false) ;
     {
         if(rtcInt.wait) return;
         EXTI->EMR |= EXTI_EMR_MR17; //enable event for wakeup
