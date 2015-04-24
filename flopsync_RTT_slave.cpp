@@ -115,6 +115,8 @@ int main()
         timer.absoluteSleep(wakeupTime);
         blueLed::high();
         
+        dynamic_cast<VHT&>(timer).disableAutoSyncWithRtc();
+        
         /** send RTT packet **/
         
         transceiver.setMode(Cc2520::TX);
@@ -124,6 +126,7 @@ int main()
         unsigned char len = sizeof(data);      
         
         transceiver.writeFrame(len,data);       //send RTT packet
+        dynamic_cast<VHT&>(timer).syncWithRtc();
         timer.absoluteWaitTrigger(frameStart-txTurnaroundTime);
         timer.absoluteWaitTimeoutOrEvent(frameStart+preambleFrameTime+delaySendPacketTime);
         unsigned long long T1 = timer.getExtEventTimestamp();   //get TX SFD timestamp
@@ -178,7 +181,9 @@ int main()
          
         blueLed::low();
         transceiver.setMode(Cc2520::DEEP_SLEEP);
-
+        
+        dynamic_cast<VHT&>(timer).enableAutoSyncWhitRtc();
+        
         #ifdef COMB
 
         #ifndef SYNC_BY_WIRE

@@ -198,7 +198,11 @@ struct Packet
 
 const unsigned long long packetTime=static_cast<unsigned long long>(((sizeof(Packet)+8)*8*hz)/channelbps+0.5f); //TODO: why "+8" instead of "+7"?
 
-//Comb spacing, for intra-frame error measure
-const unsigned long long combSpacing=static_cast<unsigned long long>(0.5f*hz+0.5f);
+//Comb spacing, for intra-frame error measure - 500ms gap width
+// const unsigned long long combSpacing=static_cast<unsigned long long>(0.5f*hz+0.5f);
+
+//Comb spacing, for intra-frame error measure - 100ms gap width
+const unsigned long long combSpacing=static_cast<unsigned long long>(0.1f*hz+0.5f);
+
 
 #endif //PROTOCOL_CONSTANTS_H

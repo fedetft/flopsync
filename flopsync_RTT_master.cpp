@@ -66,7 +66,9 @@ int main()
         unsigned long long wakeupTime=frameStart-(jitterAbsorption+rxTurnaroundTime+w);
         timer.absoluteSleep(wakeupTime);
         blueLed::high();
-
+            
+        dynamic_cast<VHT&>(timer).disableAutoSyncWithRtc();
+        
         transceiver.setMode(Cc2520::RX);
         transceiver.setAutoFCS(false);
         
@@ -77,12 +79,14 @@ int main()
         {
             /** code for RTT slave packet wait **/
             
+            dynamic_cast<VHT&>(timer).syncWithRtc();
+            
             timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+rttPacketTime+w);
             measuredTime=timer.getExtEventTimestamp();
             if(timeout)
             {
-                iprintf("Timeout while waiting for packet\n");
-                measuredTime=timer.getValue();
+               iprintf("Timeout while waiting for packet\n");
+               measuredTime=timer.getValue();
                 break;
             }
             transceiver.isSFDRaised();
@@ -103,22 +107,24 @@ int main()
             
             transceiver.setMode(Cc2520::TX);
             transceiver.setAutoFCS(false);
-            //Flushing buffers causes two extra bytes, sometimes ff 10, sometimes ff 16 to
-            //be prepended to the next sent packet. Why on earth is this happening???
-//             transceiver.flushTxFifoBuffer(); // TODO: useful or useless?
-//             transceiver.flushRxFifoBuffer(); // TODO: useful or useless?
+//          Flushing buffers causes two extra bytes, sometimes ff 10, sometimes ff 16 to
+//          be prepended to the next sent packet. Why on earth is this happening???
+//          transceiver.flushTxFifoBuffer(); // TODO: useful or useless?
+//          transceiver.flushRxFifoBuffer(); // TODO: useful or useless?
             
             packet16 pkt;
             pkt.encode(7);
             len = pkt.getPacketSize();
             
             unsigned long long ledBarPaketTime = static_cast<unsigned long long>(((pkt.getPacketSize()+8)*8*hz)/channelbps+0.5f); //tempo di trasmissione della barra a led; TODO: metterlo a posto!
-                       
+            
             transceiver.writeFrame(len,pkt.getPacket());
-            timer.absoluteWaitTrigger(measuredTime+rttRetransmitTime);
-            timeout = timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+preambleFrameTime+delaySendPacketTime); //TODO: verificare se va aggiunto anche il txTurnaroundTime o se viene compensato dallo slack
+            timer.absoluteWaitTrigger(measuredTime+rttRetransmitTime-txTurnaroundTime);
+//            timeout = timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+preambleFrameTime+delaySendPacketTime); //TODO: verificare se va aggiunto anche il txTurnaroundTime o se viene compensato dallo slack
+            timeout = timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+preambleFrameTime+delaySendPacketTime+txTurnaroundTime);
             transceiver.isSFDRaised();
-            timeout = timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+ledBarPaketTime+delaySendPacketTime); //TODO: verificare se va aggiunto anche il txTurnaroundTime o se viene compensato dallo slack
+//             timeout = timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+ledBarPaketTime+delaySendPacketTime); //TODO: verificare se va aggiunto anche il txTurnaroundTime o se viene compensato dallo slack
+            timeout = timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+ledBarPaketTime+delaySendPacketTime+txTurnaroundTime);
             transceiver.isTxFrameDone();
 //             transceiver.flushTxFifoBuffer();    // TODO: useful or useless?
             
@@ -126,9 +132,10 @@ int main()
             iprintf("sending end %d\n",len);
             break;
         }
-        
+
         blueLed::low();
         transceiver.setMode(Cc2520::DEEP_SLEEP);
+        dynamic_cast<VHT&>(timer).enableAutoSyncWhitRtc();
                 
         #ifdef COMB
         
