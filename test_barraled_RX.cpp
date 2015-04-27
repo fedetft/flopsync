@@ -14,7 +14,7 @@
 #include "drivers/frame.h"
 #include "drivers/HW_mapping.h"
 #include "drivers/SPI.h"
-#include "drivers/barraLed.h"
+#include "drivers/BarraLed.h"
 
 using namespace std;
 // using namespace miosix;
