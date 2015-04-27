@@ -166,23 +166,30 @@ const unsigned long long frameTime=static_cast<unsigned long long>((16*8*hz)/cha
 //Time to wait before forwarding the packet
 const unsigned long long delayRebroadcastTime=static_cast<unsigned long long>(0.0005f*hz+0.5f); 
 
-//Waiting time over the reception of the nominal time of packet. TODO: what is this???
+//Waiting time over the reception of the nominal time of packet.
+//Aka slack time, we wait for a little longer than the nominal time to avoid spurous timeouts
 const unsigned long long delaySendPacketTime=static_cast<unsigned long long>(0.0001f*hz+0.5f);
 
+
+
 //Payload bytes' number in RTT request packet
-const unsigned long long rttPayloadBytes = 2;
+const unsigned long long rttPayloadBytes=2;
 
 //Time required to send RTT request packet's payload + CRC
-const unsigned long long rttTailPacketTime = ((rttPayloadBytes+2)*8*hz)/channelbps;
-
-//Time gap between SFD request packet and reply packet sending (Tail packet time + 2ms of slack time)
-const unsigned long long rttRetransmitTime = rttTailPacketTime + static_cast<unsigned long long>(0.002f*hz+0.5f);
-
-//Time gap used for reply packet timeout (2ms)
-const unsigned long long rttSlackTime = static_cast<unsigned long long>(0.002f*hz+0.5f);
+const unsigned long long rttTailPacketTime=((rttPayloadBytes+2)*8*hz)/channelbps;
 
 //time required to send a complete packet (pre + sfd + payload + crc)
-const unsigned long long rttPacketTime=static_cast<unsigned long long>(((rttPayloadBytes+8)*8*hz)/channelbps+0.5f); //TODO: why "+8" instead of "+7"
+const unsigned long long rttPacketTime=preambleFrameTime+rttTailPacketTime;
+
+//Time gap used for reply packet timeout
+const unsigned long long rttSlackTime=static_cast<unsigned long long>(0.002f*hz+0.5f);
+
+//Time gap between SFD request packet and reply packet sending (tail packet + slack time)
+const unsigned long long rttRetransmitTime=rttTailPacketTime+rttSlackTime;
+
+
+
+
 
 //New sync quality packet
 struct Packet

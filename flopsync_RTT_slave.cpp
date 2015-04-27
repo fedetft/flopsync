@@ -104,84 +104,90 @@ int main()
     Clock *clock;
     if(monotonic) clock=new MonotonicClock(*sync,flooder);
     else clock=new NonMonotonicClock(*sync,flooder);
+    
+    int statMin=numeric_limits<int>::max(),
+        statMax=numeric_limits<int>::min(),
+        statSpread;
 
     for(;;)
     {
         if(flooder.synchronize()) flooder.resynchronize();
-              
-        unsigned long long frameStart = clock->localTime(combSpacing);
-        unsigned long long wakeupTime = frameStart - (jitterAbsorption+txTurnaroundTime);
-
-        timer.absoluteSleep(wakeupTime);
-        blueLed::high();
         
+        //
+        // wait combSpacing after synchronizing
+        //
+              
+        long long frameStart=clock->localTime(combSpacing);
+        long long wakeupTime=frameStart-(jitterAbsorption+txTurnaroundTime);
+        timer.absoluteSleep(wakeupTime);
+        
+        blueLed::high();
         dynamic_cast<VHT&>(timer).disableAutoSyncWithRtc();
         
-        /** send RTT packet **/
+        //
+        // send RTT request packet
+        //
         
         transceiver.setMode(Cc2520::TX);
         transceiver.setAutoFCS(false);
 
         unsigned char data[] = {0x01,0x02};     //RTT packet payload
-        unsigned char len = sizeof(data);      
-        
+        unsigned char len = sizeof(data);
         transceiver.writeFrame(len,data);       //send RTT packet
-        dynamic_cast<VHT&>(timer).syncWithRtc();
         timer.absoluteWaitTrigger(frameStart-txTurnaroundTime);
-        timer.absoluteWaitTimeoutOrEvent(frameStart+preambleFrameTime+delaySendPacketTime);
-        unsigned long long T1 = timer.getExtEventTimestamp();   //get TX SFD timestamp
+        bool b0=timer.absoluteWaitTimeoutOrEvent(frameStart+preambleFrameTime+delaySendPacketTime);
+        unsigned long long T1=timer.getExtEventTimestamp();
         transceiver.isSFDRaised();
-        timer.absoluteWaitTimeoutOrEvent(frameStart+rttPacketTime+delaySendPacketTime);
+        bool b1=timer.absoluteWaitTimeoutOrEvent(frameStart+rttPacketTime+delaySendPacketTime);
         transceiver.isTxFrameDone();
-//         transceiver.flushTxFifoBuffer(); // TODO: useful or useless?
-//         transceiver.flushRxFifoBuffer(); // TODO: useful or useless?
+         
+        //
+        // await RTT response packet
+        //
         
-        /** led bar processing **/
-        
-        packet16 pkt;   //led bar packet
-        unsigned long long ledBarPaketTime = static_cast<unsigned long long>(((pkt.getPacketSize()+8)*8*hz)/channelbps+0.5f); //tempo di trasmissione della barra a led; TODO: metterlo a posto!
-        
+        packet16 pkt;
+        const unsigned long long rttResponsePacketTime=
+            static_cast<unsigned long long>((pkt.getPacketSize()*8*hz)/channelbps+0.5f);
         transceiver.setMode(Cc2520::RX);
         transceiver.setAutoFCS(false);
-        bool timeout;
-        unsigned long long T2;
-        for(;;)
+        bool timeout=timer.absoluteWaitTimeoutOrEvent(
+            frameStart+preambleFrameTime+rttRetransmitTime+txTurnaroundTime+preambleFrameTime+rttResponsePacketTime+delaySendPacketTime);
+        unsigned long long T2=timer.getExtEventTimestamp();
+        transceiver.isSFDRaised();
+        bool b2=timer.absoluteWaitTimeoutOrEvent(T2+rttResponsePacketTime+delaySendPacketTime);
+        transceiver.isRxFrameDone();      
+        
+        //
+        // process received data
+        //
+        
+        iprintf("to=%d b0=%d b1=%d b2=%d\n",timeout,b0,b1,b2);
+        
+        if(timeout)
         {
-            timeout = timer.absoluteWaitTimeoutOrEvent(frameStart+2*(txTurnaroundTime+preambleFrameTime)+rttRetransmitTime+rttSlackTime);
-            T2 = timer.getExtEventTimestamp();
-            transceiver.isSFDRaised();
-            timer.absoluteWaitTimeoutOrEvent(T2+ledBarPaketTime+delaySendPacketTime);   //TODO: verificare se si può utilizzare T2 come "tempo di inizio"!
-            transceiver.isRxFrameDone();
-            
-            if(timeout)
-            {
-                iprintf("timeout occurred before T2 SFD is detected\n");
-                break;
-            }
-            
+            iprintf("Timeout while waiting RTT response\n");
+        } else {
             iprintf("T1 absolute value: %llu\n",T1);
             iprintf("T2 absolute value: %llu\n",T2);
-            
-            
-            len = pkt.getPacketSize();
+            len=pkt.getPacketSize();
             int retVal=transceiver.readFrame(len,pkt.getPacket());
-            iprintf("retVal: %d\n", retVal);
-            if(retVal != 1) break;
-            
-            miosix::memDump(pkt.getPacket(),len);
-            
-            std::pair<int, bool> result = pkt.decode();
-            
-            if(result.second)
+            std::pair<int,bool> result=pkt.decode();
+            if(retVal!=1 || len!=pkt.getPacketSize() || result.second==false)
             {
-                iprintf("result.first = %d, time = %llu\n", result.first, T2 - T1);
-                break; 
-            }               
+                iprintf("Bad packet received (readFrame returned %d)\n",retVal);
+                miosix::memDump(pkt.getPacket(),len);
+            } else {
+                int delta=static_cast<int>(T2-T1);
+                statMin=min(statMin,delta);
+                statMax=max(statMax,delta);
+                statSpread=statMax-statMin;
+                iprintf("result.first=%d time=%d min=%d max=%d spread=%d\n",
+                        result.first,delta,statMin,statMax,statSpread);
+            }
         }
-         
+        
         blueLed::low();
         transceiver.setMode(Cc2520::DEEP_SLEEP);
-        
         dynamic_cast<VHT&>(timer).enableAutoSyncWhitRtc();
         
         #ifdef COMB
