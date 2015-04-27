@@ -54,85 +54,73 @@ int main()
     Timer& timer=VHT::instance();
     #endif //USE_VHT
     FlooderRootNode flooder(timer);
-   
+    
     for(;;)
     {
         flooder.synchronize();
         #if TIMER_DEBUG>0
         puts("----");
         #endif//TIMER_DEBUG
+
+        //
+        // wait combSpacing after synchronizing
+        //
         
-        unsigned long long frameStart=flooder.getMeasuredFrameStart() + combSpacing;
+        unsigned long long frameStart=flooder.getMeasuredFrameStart()+combSpacing;
         unsigned long long wakeupTime=frameStart-(jitterAbsorption+rxTurnaroundTime+w);
         timer.absoluteSleep(wakeupTime);
+        
         blueLed::high();
-            
         dynamic_cast<VHT&>(timer).disableAutoSyncWithRtc();
+        
+        //
+        // await RTT request packet
+        //
         
         transceiver.setMode(Cc2520::RX);
         transceiver.setAutoFCS(false);
+        bool timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+rttPacketTime+w);
+        unsigned long long measuredTime=timer.getExtEventTimestamp();
+        transceiver.isSFDRaised();
+        bool b0=timer.absoluteWaitTimeoutOrEvent(frameStart+rttPacketTime+w+rttTailPacketTime+delaySendPacketTime);
+        transceiver.isRxFrameDone();
         
-        bool timeout;
-        unsigned long long measuredTime;
-        
-        for(;;)
+        if(timeout)
         {
-            /** code for RTT slave packet wait **/
-            
-            dynamic_cast<VHT&>(timer).syncWithRtc();
-            
-            timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+rttPacketTime+w);
-            measuredTime=timer.getExtEventTimestamp();
-            if(timeout)
-            {
-               iprintf("Timeout while waiting for packet\n");
-               measuredTime=timer.getValue();
-                break;
-            }
-            transceiver.isSFDRaised();
-            timer.absoluteWaitTimeoutOrEvent(measuredTime+rttTailPacketTime+delaySendPacketTime);
-            transceiver.isRxFrameDone();
-
+            iprintf("Timeout while waiting RTT request\n");
+        } else {
             unsigned char recv[2];
             unsigned char len=sizeof(recv);
             int retVal=transceiver.readFrame(len,recv);
-            
-            /** code for led bar sending **/
-            
-            if(retVal!=1 || len!=2 || recv[0]!=0x01 || recv[1]!=0x02)
-            {         
-                iprintf("bad RTT packet payload! \n");
-                break;
-            }
-            
-            transceiver.setMode(Cc2520::TX);
-            transceiver.setAutoFCS(false);
-//          Flushing buffers causes two extra bytes, sometimes ff 10, sometimes ff 16 to
-//          be prepended to the next sent packet. Why on earth is this happening???
-//          transceiver.flushTxFifoBuffer(); // TODO: useful or useless?
-//          transceiver.flushRxFifoBuffer(); // TODO: useful or useless?
-            
-            packet16 pkt;
-            pkt.encode(7);
-            len = pkt.getPacketSize();
-            
-            unsigned long long ledBarPaketTime = static_cast<unsigned long long>(((pkt.getPacketSize()+8)*8*hz)/channelbps+0.5f); //tempo di trasmissione della barra a led; TODO: metterlo a posto!
-            
-            transceiver.writeFrame(len,pkt.getPacket());
-            timer.absoluteWaitTrigger(measuredTime+rttRetransmitTime-txTurnaroundTime);
-//            timeout = timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+preambleFrameTime+delaySendPacketTime); //TODO: verificare se va aggiunto anche il txTurnaroundTime o se viene compensato dallo slack
-            timeout = timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+preambleFrameTime+delaySendPacketTime+txTurnaroundTime);
-            transceiver.isSFDRaised();
-//             timeout = timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+ledBarPaketTime+delaySendPacketTime); //TODO: verificare se va aggiunto anche il txTurnaroundTime o se viene compensato dallo slack
-            timeout = timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+ledBarPaketTime+delaySendPacketTime+txTurnaroundTime);
-            transceiver.isTxFrameDone();
-//             transceiver.flushTxFifoBuffer();    // TODO: useful or useless?
-            
-            miosix::memDump(pkt.getPacket(),len);
-            iprintf("sending end %d\n",len);
-            break;
-        }
 
+            if(retVal!=1 || len!=2 || recv[0]!=0x01 || recv[1]!=0x02)
+            {
+                iprintf("Bad packet received (readFrame returned %d)\n",retVal);
+                miosix::memDump(recv,len);
+            } else {
+                
+                //
+                // send RTT response packet
+                //
+                
+                transceiver.setMode(Cc2520::TX);
+                transceiver.setAutoFCS(false);
+                packet16 pkt;
+                pkt.encode(7);
+                len=pkt.getPacketSize();
+            
+                transceiver.writeFrame(len,pkt.getPacket());
+                timer.absoluteWaitTrigger(measuredTime+rttRetransmitTime-txTurnaroundTime);
+                bool b1=timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+preambleFrameTime+delaySendPacketTime);
+                transceiver.isSFDRaised();
+                bool b2=timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+preambleFrameTime+rttResponseTailPacketTime+delaySendPacketTime);
+                transceiver.isTxFrameDone();  
+                
+                iprintf("RTT ok\n");
+                iprintf("timeout=%d b0=%d b1=%d b2=%d\n",timeout,b0,b1,b2);
+            }
+        }
+        
         blueLed::low();
         transceiver.setMode(Cc2520::DEEP_SLEEP);
         dynamic_cast<VHT&>(timer).enableAutoSyncWhitRtc();

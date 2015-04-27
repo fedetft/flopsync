@@ -146,15 +146,14 @@ int main()
         //
         
         packet16 pkt;
-        const unsigned long long rttResponsePacketTime=
-            static_cast<unsigned long long>((pkt.getPacketSize()*8*hz)/channelbps+0.5f);
         transceiver.setMode(Cc2520::RX);
         transceiver.setAutoFCS(false);
         bool timeout=timer.absoluteWaitTimeoutOrEvent(
-            frameStart+preambleFrameTime+rttRetransmitTime+txTurnaroundTime+preambleFrameTime+rttResponsePacketTime+delaySendPacketTime);
+            frameStart+preambleFrameTime+rttRetransmitTime+preambleFrameTime+delaySendPacketTime);//had +txTurnaroundTime
         unsigned long long T2=timer.getExtEventTimestamp();
         transceiver.isSFDRaised();
-        bool b2=timer.absoluteWaitTimeoutOrEvent(T2+rttResponsePacketTime+delaySendPacketTime);
+        bool b2=timer.absoluteWaitTimeoutOrEvent(
+            frameStart+preambleFrameTime+rttRetransmitTime+preambleFrameTime+rttResponseTailPacketTime+delaySendPacketTime);//had +txTurnaroundTime
         transceiver.isRxFrameDone();      
         
         //
@@ -180,7 +179,7 @@ int main()
                 int delta=static_cast<int>(T2-T1);
                 statMin=min(statMin,delta);
                 statMax=max(statMax,delta);
-                statSpread=statMax-statMin;
+                statSpread=statMax-statMin+1;
                 iprintf("result.first=%d time=%d min=%d max=%d spread=%d\n",
                         result.first,delta,statMin,statMax,statSpread);
             }

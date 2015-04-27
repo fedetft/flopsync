@@ -175,17 +175,23 @@ const unsigned long long delaySendPacketTime=static_cast<unsigned long long>(0.0
 //Payload bytes' number in RTT request packet
 const unsigned long long rttPayloadBytes=2;
 
-//Time required to send RTT request packet's payload + CRC
-const unsigned long long rttTailPacketTime=((rttPayloadBytes+2)*8*hz)/channelbps;
+//Time required to send RTT request packet's payload
+const unsigned long long rttTailPacketTime=(rttPayloadBytes*8*hz)/channelbps;
 
-//time required to send a complete packet (pre + sfd + payload + crc)
+//time required to send a complete packet (pre + sfd + payload)
 const unsigned long long rttPacketTime=preambleFrameTime+rttTailPacketTime;
 
 //Time gap used for reply packet timeout
-const unsigned long long rttSlackTime=static_cast<unsigned long long>(0.002f*hz+0.5f);
+const unsigned long long rttSlackTime=static_cast<unsigned long long>(0.0002f*hz+0.5f);
 
 //Time gap between SFD request packet and reply packet sending (tail packet + slack time)
-const unsigned long long rttRetransmitTime=rttTailPacketTime+rttSlackTime;
+const unsigned long long rttRetransmitTime=rttTailPacketTime+txTurnaroundTime+rttSlackTime;
+
+//Payload bytes' number in RTT response packet
+const unsigned long long rttResponsePayloadBytes=16;
+
+//Time required to send RTT response packet's payload
+const unsigned long long rttResponseTailPacketTime=static_cast<unsigned long long>((rttResponsePayloadBytes*8*hz)/channelbps+0.5f);
 
 
 
