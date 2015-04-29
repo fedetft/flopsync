@@ -71,6 +71,7 @@ int main()
     blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
     Cc2520& transceiver=Cc2520::instance();
+    transceiver.setTxPower(Cc2520::P_2);
     transceiver.setFrequency(2450);
     #ifndef USE_VHT
     Timer& timer=Rtc::instance();
@@ -180,8 +181,10 @@ int main()
                 statMin=min(statMin,delta);
                 statMax=max(statMax,delta);
                 statSpread=statMax-statMin+1;
-                iprintf("result.first=%d time=%d min=%d max=%d spread=%d\n",
-                        result.first,delta,statMin,statMax,statSpread);
+                const int t1tot2nominal=rttRetransmitTime+preambleFrameTime+2*trasmissionTime;
+                int delay=(delta-t1tot2nominal)/2;
+                iprintf("result.first=%d delay=%d time=%d min=%d max=%d spread=%d nominal=%d\n",
+                        result.first,delay,delta,statMin,statMax,statSpread,t1tot2nominal);
             }
         }
         

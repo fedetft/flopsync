@@ -75,7 +75,7 @@ Cc2520& Cc2520::instance()
     return singleton;
 }
 
-Cc2520::Cc2520() :  autoFCS(true), mode(DEEP_SLEEP),timer(VHT::instance())
+Cc2520::Cc2520() : autoFCS(true), power(P_0), mode(DEEP_SLEEP), timer(VHT::instance())
 {
     cc2520GpioInit();
     setMode(DEEP_SLEEP);  //entry state of FSM
@@ -287,6 +287,16 @@ void Cc2520::setMode(Mode mode)
     }
     #endif //CC2520_DEBUG
     return;
+}
+
+void Cc2520::setTxPower(Power power)
+{
+    this->power=power;
+    Mode m=this->mode;           //Temporary needed setMode() changes this->mode
+    if(m==DEEP_SLEEP) return;    //At wakeup new power will be set, do nothing
+    if(m==SLEEP) setMode(IDLE);  //Need to get out of sleep to write reg
+    writeReg(CC2520_TXPOWER,power);
+    if(m==SLEEP) setMode(SLEEP); //Get back sleeping if we were sleeping
 }
     
 void Cc2520::setFrequency(unsigned short freq)
@@ -812,7 +822,7 @@ void Cc2520::initConfigureReg()
     writeReg(CC2520_EXCMASKB2,0X00);
     
     //Register that need to update from their default value (as recommended datasheet)
-    writeReg(CC2520_TXPOWER,0x32); //TX power 0 dBm
+    writeReg(CC2520_TXPOWER,power); //TX power
     writeReg(CC2520_CCACTRL0,0xF8);
     writeReg(CC2520_MDMCTRL0,0x85); //controls modem
     writeReg(CC2520_MDMCTRL1,0x14); //controls modem

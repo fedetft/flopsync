@@ -67,9 +67,29 @@ public:
     };
     
     /**
+     * Nominal transmit power
+     */
+    enum Power {
+        P_5 = 0xf7,  ///< +5dBm
+        P_3 = 0xf2,  ///< +3dBm
+        P_2 = 0xab,  ///< +2dBm
+        P_1 = 0x13,  ///< +1dBm
+        P_0 = 0x32,  ///< +0dBm
+        P_m2 = 0x81, ///< -2dBm
+        P_m7 = 0x2c, ///< -7dBm
+        P_m18 = 0x03 ///< -18dBm
+    };
+    
+    /**
      * \param mode the new cc2520 operating mode
      */
     void setMode(Mode mode);
+    
+    /**
+     * Set transmit power
+     * \param power transmit power
+     */
+    void setTxPower(Power power);
     
     /**
      * \param freq the new cc2520 operating frequency, in MHz, from 2394 to 2507
@@ -248,6 +268,9 @@ private:
      * Constructor
      */
     Cc2520();
+    
+    Cc2520(const Cc2520&);
+    Cc2520& operator=(const Cc2520&);
     
     /**
      * List of Registers of CC2520
@@ -570,6 +593,7 @@ private:
     unsigned char panId[2];
     unsigned char shortAddress[2];
     bool autoFCS;
+    Power power;
     Mode mode; //< Operating mode
     Timer& timer;
 };
