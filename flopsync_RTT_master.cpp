@@ -32,6 +32,7 @@
 #include "flopsync_v3/protocol_constants.h"
 #include "flopsync_v3/flooder_root_node.h"
 #include "flopsync_v3/synchronizer.h"
+#include "flopsync_v3/rtt_measure.h"
 #include "drivers/BarraLed.h"
 #include "board_setup.h"
 #include <cassert>
@@ -54,6 +55,8 @@ int main()
     Timer& timer=VHT::instance();
     #endif //USE_VHT
     FlooderRootNode flooder(timer);
+
+    RttMeasure *measure = new RttMeasure(0, transceiver, timer); //this node is the tree's root node, so hopCount is zero.
     
     for(;;)
     {
@@ -61,65 +64,15 @@ int main()
         #if TIMER_DEBUG>0
         puts("----");
         #endif//TIMER_DEBUG
-
-        //
-        // wait combSpacing after synchronizing
-        //
         
-        unsigned long long frameStart=flooder.getMeasuredFrameStart()+combSpacing;
+        unsigned long long frameStart=flooder.getMeasuredFrameStart(); //removed combSpacing, the master node acts as RTT server immediately after synchronizing
         unsigned long long wakeupTime=frameStart-(jitterAbsorption+rxTurnaroundTime+w);
         timer.absoluteSleep(wakeupTime);
         
         blueLed::high();
         dynamic_cast<VHT&>(timer).disableAutoSyncWithRtc();
         
-        //
-        // await RTT request packet
-        //
-        
-        transceiver.setMode(Cc2520::RX);
-        transceiver.setAutoFCS(false);
-        bool timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+rttPacketTime+w);
-        unsigned long long measuredTime=timer.getExtEventTimestamp();
-        transceiver.isSFDRaised();
-        bool b0=timer.absoluteWaitTimeoutOrEvent(frameStart+rttPacketTime+w+rttTailPacketTime+delaySendPacketTime);
-        transceiver.isRxFrameDone();
-        
-        if(timeout)
-        {
-            iprintf("Timeout while waiting RTT request\n");
-        } else {
-            unsigned char recv[2];
-            unsigned char len=sizeof(recv);
-            int retVal=transceiver.readFrame(len,recv);
-
-            if(retVal!=1 || len!=2 || recv[0]!=0x01 || recv[1]!=0x02)
-            {
-                iprintf("Bad packet received (readFrame returned %d)\n",retVal);
-                miosix::memDump(recv,len);
-            } else {
-                
-                //
-                // send RTT response packet
-                //
-                
-                transceiver.setMode(Cc2520::TX);
-                transceiver.setAutoFCS(false);
-                packet16 pkt;
-                pkt.encode(7);
-                len=pkt.getPacketSize();
-            
-                transceiver.writeFrame(len,pkt.getPacket());
-                timer.absoluteWaitTrigger(measuredTime+rttRetransmitTime-txTurnaroundTime);
-                bool b1=timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+preambleFrameTime+delaySendPacketTime);
-                transceiver.isSFDRaised();
-                bool b2=timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+preambleFrameTime+rttResponseTailPacketTime+delaySendPacketTime);
-                transceiver.isTxFrameDone();  
-                
-                iprintf("RTT ok\n");
-                iprintf("timeout=%d b0=%d b1=%d b2=%d\n",timeout,b0,b1,b2);
-            }
-        }
+        measure->rttServer(frameStart, 0); //since this node is at tree's root its cumulated propagation delay is zero.
         
         blueLed::low();
         transceiver.setMode(Cc2520::DEEP_SLEEP);

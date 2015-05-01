@@ -41,6 +41,7 @@
 #include "flopsync_v3/clock.h"
 #include "flopsync_v3/monotonic_clock.h"
 #include "flopsync_v3/non_monotonic_clock.h"
+#include "flopsync_v3/rtt_measure.h"
 #include "flopsync_v3/critical_section.h"
 #include "board_setup.h"
 #include "drivers/BarraLed.h"
@@ -104,86 +105,36 @@ int main()
     Clock *clock;
     if(monotonic) clock=new MonotonicClock(*sync,flooder);
     else clock=new NonMonotonicClock(*sync,flooder);
-    
-    int statMin=numeric_limits<int>::max(),
-        statMax=numeric_limits<int>::min(),
-        statSpread;
 
+    RttMeasure *measure = new RttMeasure(identifyNode(), transceiver, timer);
+    
+    int myRtt = 0;                  //distance between this node and the previous one (hopCount - 1)
+    int cumulatedRtt = 0;           //distance between the root node and the previous one
+    std::pair<int, int> rttData;    //data returned by rttSlave
+    
     for(;;)
     {
-        if(flooder.synchronize()) flooder.resynchronize();
+        if(flooder.synchronize()){
+            flooder.resynchronize();
+            cumulatedRtt = 0;        //if sync is lost we have to clear cumulatedRtt. TODO: is it correct??
+        }
         
-        //
-        // wait combSpacing after synchronizing
-        //
-              
-        long long frameStart=clock->localTime(combSpacing);
-        long long wakeupTime=frameStart-(jitterAbsorption+txTurnaroundTime);
-        timer.absoluteSleep(wakeupTime);
+        unsigned long long start = (identifyNode()-1)*rttSpacing; //set time slot; slot 0 is used by node 1 and master, slot 1 by node 1 and 2, .... TODO: is it correct??
         
         blueLed::high();
         dynamic_cast<VHT&>(timer).disableAutoSyncWithRtc();
         
-        //
-        // send RTT request packet
-        //
+        rttData = measure->rttClient(start);    //get distance from this node and the previous one
         
-        transceiver.setMode(Cc2520::TX);
-        transceiver.setAutoFCS(false);
-
-        unsigned char data[] = {0x01,0x02};     //RTT packet payload
-        unsigned char len = sizeof(data);
-        transceiver.writeFrame(len,data);       //send RTT packet
-        timer.absoluteWaitTrigger(frameStart-txTurnaroundTime);
-        bool b0=timer.absoluteWaitTimeoutOrEvent(frameStart+preambleFrameTime+delaySendPacketTime);
-        unsigned long long T1=timer.getExtEventTimestamp();
-        transceiver.isSFDRaised();
-        bool b1=timer.absoluteWaitTimeoutOrEvent(frameStart+rttPacketTime+delaySendPacketTime);
-        transceiver.isTxFrameDone();
-         
-        //
-        // await RTT response packet
-        //
+        myRtt = rttData.first();
+        cumulatedRtt = rttData.second();
         
-        packet16 pkt;
-        transceiver.setMode(Cc2520::RX);
-        transceiver.setAutoFCS(false);
-        bool timeout=timer.absoluteWaitTimeoutOrEvent(
-            frameStart+preambleFrameTime+rttRetransmitTime+preambleFrameTime+delaySendPacketTime);//had +txTurnaroundTime
-        unsigned long long T2=timer.getExtEventTimestamp();
-        transceiver.isSFDRaised();
-        bool b2=timer.absoluteWaitTimeoutOrEvent(
-            frameStart+preambleFrameTime+rttRetransmitTime+preambleFrameTime+rttResponseTailPacketTime+delaySendPacketTime);//had +txTurnaroundTime
-        transceiver.isRxFrameDone();      
+        /*
+         *  TODO: some data processing here??
+         *  maybe we have to force a VHT resync between rttClient and rttServer?
+         */
         
-        //
-        // process received data
-        //
-        
-        iprintf("to=%d b0=%d b1=%d b2=%d\n",timeout,b0,b1,b2);
-        
-        if(timeout)
-        {
-            iprintf("Timeout while waiting RTT response\n");
-        } else {
-            iprintf("T1 absolute value: %llu\n",T1);
-            iprintf("T2 absolute value: %llu\n",T2);
-            len=pkt.getPacketSize();
-            int retVal=transceiver.readFrame(len,pkt.getPacket());
-            std::pair<int,bool> result=pkt.decode();
-            if(retVal!=1 || len!=pkt.getPacketSize() || result.second==false)
-            {
-                iprintf("Bad packet received (readFrame returned %d)\n",retVal);
-                miosix::memDump(pkt.getPacket(),len);
-            } else {
-                int delta=static_cast<int>(T2-T1);
-                statMin=min(statMin,delta);
-                statMax=max(statMax,delta);
-                statSpread=statMax-statMin+1;
-                iprintf("result.first=%d time=%d min=%d max=%d spread=%d\n",
-                        result.first,delta,statMin,statMax,statSpread);
-            }
-        }
+        measure->rttServer(start+rttSpacing, myRtt+cumulatedRtt);   //act as a server for the following node(s), next time slot is used
         
         blueLed::low();
         transceiver.setMode(Cc2520::DEEP_SLEEP);

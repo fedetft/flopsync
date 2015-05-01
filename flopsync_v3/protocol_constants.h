@@ -217,5 +217,7 @@ const unsigned long long packetTime=static_cast<unsigned long long>(((sizeof(Pac
 //Comb spacing, for intra-frame error measure - 100ms gap width
 const unsigned long long combSpacing=static_cast<unsigned long long>(0.1f*hz+0.5f);
 
+//Time slot width used for RTT measure - 1 ms gap width
+const unsigned long long rttSpacing=static_cast<unsigned long long>(0.01f*hz+0.5f); //TODO: set the correct value, 1ms is dummy!
 
 #endif //PROTOCOL_CONSTANTS_H
