@@ -173,7 +173,7 @@ const unsigned long long delaySendPacketTime=static_cast<unsigned long long>(0.0
 
 
 //Payload bytes' number in RTT request packet
-const unsigned long long rttPayloadBytes=2;
+const unsigned long long rttPayloadBytes=2; //FIXME: there is one more byte that is the packet length!!
 
 //Time required to send RTT request packet's payload
 const unsigned long long rttTailPacketTime=(rttPayloadBytes*8*hz)/channelbps;
@@ -188,7 +188,7 @@ const unsigned long long rttSlackTime=static_cast<unsigned long long>(0.0002f*hz
 const unsigned long long rttRetransmitTime=rttTailPacketTime+txTurnaroundTime+rttSlackTime;
 
 //Payload bytes' number in RTT response packet
-const unsigned long long rttResponsePayloadBytes=16;
+const unsigned long long rttResponsePayloadBytes=16; //FIXME: there is one more byte that is the packet length!!
 
 //Time required to send RTT response packet's payload
 const unsigned long long rttResponseTailPacketTime=static_cast<unsigned long long>((rttResponsePayloadBytes*8*hz)/channelbps+0.5f);
@@ -209,7 +209,7 @@ struct Packet
     unsigned char check;
 };
 
-const unsigned long long packetTime=static_cast<unsigned long long>(((sizeof(Packet)+8)*8*hz)/channelbps+0.5f); //TODO: why "+8" instead of "+7"?
+const unsigned long long packetTime=static_cast<unsigned long long>(((sizeof(Packet)+8)*8*hz)/channelbps+0.5f); //+8 is 4=preamble 1=sfd 1=length 2=crc
 
 //Comb spacing, for intra-frame error measure - 500ms gap width
 // const unsigned long long combSpacing=static_cast<unsigned long long>(0.5f*hz+0.5f);
