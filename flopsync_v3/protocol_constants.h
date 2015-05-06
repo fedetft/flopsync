@@ -193,7 +193,7 @@ const unsigned long long rttResponsePayloadBytes=16+1; //16 bytes payload + one 
 //Time required to send RTT response packet's payload
 const unsigned long long rttResponseTailPacketTime=static_cast<unsigned long long>((rttResponsePayloadBytes*8*hz)/channelbps+0.5f);
 
-
+const int rttOffsetTicks=1; //After removing all other time delays, a very small offset still remains
 
 
 
@@ -212,12 +212,9 @@ struct Packet
 const unsigned long long packetTime=static_cast<unsigned long long>(((sizeof(Packet)+8)*8*hz)/channelbps+0.5f); //+8 is 4=preamble 1=sfd 1=length 2=crc
 
 //Comb spacing, for intra-frame error measure - 500ms gap width
-// const unsigned long long combSpacing=static_cast<unsigned long long>(0.5f*hz+0.5f);
+const unsigned long long combSpacing=static_cast<unsigned long long>(0.5f*hz+0.5f);
 
-//Comb spacing, for intra-frame error measure - 100ms gap width
-const unsigned long long combSpacing=static_cast<unsigned long long>(0.1f*hz+0.5f);
-
-//Time slot width used for RTT measure - 1 ms gap width
-const unsigned long long rttSpacing=static_cast<unsigned long long>(0.01f*hz+0.5f); //TODO: set the correct value, 1ms is dummy!
+//Time slot width used for RTT measure - 100 ms gap width
+const unsigned long long rttSpacing=static_cast<unsigned long long>(0.1f*hz+0.5f);
 
 #endif //PROTOCOL_CONSTANTS_H

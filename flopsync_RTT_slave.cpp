@@ -50,6 +50,8 @@
 
 using namespace std;
 
+typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
+
 int identifyNode()
 {
     if(strstr(experimentName,"node0")) return 0;
@@ -68,6 +70,7 @@ int main()
 {
     lowPowerSetup();
     puts(experimentName);
+    blueLed::mode(miosix::Mode::OUTPUT);
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setTxPower(Cc2520::P_2);
     transceiver.setFrequency(2450);
@@ -103,35 +106,50 @@ int main()
     Clock *clock;
     if(monotonic) clock=new MonotonicClock(*sync,flooder);
     else clock=new NonMonotonicClock(*sync,flooder);
-
-    RttMeasure *measure = new RttMeasure(identifyNode(), transceiver, timer);
     
-    int myRtt = 0;                  //distance between this node and the previous one (hopCount - 1)
-    int cumulatedRtt = 0;           //distance between the root node and the previous one
-    std::pair<int, int> rttData;    //data returned by rttSlave
+    const int nodeId=identifyNode();
+
+    RttMeasure measure(nodeId, transceiver, timer);
+    
+    int cumulatedRtt = 0;
+    bool rttFirst=true;
+    float rttFiltered = 0;
+    const float k=0.83f;
     
     for(;;)
     {
         if(flooder.synchronize()){
             flooder.resynchronize();
+            rttFirst=true;
             cumulatedRtt = 0;
         }
         
-        unsigned long long relativeFrameStart=(identifyNode())*rttSpacing;
+        unsigned long long relativeFrameStart=nodeId*rttSpacing;
         unsigned long long frameStart = clock->localTime(relativeFrameStart);
        
-        rttData = measure->rttClient(start);    //get distance from this node and the previous one
+        std::pair<int, int> rttData = measure.rttClient(frameStart);    //get distance from this node and the previous one
         
-        myRtt = rttData.first; //TODO: what if barra led fails?
-        cumulatedRtt = rttData.second; //TODO: filter
+        if(rttData.first>=0)
+        {
+            if(rttFirst)
+            {
+                rttFirst=false;
+                rttFiltered=rttData.first;
+            } else {
+                rttFiltered=k*rttFiltered+(1.0f-k)*rttData.first;
+            }
+        }
+        if(rttData.second >= 0) cumulatedRtt = rttData.second;
+        
+        printf("rtt=%f cumulated=%d\n",rttFiltered,cumulatedRtt);
         
         frameStart = clock->localTime(relativeFrameStart+rttSpacing);
-        measure->rttServer(frameStart, myRtt+cumulatedRtt);
+        measure.rttServer(frameStart, static_cast<int>(rttFiltered+0.5f)+cumulatedRtt);
         
         #ifdef COMB
 
         #ifndef SYNC_BY_WIRE
-        unsigned long long start=identifyNode()*combSpacing;
+        unsigned long long start=nodeId*combSpacing;
         for(unsigned long long i=start;i<nominalPeriod-combSpacing/2;i+=numb_nodes*combSpacing)
         {
             #ifdef SENSE_TEMPERATURE
@@ -186,5 +204,7 @@ int main()
         }
         #endif//SYNC_BY_WIRE
         #endif//COMB*/
+        
+        puts("\n");
     }
 }

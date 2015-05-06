@@ -40,10 +40,13 @@
 #define numb_nodes 9
 using namespace std;
 
+typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
+
 int main()
 {
     lowPowerSetup();
     puts(experimentName);
+    blueLed::mode(miosix::Mode::OUTPUT);
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setTxPower(Cc2520::P_2);
     transceiver.setFrequency(2450);
@@ -54,7 +57,7 @@ int main()
     #endif //USE_VHT
     FlooderRootNode flooder(timer);
 
-    RttMeasure *measure = new RttMeasure(0, transceiver, timer); //this node is the tree's root node, so hopCount is zero.
+    RttMeasure measure(0, transceiver, timer); //this node is the tree's root node, so hopCount is zero.
     
     for(;;)
     {
@@ -64,7 +67,7 @@ int main()
         #endif//TIMER_DEBUG
         
         unsigned long long frameStart=flooder.getMeasuredFrameStart()+rttSpacing;
-        measure->rttServer(frameStart, 0); //since this node is at tree's root its cumulated propagation delay is zero.
+        measure.rttServer(frameStart, 0); //since this node is at tree's root its cumulated propagation delay is zero.
                 
         #ifdef COMB
         

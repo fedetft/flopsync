@@ -31,10 +31,10 @@ std::pair<int, int> RttMeasure::rttClient(unsigned long long frameStart)
     
     transceiver.setMode(Cc2520::TX);
     transceiver.setAutoFCS(false);
-
+    
     unsigned char data[2];
     data[0] = 0x55;
-    data[1] = hopCount;
+    data[1] = hopCount-1;
     unsigned char len = sizeof(data);
     transceiver.writeFrame(len,data);       //send RTT packet
     timer.absoluteWaitTrigger(frameStart-txTurnaroundTime);
@@ -64,11 +64,11 @@ std::pair<int, int> RttMeasure::rttClient(unsigned long long frameStart)
     //
     
     //iprintf("to=%d b0=%d b1=%d b2=%d\n",timeout,b0,b1,b2);
+    int lastDelay=-1, cumulatedDelay=-1;
     if(timeout)
     {
         iprintf("Timeout while waiting RTT response\n");
     } else {
-        
         iprintf("T1 absolute value: %llu\n",T1);
         iprintf("T2 absolute value: %llu\n",T2);
         len=pkt.getPacketSize();
@@ -77,15 +77,19 @@ std::pair<int, int> RttMeasure::rttClient(unsigned long long frameStart)
         
         if(retVal!=1 || len!=pkt.getPacketSize() || result.second==false)
         {
-            iprintf("Bad packet received (readFrame returned %d)\n",retVal);
+            iprintf("Bad packet received  while waiting RTT response (readFrame returned %d)\n",retVal);
             miosix::memDump(pkt.getPacket(),len);
-                        
-        } else            
-            return make_pair<int, int>(static_cast<int>(T2-T1),result.second);
+        } else {
+            int delta = static_cast<int>(T2-T1);
+            const int t1tot2nominal=rttRetransmitTime+preambleFrameTime+2*trasmissionTime;
+            lastDelay = (delta-t1tot2nominal)/2-rttOffsetTicks;
+            cumulatedDelay=result.first;
+        }
     }
-    
     transceiver.setMode(Cc2520::DEEP_SLEEP);
     dynamic_cast<VHT&>(timer).enableAutoSyncWhitRtc();
+    
+    return make_pair<int, int>(lastDelay, cumulatedDelay);
 }
     
 void RttMeasure::rttServer(unsigned long long frameStart, int cumulatedPropagationDelay)
@@ -118,11 +122,9 @@ void RttMeasure::rttServer(unsigned long long frameStart, int cumulatedPropagati
         unsigned char len = sizeof(recv);
         int retVal = transceiver.readFrame(len,recv);
         
-        char remoteHopCount = recv[1];
-        
-        if(retVal!=1 || len!=2 || recv[0]!=0x55 || (remoteHopCount - 1) != hopCount)
+        if(retVal!=1 || len!=2 || recv[0]!=0x55 || recv[1] != hopCount)
         {
-            iprintf("Bad packet received (readFrame returned %d)\n",retVal);
+            iprintf("Bad packet received while waiting RTT request (readFrame returned %d)\n",retVal);
             miosix::memDump(recv,len);
                         
         } else {
