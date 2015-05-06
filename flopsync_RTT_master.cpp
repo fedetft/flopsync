@@ -40,12 +40,9 @@
 #define numb_nodes 9
 using namespace std;
 
-typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
-
 int main()
 {
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setTxPower(Cc2520::P_2);
@@ -66,18 +63,8 @@ int main()
         puts("----");
         #endif//TIMER_DEBUG
         
-        unsigned long long frameStart=flooder.getMeasuredFrameStart(); //removed combSpacing, the master node acts as RTT server immediately after synchronizing
-        unsigned long long wakeupTime=frameStart-(jitterAbsorption+rxTurnaroundTime+w);
-        timer.absoluteSleep(wakeupTime);
-        
-        blueLed::high();
-        dynamic_cast<VHT&>(timer).disableAutoSyncWithRtc();
-        
+        unsigned long long frameStart=flooder.getMeasuredFrameStart()+rttSpacing;
         measure->rttServer(frameStart, 0); //since this node is at tree's root its cumulated propagation delay is zero.
-        
-        blueLed::low();
-        transceiver.setMode(Cc2520::DEEP_SLEEP);
-        dynamic_cast<VHT&>(timer).enableAutoSyncWhitRtc();
                 
         #ifdef COMB
         

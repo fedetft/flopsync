@@ -50,8 +50,6 @@
 
 using namespace std;
 
-typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
-
 int identifyNode()
 {
     if(strstr(experimentName,"node0")) return 0;
@@ -69,7 +67,6 @@ int identifyNode()
 int main()
 {
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
     puts(experimentName);
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setTxPower(Cc2520::P_2);
@@ -117,29 +114,19 @@ int main()
     {
         if(flooder.synchronize()){
             flooder.resynchronize();
-            cumulatedRtt = 0;        //if sync is lost we have to clear cumulatedRtt. TODO: is it correct??
+            cumulatedRtt = 0;
         }
         
-        unsigned long long start = (identifyNode()-1)*rttSpacing; //set time slot; slot 0 is used by node 1 and master, slot 1 by node 1 and 2, .... TODO: is it correct??
-        
-        blueLed::high();
-        dynamic_cast<VHT&>(timer).disableAutoSyncWithRtc();
-        
+        unsigned long long relativeFrameStart=(identifyNode())*rttSpacing;
+        unsigned long long frameStart = clock->localTime(relativeFrameStart);
+       
         rttData = measure->rttClient(start);    //get distance from this node and the previous one
         
-        myRtt = rttData.first;
-        cumulatedRtt = rttData.second;
+        myRtt = rttData.first; //TODO: what if barra led fails?
+        cumulatedRtt = rttData.second; //TODO: filter
         
-        /*
-         *  TODO: some data processing here??
-         *  maybe we have to force a VHT resync between rttClient and rttServer?
-         */
-        
-        measure->rttServer(start+rttSpacing, myRtt+cumulatedRtt);   //act as a server for the following node(s), next time slot is used
-        
-        blueLed::low();
-        transceiver.setMode(Cc2520::DEEP_SLEEP);
-        dynamic_cast<VHT&>(timer).enableAutoSyncWhitRtc();
+        frameStart = clock->localTime(relativeFrameStart+rttSpacing);
+        measure->rttServer(frameStart, myRtt+cumulatedRtt);
         
         #ifdef COMB
 
