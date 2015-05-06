@@ -173,7 +173,7 @@ const unsigned long long delaySendPacketTime=static_cast<unsigned long long>(0.0
 
 
 //Payload bytes' number in RTT request packet
-const unsigned long long rttPayloadBytes=2;
+const unsigned long long rttPayloadBytes=2+1; //two bytes payload + one byte for packet lenght
 
 //Time required to send RTT request packet's payload
 const unsigned long long rttTailPacketTime=(rttPayloadBytes*8*hz)/channelbps;
@@ -188,7 +188,7 @@ const unsigned long long rttSlackTime=static_cast<unsigned long long>(0.0002f*hz
 const unsigned long long rttRetransmitTime=rttTailPacketTime+txTurnaroundTime+rttSlackTime;
 
 //Payload bytes' number in RTT response packet
-const unsigned long long rttResponsePayloadBytes=16;
+const unsigned long long rttResponsePayloadBytes=16+1; //16 bytes payload + one byte for packet lenght
 
 //Time required to send RTT response packet's payload
 const unsigned long long rttResponseTailPacketTime=static_cast<unsigned long long>((rttResponsePayloadBytes*8*hz)/channelbps+0.5f);
