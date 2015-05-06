@@ -126,8 +126,8 @@ int main()
         
         rttData = measure->rttClient(start);    //get distance from this node and the previous one
         
-        myRtt = rttData.first();
-        cumulatedRtt = rttData.second();
+        myRtt = rttData.first;
+        cumulatedRtt = rttData.second;
         
         /*
          *  TODO: some data processing here??

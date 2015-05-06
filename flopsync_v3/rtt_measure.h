@@ -44,4 +44,4 @@ private:
     Timer& timer;   
 };
 
-#endif RTT_MEASURE_H
+#endif

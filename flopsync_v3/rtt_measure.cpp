@@ -68,7 +68,7 @@ std::pair<int, int> RttMeasure::rttClient(unsigned long long frameStart)
                 miosix::memDump(pkt.getPacket(),len);
                             
             } else            
-                return make_pair<int, int>(static_cast<int>(T2-T1),result.second());
+                return make_pair<int, int>(static_cast<int>(T2-T1),result.second);
         }
 }
     
