@@ -80,9 +80,9 @@ std::pair<int, int> RttEstimator::rttClient(unsigned long long frameStart)
             iprintf("Bad packet received  while waiting RTT response (readFrame returned %d)\n",retVal);
             miosix::memDump(pkt.getPacket(),len);
         } else {
-            int delta = static_cast<int>(T2-T1);
+            int delta=static_cast<int>(T2-T1);
             const int t1tot2nominal=rttRetransmitTime+preambleFrameTime+2*trasmissionTime;
-            lastDelay = (delta-t1tot2nominal)/2-rttOffsetTicks;
+            lastDelay=max(0,(delta-t1tot2nominal)/2-rttOffsetTicks);
             cumulatedDelay=result.first;
         }
     }

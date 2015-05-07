@@ -48,7 +48,7 @@ int main()
     puts(experimentName);
     blueLed::mode(miosix::Mode::OUTPUT);
     Cc2520& transceiver=Cc2520::instance();
-    transceiver.setTxPower(Cc2520::P_5);
+    transceiver.setTxPower(Cc2520::P_2);
     transceiver.setFrequency(2450);
     #ifndef USE_VHT
     Timer& timer=Rtc::instance();
@@ -67,7 +67,14 @@ int main()
         
         unsigned long long frameStart=flooder.getMeasuredFrameStart()+rttSpacing;
         estimator.rttServer(frameStart,0); //since this node is at tree's root its cumulated propagation delay is zero.
-                
+        
+        timer.absoluteSleep(flooder.getMeasuredFrameStart()+nominalPeriod/2-jitterAbsorption);
+        blueLed::high();
+        transceiver.setMode(Cc2520::IDLE);
+        timer.absoluteWaitTrigger(flooder.getMeasuredFrameStart()+nominalPeriod/2);
+        transceiver.setMode(Cc2520::DEEP_SLEEP);
+        blueLed::low();
+        
         #ifdef COMB
         
         #ifndef SYNC_BY_WIRE

@@ -72,7 +72,7 @@ int main()
     puts(experimentName);
     blueLed::mode(miosix::Mode::OUTPUT);
     Cc2520& transceiver=Cc2520::instance();
-    transceiver.setTxPower(Cc2520::P_5);
+    transceiver.setTxPower(Cc2520::P_2);
     transceiver.setFrequency(2450);
     #ifndef USE_VHT
     Timer& timer=Rtc::instance();
@@ -110,10 +110,9 @@ int main()
     const int nodeId=identifyNode();
     RttEstimator estimator(nodeId, transceiver, timer);
     
-    int cumulatedRtt=0;
     bool rttFirst=true;
     float rttFiltered=0;
-    const float k=0.83f;
+    const float k=0.75f;
     
     for(;;)
     {
@@ -121,28 +120,35 @@ int main()
         {
             flooder.resynchronize();
             rttFirst=true;
-            cumulatedRtt=0;
+            rttFiltered=0;
         }
         
         unsigned long long relativeFrameStart=nodeId*rttSpacing;
         unsigned long long frameStart=clock->localTime(relativeFrameStart);
         pair<int,int> rttData=estimator.rttClient(frameStart);
-        if(rttData.first>=0)
+        if(rttData.first>=0 && rttData.second>=0)
         {
             if(rttFirst)
             {
                 rttFirst=false;
-                rttFiltered=rttData.first;
+                rttFiltered=rttData.first+rttData.second;
             } else {
-                rttFiltered=k*rttFiltered+(1.0f-k)*rttData.first;
+                rttFiltered=k*rttFiltered+(1.0f-k)*(rttData.first+rttData.second);
             }
+            iprintf("last_rtt=%d cumulated_rtt=%d\n",rttData.first,rttData.second);
         }
-        if(rttData.second>=0) cumulatedRtt=rttData.second;
-        
-        printf("rtt=%f cumulated=%d\n",rttFiltered,cumulatedRtt);
+        printf("total_filtered_rtt=%f\n",rttFiltered);
         
         frameStart=clock->localTime(relativeFrameStart+rttSpacing);
-        estimator.rttServer(frameStart,static_cast<int>(rttFiltered+0.5f)+cumulatedRtt);
+        estimator.rttServer(frameStart,static_cast<int>(rttFiltered+0.5f));
+        
+        unsigned long long x=clock->localTime(nominalPeriod/2);
+        timer.absoluteSleep(x-jitterAbsorption);
+        blueLed::high();
+        transceiver.setMode(Cc2520::IDLE);
+        timer.absoluteWaitTrigger(x-static_cast<int>(rttFiltered+0.5f));
+        transceiver.setMode(Cc2520::DEEP_SLEEP);
+        blueLed::low();
         
         #ifdef COMB
 
