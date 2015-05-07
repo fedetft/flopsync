@@ -1,24 +1,22 @@
 
-#ifndef RTT_MEASURE_H
-#define RTT_MEASURE_H
+#ifndef RTT_ESTIMATOR_H
+#define RTT_ESTIMATOR_H
 
 #include "protocol_constants.h"
 #include "../drivers/cc2520.h"
 #include "../drivers/timer.h"
 #include "../drivers/BarraLed.h"
 
-class RttMeasure
+class RttEstimator
 {
-
 public:
-    
     /**
      * Constructor
      * \param hopCount the node's hopCount in the overall system
      * \param transceiver pointer to node's transceiver object
      * \param timer pointer to node's VHT
      */    
-    RttMeasure(char hopCount, Cc2520& transceiver, Timer& timer);   
+    RttEstimator(char hopCount, Cc2520& transceiver, Timer& timer);   
     
     /**
      * Used by nodes to measure the distance between them and the previous ones (in hopCoun terms)
@@ -27,15 +25,12 @@ public:
      */
     std::pair<int, int> rttClient(unsigned long long frameStart);
     
-    
     /**
      * Used by nodes to serve a rtt request coming from the next ones (in hopCoun terms)
      * \param frameStart absolute time that triggers the rtt measurement process
      * \param cumulatedPropagationDelay rtt delay from this node and the root node
      */    
     void rttServer(unsigned long long frameStart, int cumulatedPropagationDelay);
-
-    
         
 private:
     
@@ -44,4 +39,4 @@ private:
     Timer& timer;   
 };
 
-#endif
+#endif //RTT_ESTIMATOR_H

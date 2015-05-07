@@ -1,5 +1,5 @@
 
-#include "rtt_measure.h"
+#include "rtt_estimator.h"
 
 using namespace std;
 
@@ -12,12 +12,12 @@ public:
     ~LedHelper() { blueLed::low(); }
 };
 
-RttMeasure::RttMeasure(char hopCount, Cc2520& transceiver, Timer& timer) : hopCount(hopCount), transceiver(transceiver), timer(timer)
+RttEstimator::RttEstimator(char hopCount, Cc2520& transceiver, Timer& timer) : hopCount(hopCount), transceiver(transceiver), timer(timer)
 {
     blueLed::mode(miosix::Mode::OUTPUT);
 }
 
-std::pair<int, int> RttMeasure::rttClient(unsigned long long frameStart)
+std::pair<int, int> RttEstimator::rttClient(unsigned long long frameStart)
 {
     long long wakeupTime=frameStart-(jitterAbsorption+txTurnaroundTime);
     timer.absoluteSleep(wakeupTime);
@@ -92,7 +92,7 @@ std::pair<int, int> RttMeasure::rttClient(unsigned long long frameStart)
     return make_pair<int, int>(lastDelay, cumulatedDelay);
 }
     
-void RttMeasure::rttServer(unsigned long long frameStart, int cumulatedPropagationDelay)
+void RttEstimator::rttServer(unsigned long long frameStart, int cumulatedPropagationDelay)
 {
     unsigned long long wakeupTime=frameStart-(jitterAbsorption+rxTurnaroundTime+w);
     timer.absoluteSleep(wakeupTime);
@@ -145,7 +145,7 @@ void RttMeasure::rttServer(unsigned long long frameStart, int cumulatedPropagati
             bool b1=timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+preambleFrameTime+delaySendPacketTime);
             transceiver.isSFDRaised();
             bool b2=timer.absoluteWaitTimeoutOrEvent(measuredTime+rttRetransmitTime+preambleFrameTime+rttResponseTailPacketTime+delaySendPacketTime);
-            transceiver.isTxFrameDone();  
+            transceiver.isTxFrameDone();
             
             //iprintf("RTT ok\n");
             //iprintf("timeout=%d b0=%d b1=%d b2=%d\n",timeout,b0,b1,b2);

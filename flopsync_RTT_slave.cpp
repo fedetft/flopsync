@@ -41,7 +41,7 @@
 #include "flopsync_v3/clock.h"
 #include "flopsync_v3/monotonic_clock.h"
 #include "flopsync_v3/non_monotonic_clock.h"
-#include "flopsync_v3/rtt_measure.h"
+#include "flopsync_v3/rtt_estimator.h"
 #include "flopsync_v3/critical_section.h"
 #include "board_setup.h"
 #include "drivers/BarraLed.h"
@@ -72,7 +72,7 @@ int main()
     puts(experimentName);
     blueLed::mode(miosix::Mode::OUTPUT);
     Cc2520& transceiver=Cc2520::instance();
-    transceiver.setTxPower(Cc2520::P_2);
+    transceiver.setTxPower(Cc2520::P_5);
     transceiver.setFrequency(2450);
     #ifndef USE_VHT
     Timer& timer=Rtc::instance();
@@ -108,27 +108,25 @@ int main()
     else clock=new NonMonotonicClock(*sync,flooder);
     
     const int nodeId=identifyNode();
-
-    RttMeasure measure(nodeId, transceiver, timer);
+    RttEstimator estimator(nodeId, transceiver, timer);
     
-    int cumulatedRtt = 0;
+    int cumulatedRtt=0;
     bool rttFirst=true;
-    float rttFiltered = 0;
+    float rttFiltered=0;
     const float k=0.83f;
     
     for(;;)
     {
-        if(flooder.synchronize()){
+        if(flooder.synchronize())
+        {
             flooder.resynchronize();
             rttFirst=true;
-            cumulatedRtt = 0;
+            cumulatedRtt=0;
         }
         
         unsigned long long relativeFrameStart=nodeId*rttSpacing;
-        unsigned long long frameStart = clock->localTime(relativeFrameStart);
-       
-        std::pair<int, int> rttData = measure.rttClient(frameStart);    //get distance from this node and the previous one
-        
+        unsigned long long frameStart=clock->localTime(relativeFrameStart);
+        pair<int,int> rttData=estimator.rttClient(frameStart);
         if(rttData.first>=0)
         {
             if(rttFirst)
@@ -139,12 +137,12 @@ int main()
                 rttFiltered=k*rttFiltered+(1.0f-k)*rttData.first;
             }
         }
-        if(rttData.second >= 0) cumulatedRtt = rttData.second;
+        if(rttData.second>=0) cumulatedRtt=rttData.second;
         
         printf("rtt=%f cumulated=%d\n",rttFiltered,cumulatedRtt);
         
-        frameStart = clock->localTime(relativeFrameStart+rttSpacing);
-        measure.rttServer(frameStart, static_cast<int>(rttFiltered+0.5f)+cumulatedRtt);
+        frameStart=clock->localTime(relativeFrameStart+rttSpacing);
+        estimator.rttServer(frameStart,static_cast<int>(rttFiltered+0.5f)+cumulatedRtt);
         
         #ifdef COMB
 

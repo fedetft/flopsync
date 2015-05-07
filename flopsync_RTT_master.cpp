@@ -32,7 +32,7 @@
 #include "flopsync_v3/protocol_constants.h"
 #include "flopsync_v3/flooder_root_node.h"
 #include "flopsync_v3/synchronizer.h"
-#include "flopsync_v3/rtt_measure.h"
+#include "flopsync_v3/rtt_estimator.h"
 #include "drivers/BarraLed.h"
 #include "board_setup.h"
 #include <cassert>
@@ -48,7 +48,7 @@ int main()
     puts(experimentName);
     blueLed::mode(miosix::Mode::OUTPUT);
     Cc2520& transceiver=Cc2520::instance();
-    transceiver.setTxPower(Cc2520::P_2);
+    transceiver.setTxPower(Cc2520::P_5);
     transceiver.setFrequency(2450);
     #ifndef USE_VHT
     Timer& timer=Rtc::instance();
@@ -56,8 +56,7 @@ int main()
     Timer& timer=VHT::instance();
     #endif //USE_VHT
     FlooderRootNode flooder(timer);
-
-    RttMeasure measure(0, transceiver, timer); //this node is the tree's root node, so hopCount is zero.
+    RttEstimator estimator(0,transceiver,timer);
     
     for(;;)
     {
@@ -67,7 +66,7 @@ int main()
         #endif//TIMER_DEBUG
         
         unsigned long long frameStart=flooder.getMeasuredFrameStart()+rttSpacing;
-        measure.rttServer(frameStart, 0); //since this node is at tree's root its cumulated propagation delay is zero.
+        estimator.rttServer(frameStart,0); //since this node is at tree's root its cumulated propagation delay is zero.
                 
         #ifdef COMB
         
