@@ -142,11 +142,20 @@ int main()
         frameStart=clock->localTime(relativeFrameStart+rttSpacing);
         estimator.rttServer(frameStart,static_cast<int>(rttFiltered+0.5f));
         
-        unsigned long long x=clock->localTime(nominalPeriod/2);
+        unsigned long long y=nominalPeriod/3;
+        unsigned long long x=clock->localTime(y);
         timer.absoluteSleep(x-jitterAbsorption);
         blueLed::high();
         transceiver.setMode(Cc2520::IDLE);
-        timer.absoluteWaitTrigger(x-static_cast<int>(rttFiltered+0.5f));
+        timer.absoluteWaitTrigger(x-static_cast<int>(rttFiltered+0.5f)); /// <-- WITH RTT COMPENSATION
+        transceiver.setMode(Cc2520::DEEP_SLEEP);
+        blueLed::low();
+        
+        x=clock->localTime(2*y);
+        timer.absoluteSleep(x-jitterAbsorption);
+        blueLed::high();
+        transceiver.setMode(Cc2520::IDLE);
+        timer.absoluteWaitTrigger(x);  /// <-- WITHOUT RTT COMPENSATION
         transceiver.setMode(Cc2520::DEEP_SLEEP);
         blueLed::low();
         

@@ -68,10 +68,20 @@ int main()
         unsigned long long frameStart=flooder.getMeasuredFrameStart()+rttSpacing;
         estimator.rttServer(frameStart,0); //since this node is at tree's root its cumulated propagation delay is zero.
         
-        timer.absoluteSleep(flooder.getMeasuredFrameStart()+nominalPeriod/2-jitterAbsorption);
+        unsigned long long y=nominalPeriod/3;
+        unsigned long long x=flooder.getMeasuredFrameStart()+y;
+        timer.absoluteSleep(x-jitterAbsorption);
         blueLed::high();
         transceiver.setMode(Cc2520::IDLE);
-        timer.absoluteWaitTrigger(flooder.getMeasuredFrameStart()+nominalPeriod/2);
+        timer.absoluteWaitTrigger(x);
+        transceiver.setMode(Cc2520::DEEP_SLEEP);
+        blueLed::low();
+        
+        x+=y;
+        timer.absoluteSleep(x-jitterAbsorption);
+        blueLed::high();
+        transceiver.setMode(Cc2520::IDLE);
+        timer.absoluteWaitTrigger(x);
         transceiver.setMode(Cc2520::DEEP_SLEEP);
         blueLed::low();
         
