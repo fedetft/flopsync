@@ -50,6 +50,8 @@
         <in>optimized_ramp_flopsync2.cpp</in>
         <in>optimized_ramp_flopsync2.h</in>
         <in>protocol_constants.h</in>
+        <in>rtt_estimator.cpp</in>
+        <in>rtt_estimator.h</in>
         <in>synchronizer.cpp</in>
         <in>synchronizer.h</in>
       </df>
@@ -3136,6 +3138,10 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="../flopsync_v3/rtt_estimator.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/rtt_estimator.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync_v3/synchronizer.cpp" ex="false" tool="1" flavor2="0">
       </item>

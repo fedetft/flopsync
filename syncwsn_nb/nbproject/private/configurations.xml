@@ -75,6 +75,8 @@
         <in>optimized_ramp_flopsync2.cpp</in>
         <in>optimized_ramp_flopsync2.h</in>
         <in>protocol_constants.h</in>
+        <in>rtt_estimator.cpp</in>
+        <in>rtt_estimator.h</in>
         <in>synchronizer.cpp</in>
         <in>synchronizer.h</in>
       </df>
@@ -644,6 +646,8 @@
         <in>test_cc2520_n0.cpp</in>
         <in>test_cc2520_n1.cpp</in>
         <in>test_config.h</in>
+      </df>
+      <df name="test_RTT_2">
       </df>
       <df name="test_timer">
         <in>test_config.h</in>
