@@ -51,6 +51,9 @@ int main()
     Timer& timer=Rtc::instance();
     #else //USE_VHT
     Timer& timer=VHT::instance();
+    #ifdef ROOT_NODE_NEVER_SLEEP
+    VHT::instance().disableAutoSyncWithRtc();
+    #endif
     #endif //USE_VHT
     FlooderRootNode flooder(timer);
    
@@ -73,7 +76,11 @@ int main()
         {
             unsigned long long wakeupTime=frameStart+i-
                 (jitterAbsorption+rxTurnaroundTime+w);
+            #ifndef ROOT_NODE_NEVER_SLEEP
             timer.absoluteSleep(wakeupTime);
+            #else
+            timer.absoluteWait(wakeupTime);
+            #endif //ROOT_NODE_NEVER_SLEEP
             blueLed::high();
             transceiver.setMode(Cc2520::IDLE);
             #if FLOPSYNC_DEBUG > 0   

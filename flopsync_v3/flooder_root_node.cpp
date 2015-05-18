@@ -53,7 +53,11 @@ bool FlooderRootNode::synchronize()
     #if FLOPSYNC_DEBUG  >0
     assert(timer.getValue()<wakeupTime);
     #endif//FLOPSYNC_DEBUG
+    #ifndef ROOT_NODE_NEVER_SLEEP
     timer.absoluteSleep(wakeupTime);
+    #else
+    timer.absoluteWait(wakeupTime);
+    #endif //ROOT_NODE_NEVER_SLEEP
     frameStart=wakeupTime+jitterAbsorption+txTurnaroundTime+trasmissionTime;
     transceiver.setMode(Cc2520::TX);
     #ifndef SEND_TIMESTAMPS

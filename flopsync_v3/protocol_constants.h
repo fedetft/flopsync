@@ -61,6 +61,9 @@
 //Enable comb
 //#define COMB //@@ Filled in by mkpackage
 
+//Enable root node never sleep
+//#define ROOT_NODE_NEVER_SLEEP //@ Filled in by mkpackage
+
 ///This is for enable debug flopsync
 #define FLOPSYNC_DEBUG  1
 #include <cstdio>

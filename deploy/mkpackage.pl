@@ -18,7 +18,7 @@ close($file);
 my @configkeys=('experiment_name','experiment_time','sync_period',
 				'relative_clock','interactive_rootnode','event_timestamping',
 				'vht','sense_temperature','send_timestamps','glossy','multi_hop',
-				'sync_by_wire','comb',
+				'sync_by_wire','comb','root_node_never_sleep',
 				'node0_enable','node0_controller','node0_file','node0_hop',
 				'node1_enable','node1_controller','node1_file','node1_hop',
 				'node2_enable','node2_controller','node2_file','node2_hop',
@@ -100,6 +100,9 @@ sub build
 		}elsif(/#define COMB/) {
 			print $outfile '//' unless($config{'comb'});
 			print $outfile "#define COMB\n";
+		}elsif(/#define ROOT_NODE_NEVER_SLEEP/){
+			print $outfile '//' unless($config{'root_node_never_sleep'});
+			print $outfile "#define ROOT_NODE_NEVER_SLEEP\n";
 		}elsif(/^#define experimentName/) {
 			my $n="#define experimentName \"$config{experiment_name}#$binfile";
 			$n.='#hop.'.$hop if($config{'multi_hop'});
