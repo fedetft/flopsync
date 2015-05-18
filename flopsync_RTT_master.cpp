@@ -54,6 +54,9 @@ int main()
     Timer& timer=Rtc::instance();
     #else //USE_VHT
     Timer& timer=VHT::instance();
+    #ifdef ROOT_NODE_NEVER_SLEEP
+    VHT::instance().disableAutoSyncWithRtc();
+    #endif
     #endif //USE_VHT
     FlooderRootNode flooder(timer);
     RttEstimator estimator(0,transceiver,timer);

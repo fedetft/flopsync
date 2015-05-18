@@ -266,6 +266,10 @@ private:
 class VHT : public Timer
 {
 public:
+    /// Unless set differently with setAutoSyncWhitRtcPeriod, this is the period
+    ///in ticks of the RTC, at which the VHT resynchronizes
+    static const unsigned int defaultAutoSyncPeriod=20;
+    
     /**
      * \return an instance to the VHT (singleton)
      */
@@ -363,10 +367,9 @@ public:
     void syncWithRtc();
     
     /**
-     * Allows you to set a periodic synchronization of the VHT with the rtc.
-     * @param period number of tick of rtc at least 2 or more.
+     * Allows you to enable periodic synchronization of the VHT with the rtc.
      */
-    void enableAutoSyncWhitRtc(unsigned int period=20);
+    void enableAutoSyncWhitRtc();
     
     /**
      * Stop the clocks synchronization with the periodic VHT rtc possibly activated.
@@ -379,8 +382,14 @@ public:
      */
     bool isAutoSync();
     
+    /**
+     * Allows you to set the period of synchronization of the VHT with the rtc.
+     * @param period number of tick of rtc, at least 2 or more.
+     */
+    void setAutoSyncWhitRtcPeriod(unsigned int period);
+    
     #if TIMER_DEBUG==4
-    typeTimer getInfo()const;
+    typeTimer getInfo() const;
     #endif //TIMER_DEBUG
     
 private:
@@ -388,6 +397,8 @@ private:
      * Constructor
      */
     VHT();
+    
+    void enableAutoSyncHelper(unsigned int period);
     
     Rtc& rtc; //The underlying rtc
     bool autoSync;

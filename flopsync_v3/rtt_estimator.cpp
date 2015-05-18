@@ -5,12 +5,36 @@ using namespace std;
 
 typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
 
-class LedHelper
+/**
+ * Temporarily disable VHT to RTC resync. Also, turn on blue led.
+ */
+class VHTScopedUnsync
 {
 public:
-    LedHelper() { blueLed::high(); }
-    ~LedHelper() { blueLed::low(); }
+    VHTScopedUnsync(Timer& timer);
+    ~VHTScopedUnsync();
+private:
+    VHT *vht;
+    bool syncWasEnabled;
 };
+
+VHTScopedUnsync::VHTScopedUnsync(Timer& timer) : vht(dynamic_cast<VHT*>(&timer))
+{
+    blueLed::high();
+    if(!vht) return;
+    syncWasEnabled=vht->isAutoSync();
+    if(syncWasEnabled) vht->disableAutoSyncWithRtc();
+}
+
+VHTScopedUnsync::~VHTScopedUnsync()
+{
+    if(vht && syncWasEnabled) vht->enableAutoSyncWhitRtc();
+    blueLed::low();
+}
+
+//
+// class RttEstimator
+//
 
 RttEstimator::RttEstimator(char hopCount, Cc2520& transceiver, Timer& timer) : hopCount(hopCount), transceiver(transceiver), timer(timer)
 {
@@ -22,9 +46,7 @@ std::pair<int, int> RttEstimator::rttClient(unsigned long long frameStart)
     long long wakeupTime=frameStart-(jitterAbsorption+txTurnaroundTime);
     timer.absoluteSleep(wakeupTime);
     
-    dynamic_cast<VHT&>(timer).disableAutoSyncWithRtc();
-
-    LedHelper led;
+    VHTScopedUnsync unsync(timer);
     //
     // send RTT request packet
     //
@@ -87,8 +109,6 @@ std::pair<int, int> RttEstimator::rttClient(unsigned long long frameStart)
         }
     }
     transceiver.setMode(Cc2520::DEEP_SLEEP);
-    dynamic_cast<VHT&>(timer).enableAutoSyncWhitRtc();
-    
     return make_pair<int, int>(lastDelay, cumulatedDelay);
 }
     
@@ -97,9 +117,7 @@ void RttEstimator::rttServer(unsigned long long frameStart, int cumulatedPropaga
     unsigned long long wakeupTime=frameStart-(jitterAbsorption+rxTurnaroundTime+w);
     timer.absoluteSleep(wakeupTime);
     
-    dynamic_cast<VHT&>(timer).disableAutoSyncWithRtc();
-    
-    LedHelper led;
+    VHTScopedUnsync unsync(timer);
     //
     // await RTT request packet
     //
@@ -153,5 +171,4 @@ void RttEstimator::rttServer(unsigned long long frameStart, int cumulatedPropaga
     }
     
     transceiver.setMode(Cc2520::DEEP_SLEEP);
-    dynamic_cast<VHT&>(timer).enableAutoSyncWhitRtc();
 }

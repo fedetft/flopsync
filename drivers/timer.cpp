@@ -42,7 +42,7 @@ static Thread *rtcWaiting=0;        ///< Thread waiting for the RTC interrupt
 static Thread *vhtWaiting=0;        ///< Thread waiting on VHT
 
 static volatile typeVecInt rtcInt;
-static unsigned int  syncVhtRtcPeriod=20;
+static unsigned int syncVhtRtcPeriod=VHT::defaultAutoSyncPeriod;
 static volatile typeVecInt vhtInt;
 static volatile unsigned long long vhtBase=0;
 static volatile long long vhtOffset=0;
@@ -896,20 +896,9 @@ void VHT::syncWithRtc()
     vhtInt.sync=false;
 }
 
-void VHT::enableAutoSyncWhitRtc(unsigned int period)
+void VHT::enableAutoSyncWhitRtc()
 {
-    FastInterruptDisableLock dLock;
-    if(period == syncVhtRtcPeriod && autoSync) return;
-    autoSync=true;
-    if (period<2) syncVhtRtcPeriod = 2;
-    TIM4->SR =~TIM_SR_CC1IF; 
-    TIM4->DIER|=TIM_DIER_CC1IE; 
-    vhtSyncPointRtc = rtc.getValue()+syncVhtRtcPeriod;
-    RTC->CRL |= RTC_CRL_CNF; //configuration mode
-    RTC->ALRL=vhtSyncPointRtc;
-    RTC->ALRH=vhtSyncPointRtc>>16;
-    RTC->CRL &= ~RTC_CRL_CNF;
-    while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
+    enableAutoSyncHelper(syncVhtRtcPeriod);
 }
 
 void VHT::disableAutoSyncWithRtc()
@@ -924,7 +913,10 @@ bool VHT::isAutoSync()
     return autoSync;
 }
 
-
+void VHT::setAutoSyncWhitRtcPeriod(unsigned int period)
+{
+    enableAutoSyncHelper(period);
+}
 
 VHT::VHT() : rtc(Rtc::instance()), autoSync(true)
 {
@@ -957,6 +949,23 @@ VHT::VHT() : rtc(Rtc::instance()), autoSync(true)
     syncWithRtc();
     
 }
+
+void VHT::enableAutoSyncHelper(unsigned int period)
+{
+    FastInterruptDisableLock dLock;
+    if(period == syncVhtRtcPeriod && autoSync) return;
+    autoSync=true;
+    if (period<2) syncVhtRtcPeriod = 2;
+    TIM4->SR =~TIM_SR_CC1IF; 
+    TIM4->DIER|=TIM_DIER_CC1IE; 
+    vhtSyncPointRtc = rtc.getValue()+syncVhtRtcPeriod;
+    RTC->CRL |= RTC_CRL_CNF; //configuration mode
+    RTC->ALRL=vhtSyncPointRtc;
+    RTC->ALRH=vhtSyncPointRtc>>16;
+    RTC->CRL &= ~RTC_CRL_CNF;
+    while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
+}
+
 #else //_BOARD_STM32VLDISCOVERY
 #error "rtc.cpp not implemented for the selected board"
 #endif //_BOARD_STM32VLDISCOVERY
