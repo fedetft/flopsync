@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include <miosix.h>
-#include <miosix/util/util.h>
 #include "drivers/cc2520.h"
 #include "drivers/frame.h"
 #include "drivers/HW_mapping.h"
@@ -23,12 +22,12 @@ typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
 typedef miosix::Gpio<GPIOC_BASE,9> greenLed;
 typedef miosix::Gpio<GPIOB_BASE,0> rx_irq;
 
-typedef miosix::Gpio<GPIOB_BASE,9> trigger_1; //trigger for transceiver 1
+typedef miosix::Gpio<GPIOB_BASE,9> trigger_1;
 
 /* control pins for transceiver 2 */
 
 typedef miosix::Gpio<GPIOC_BASE,10> reset_2;
-typedef miosix::Gpio<GPIOC_BASE,11> vreg_2;     //OK! vreg è appaiabile
+typedef miosix::Gpio<GPIOC_BASE,11> vreg_2; 
 typedef miosix::Gpio<GPIOA_BASE,12> trigger_2;
 typedef miosix::Gpio<GPIOC_BASE,4> cs_2;
 
@@ -48,7 +47,7 @@ int main(int argc, char** argv)
 
     cc2520.setFrequency(2450);
     cc2520.setMode(Cc2520::RX);
-    cc2520.setAutoFCS(true); //FIXME: questo abilita il CRC, bisogna mettere false!!!!!!!!!!!
+    cc2520.setAutoFCS(false);
     
     unsigned char *packet=new unsigned char[128];
     unsigned char length;
@@ -58,9 +57,9 @@ int main(int argc, char** argv)
         if(cc2520.isRxFrameDone() == 1)
         {
             blueLed::high();
-            length=64; //FIXME: with 128 fails, because max packet is 127
+            length=64;
             cc2520.readFrame(length,packet);
-            miosix::memDump(packet,length); //FIXME: la dump modificata si è persa, rifare!!!
+            miosix::memDump(packet,length);
             blueLed::low();
             
             switch(length)

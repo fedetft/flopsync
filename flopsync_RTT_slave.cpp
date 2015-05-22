@@ -72,7 +72,7 @@ int main()
     puts(experimentName);
     blueLed::mode(miosix::Mode::OUTPUT);
     Cc2520& transceiver=Cc2520::instance();
-    transceiver.setTxPower(Cc2520::P_2);
+    transceiver.setTxPower(Cc2520::P_5);
     transceiver.setFrequency(2450);
     #ifndef USE_VHT
     Timer& timer=Rtc::instance();

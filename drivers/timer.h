@@ -406,6 +406,7 @@ private:
 
 
 struct typeVecInt{
+    
     unsigned char wait    : 1;
     unsigned char trigger : 1;
     unsigned char event   : 1;

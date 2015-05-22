@@ -23,7 +23,7 @@ SRC_DIR := drivers flopsync_v3
 ##
 # Please note that the file containing main() has to be on the same text line
 # as the one with SRC or mkpackage.pl won't work
-SRC := flopsync_RTT_master.cpp
+SRC := flopsync_RTT_slave.cpp
 ## flopsync2.cpp 
 
 ##

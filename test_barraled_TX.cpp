@@ -15,8 +15,7 @@
 #include "drivers/HW_mapping.h"
 #include "drivers/SPI.h"
 #include "drivers/BarraLed.h"
-#include "gh.h"
-#include "fast_trigger.h"
+#include "drivers/fast_trigger.h"
 
 using namespace std;
 // using namespace miosix;
@@ -24,12 +23,12 @@ using namespace std;
 typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
 typedef miosix::Gpio<GPIOC_BASE,9> greenLed;
 typedef miosix::Gpio<GPIOB_BASE,0> rx_irq;
-typedef miosix::Gpio<GPIOB_BASE,9> trigger_1; //trigger for transceiver 1
+typedef miosix::Gpio<GPIOB_BASE,9> trigger_1;
 
 /* control pins for transceiver 2 */
 
 typedef miosix::Gpio<GPIOC_BASE,10> reset_2;
-typedef miosix::Gpio<GPIOC_BASE,11> vreg_2;     //OK! vreg è appaiabile
+typedef miosix::Gpio<GPIOC_BASE,11> vreg_2;
 typedef miosix::Gpio<GPIOA_BASE,12> trigger_2;
 typedef miosix::Gpio<GPIOC_BASE,5> cs_2;
 
@@ -99,15 +98,10 @@ void sendBarraLed(Cc2520& cc2520_1, Cc2520& cc2520_2, Cc2520& cc2520_3,
         if(skew == 0)
         {
             miosix::FastInterruptDisableLock lock;
-//             trigger_1::high();
-//             trigger_2::high();
 	    trigger_80ns();
             if(power>0) trigger_3::high();
         } else {
             miosix::FastInterruptDisableLock lock;
-//             trigger_1::high();
-//             for(int k=0;k<skew;k++) asm volatile("nop");
-//             trigger_2::high();
 	    
         switch(skew){
 	    
@@ -175,18 +169,15 @@ int main(int argc, char** argv)
     
     cc2520_1.setFrequency(2450);
     cc2520_1.setMode(Cc2520::TX);
-    cc2520_1.setAutoFCS(true); //FIXME: questo abilita il CRC, bisogna mettere false!!!!!!!!!!!
-    cc2520_1.setTxPower(Cc2520::P_0); //TODO: was this the default?? check!!
+    cc2520_1.setAutoFCS(false);
     
     cc2520_2.setFrequency(2450);
     cc2520_2.setMode(Cc2520::TX);
-    cc2520_2.setAutoFCS(true); //FIXME: questo abilita il CRC, bisogna mettere false!!!!!!!!!!!
-    cc2520_2.setTxPower(Cc2520::P_0);
+    cc2520_2.setAutoFCS(false);
     
     cc2520_3.setFrequency(2450);
     cc2520_3.setMode(Cc2520::TX);
-    cc2520_3.setAutoFCS(true); //FIXME: questo abilita il CRC, bisogna mettere false!!!!!!!!!!!
-    cc2520_3.setTxPower(Cc2520::P_0);
+    cc2520_3.setAutoFCS(false);
     
     for(;;)
     {
@@ -201,7 +192,7 @@ int main(int argc, char** argv)
                 // ++-------- 0=16 byte packets, 1=64 byte, 2=128 byte
                 sendBarraLed<packet16>(cc2520_1,cc2520_2,cc2520_3,0x00 | j<<3 | i,i,j);
                 sendBarraLed<packet64>(cc2520_1,cc2520_2,cc2520_3,0x40 | j<<3 | i,i,j);
-//                 sendBarraLed<packet128>(cc2520_1,cc2520_2,cc2520_3,0x80 | j<<3 | i,i,j); //FIXME: locks up, why? because max packet is 127, not 128
+                sendBarraLed<packet127>(cc2520_1,cc2520_2,cc2520_3,0x80 | j<<3 | i,i,j);
             }
         }
     }

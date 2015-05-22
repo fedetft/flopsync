@@ -693,8 +693,8 @@ bool VHT::absoluteWaitTimeoutOrEvent(unsigned long long value)
         TIM4->DIER |= TIM_DIER_CC2IE        //Enable interrupt channel 2
                    |  TIM_DIER_CC3IE;       //Enable interrupt channel 3
         //Check that wakeup is not in the past.
-        if(vhtWakeupWait >
-            ((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0)) | TIM4->CNT))
+        bool notInThePast=vhtWakeupWait > ((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0)) | TIM4->CNT);
+        if(notInThePast)
         {
             vhtInt.wait=false;
             vhtInt.event=false;
@@ -719,6 +719,7 @@ bool VHT::absoluteWaitTimeoutOrEvent(unsigned long long value)
         }
         vhtInt.wait=false;
         vhtInt.event=false;
+        if(notInThePast==false) result=true; //Force timeout if time in the past
     }
     else
     {

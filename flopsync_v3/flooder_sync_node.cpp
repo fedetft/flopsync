@@ -73,13 +73,14 @@ bool FlooderSyncNode::synchronize()
     transceiver.setMode(Cc2520::RX);
     bool timeout;
     miosix::ledOn();
-    const int fixmeThreshold=10; //Must be greater than max hop count due to overhearing
-    for(int iii=0;iii<fixmeThreshold;iii++)//was: for(;;)
+  //  const int fixmeThreshold=10; //Must be greater than max hop count due to overhearing
+    //for(int iii=0;iii<fixmeThreshold;iii++)//was: 
+    for(;;)
     {
         //Under certain conditions the tranceiver seems to enter an unknown state
         //and this causes this loop to be iterated forever. While the root cause
         //is being investigated, a reboot is better than an infinite loop...
-        if(iii>=fixmeThreshold-1) assert(false);
+       // if(iii>=fixmeThreshold-1) assert(false);
         
         //When I enter for the first time in the cycle is safe that SFD and FRM_DONE 
         //are reset because I have rxTurnaraoundTime before the transceiver go in 
@@ -102,7 +103,8 @@ bool FlooderSyncNode::synchronize()
         timer.absoluteWaitTimeoutOrEvent(measuredFrameStart+frameTime+delaySendPacketTime);
         transceiver.isRxFrameDone();
 
-        if(transceiver.readFrame(*syncFrame)==0)
+        int result=transceiver.readFrame(*syncFrame);
+        if(result==0)
         {
             #ifndef SEND_TIMESTAMPS
             unsigned char payload[syncFrame->getSizePayload()];
@@ -130,8 +132,9 @@ bool FlooderSyncNode::synchronize()
                 break;
             }
             #endif //SEND_TIMESTAMPS
-        }
+        } else iprintf("result=%d\n",result);
         delete syncFrame;
+        transceiver.flushRxFifoBuffer();
         transceiver.flushRxFifoBuffer();
         miosix::ledOn();
     }

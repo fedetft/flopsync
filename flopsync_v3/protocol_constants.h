@@ -170,7 +170,7 @@ const unsigned long long frameTime=static_cast<unsigned long long>((16*8*hz)/cha
 const unsigned long long delayRebroadcastTime=static_cast<unsigned long long>(0.0005f*hz+0.5f); 
 
 //Waiting time over the reception of the nominal time of packet.
-//Aka slack time, we wait for a little longer than the nominal time to avoid spurous timeouts
+//Aka slack time, we wait for a little longer than the nominal time to avoid spurious timeouts
 const unsigned long long delaySendPacketTime=static_cast<unsigned long long>(0.0001f*hz+0.5f);
 
 

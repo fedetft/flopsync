@@ -102,6 +102,6 @@ void BarraLed<N>::print() { miosix::memDump(packet, N); }
 
 typedef BarraLed<16> packet16;
 typedef BarraLed<64> packet64;
-typedef BarraLed<128> packet128;
+typedef BarraLed<127> packet127;
 
 #endif // BARRALED_H
