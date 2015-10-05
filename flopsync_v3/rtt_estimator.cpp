@@ -109,7 +109,7 @@ std::pair<int, int> RttEstimator::rttClient(unsigned long long frameStart)
         }
     }
     transceiver.setMode(Cc2520::DEEP_SLEEP);
-    return make_pair<int, int>(lastDelay, cumulatedDelay);
+    return make_pair(lastDelay, cumulatedDelay);
 }
     
 void RttEstimator::rttServer(unsigned long long frameStart, int cumulatedPropagationDelay)

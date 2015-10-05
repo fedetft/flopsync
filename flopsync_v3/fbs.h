@@ -93,8 +93,8 @@ public:
     int getReceiverWindow() const { return w; }
     
 private:
-    static const float kp=0.7847f;//0.35f;
-    static const float ki=0.7847f;//0.05f;
+    static const float kp;
+    static const float ki;
     
     Timer& timer;
     int offset,offseto;

@@ -62,3 +62,6 @@ void FBS::reset()
     u=0.0f;
     first=true;
 }
+
+const float FBS::kp=0.7847f;
+const float FBS::ki=0.7847f;
