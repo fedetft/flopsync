@@ -5,6 +5,7 @@
 #include <miosix.h>
 #include "flopsync_v3/protocol_constants.h"
 
+#ifdef _BOARD_STM32VLDISCOVERY
 
 #if FLOPSYNC_DEBUG == 0
 //inline because it's called once
@@ -137,7 +138,7 @@ inline void lowPowerSetup()
     //Gpio<GPIOC_BASE,14>::mode(Mode::INPUT_PULL_UP_DOWN); //32KHz XTAL
     //Gpio<GPIOC_BASE,15>::mode(Mode::INPUT_PULL_UP_DOWN);
     
-    button::mode(miosix::Mode::OUTPUT);
+    button::mode(miosix::Mode::OUTPUT); //FIXME: is this correct?
     probe_int_dis::mode(miosix::Mode::OUTPUT);
     probe_wakeup::mode(miosix::Mode::OUTPUT);
     probe_pll_boot::mode(miosix::Mode::OUTPUT);
@@ -148,4 +149,32 @@ inline void lowPowerSetup()
 }
 
 #endif //FLOPSYNC_DEBUG
+
+#elif defined(_BOARD_POLINODE)
+
+typedef miosix::Gpio<GPIOE_BASE,8>  probe_int_dis;
+typedef miosix::Gpio<GPIOE_BASE,9>  probe_wakeup;
+typedef miosix::Gpio<GPIOC_BASE,10> probe_pll_boot;
+typedef miosix::Gpio<GPIOC_BASE,9>  probe_sync_vht;
+typedef miosix::Gpio<GPIOC_BASE,8>  probe_xosc_radio_boot;
+typedef miosix::Gpio<GPIOC_BASE,1>  probe_pin14;
+typedef miosix::Gpio<GPIOA_BASE,0>  probe_pin15;
+typedef miosix::Gpio<GPIOA_BASE,3>  button;
+
+inline void lowPowerSetup()
+{
+    //The board support package of this board should take care of providing
+    //good defaults for low power
+    
+    probe_int_dis::mode(miosix::Mode::OUTPUT);
+    probe_wakeup::mode(miosix::Mode::OUTPUT);
+    probe_pll_boot::mode(miosix::Mode::OUTPUT);
+    probe_sync_vht::mode(miosix::Mode::OUTPUT);
+    probe_xosc_radio_boot::mode(miosix::Mode::OUTPUT);
+    probe_pin14::mode(miosix::Mode::OUTPUT);
+    probe_pin15::mode(miosix::Mode::OUTPUT);
+}
+
+#endif
+
 #endif //BOARD_SETUP_H

@@ -105,6 +105,77 @@ static unsigned char cc2520SpiSendRecv(unsigned char data = 0) {
 
 //TBD
 
+#elif defined(_BOARD_POLINODE)
+/*
+ * Connections between CC2520 and stm32vldiscovery
+ */
+namespace cc2520 {
+    typedef miosix::transceiver::cs     cs;
+    typedef miosix::transceiver::gpio1  fifo_irq; //GPIO1
+    typedef miosix::transceiver::gpio2  fifop_irq; //GPIO2
+    typedef miosix::transceiver::excChB exc_channelB; //GPIO3
+    typedef miosix::transceiver::gpio4  sfd; //GPIO4
+    typedef miosix::internalSpi::sck    sck;
+    typedef miosix::internalSpi::miso   miso;
+    typedef miosix::internalSpi::mosi   mosi;
+    typedef miosix::transceiver::vregEn vreg;
+    typedef miosix::transceiver::reset  reset; 
+}
+
+/**
+ * Setup GPIOs that connect the CC2520 to the microcontroller
+ */
+static inline void cc2520GpioInit() {
+    {
+        miosix::FastInterruptDisableLock dLock;
+        //mosi, miso, sck, cs already configured by bsp
+        cc2520::fifo_irq::mode(miosix::Mode::INPUT);
+        cc2520::fifop_irq::mode(miosix::Mode::INPUT);
+        cc2520::sfd::mode(miosix::Mode::INPUT);
+        
+        cc2520::exc_channelB::mode(miosix::Mode::INPUT);
+        cc2520::vreg::mode(miosix::Mode::OUTPUT_LOW);
+        cc2520::reset::mode(miosix::Mode::OUTPUT_HIGH);
+        
+        CMU->HFPERCLKEN0|=CMU_HFPERCLKEN0_USART1;
+        
+        NVIC_EnableIRQ(GPIO_ODD_IRQn);
+        NVIC_SetPriority(GPIO_ODD_IRQn,15); //Low priority
+    }
+    //Configuration SPI
+    USART1->CTRL=USART_CTRL_MSBF
+               | USART_CTRL_SYNC;
+    USART1->FRAME=USART_FRAME_STOPBITS_ONE //Should not even be needed
+                | USART_FRAME_PARITY_NONE
+                | USART_FRAME_DATABITS_EIGHT;
+    USART1->CLKDIV=((48000000/8000000)-1)<<8; //CC2520 max freq is 8MHz
+    USART1->IEN=0;
+    USART1->IRCTRL=0;
+    USART1->I2SCTRL=0;
+    USART1->ROUTE=USART_ROUTE_LOCATION_LOC1
+                | USART_ROUTE_CLKPEN
+                | USART_ROUTE_TXPEN
+                | USART_ROUTE_RXPEN;
+    USART1->CMD=USART_CMD_CLEARRX
+              | USART_CMD_CLEARTX
+              | USART_CMD_TXTRIDIS
+              | USART_CMD_RXBLOCKDIS
+              | USART_CMD_MASTEREN
+              | USART_CMD_TXEN
+              | USART_CMD_RXEN;
+}
+
+/**
+ * Send/receive one byte from the SPI interface where the CC2520 is attached
+ * \param data byte to send
+ * \return byte received
+ */
+static unsigned char cc2520SpiSendRecv(unsigned char data = 0) {
+    USART1->TXDATA=data;
+    while((USART1->STATUS & USART_STATUS_RXDATAV)==0) ;
+    return USART1->RXDATA;
+}
+
 #endif
 
 #endif //CC2520_CONFIG_H

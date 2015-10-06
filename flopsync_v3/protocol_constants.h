@@ -78,6 +78,8 @@
 //Channel bandwidth 250 Kbps
 const unsigned long long channelbps=250000;
 
+#ifdef _BOARD_STM32VLDISCOVERY
+
 //Channel bandwidth 6 Mbps
 const unsigned long long spibps=6000000;
 
@@ -86,6 +88,19 @@ const unsigned long long hz=16384;
 #else //USE_VHT
 const unsigned long long hz=24000000;
 #endif //USE_VHT
+
+#elif defined(_BOARD_POLINODE)
+
+//Channel bandwidth 8 Mbps
+const unsigned long long spibps=8000000;
+
+#ifndef USE_VHT
+const unsigned long long hz=32768;
+#else //USE_VHT
+const unsigned long long hz=48000000;
+#endif //USE_VHT
+
+#endif //_BOARD_STM32VLDISCOVERY
 
 // Give a hop for this node
 const unsigned char node_hop=0; //@@ Filled in by mkpackage.pl

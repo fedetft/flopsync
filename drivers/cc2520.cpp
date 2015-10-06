@@ -38,6 +38,8 @@ using namespace miosix;
 static Thread *waiting=0;
 static volatile bool xoscInterrupt=false;
 
+#ifdef _BOARD_STM32VLDISCOVERY
+
 /**
  * EXTI9_5 is connected to the so(PA6) of spi pin, this for irq xosc start
  */
@@ -48,14 +50,32 @@ void __attribute__((naked)) EXTI9_5_IRQHandler()
 	restoreContext();
 }
 
+#elif defined(_BOARD_POLINODE)
+
+void __attribute__((naked)) GPIO_ODD_IRQHandler()
+{
+    saveContext();
+    asm volatile("bl _Z18xoscIrqhandlerImplv");
+    restoreContext();
+}
+
+#endif
+
 /**
  * xosx actual implementation
  */
 void __attribute__((used)) xoscIrqhandlerImpl()
 {
+     //Disable interrupt, not just pending bit
+    #ifdef _BOARD_STM32VLDISCOVERY
     EXTI->PR=EXTI_PR_PR6;
     EXTI->IMR &= ~EXTI_IMR_MR6;
     EXTI->RTSR &= ~EXTI_RTSR_TR6;
+    #elif defined(_BOARD_POLINODE)
+    GPIO->IFC = 1<<1;
+    GPIO->IEN &= ~(1<<1);
+    #endif
+
     xoscInterrupt=true;
     if(!waiting) return;
     waiting->IRQwakeup();
@@ -846,9 +866,18 @@ void Cc2520::initConfigureReg()
 void Cc2520::wait()
 {
     FastInterruptDisableLock dLock;
+    #ifdef _BOARD_STM32VLDISCOVERY
     EXTI->IMR |= EXTI_IMR_MR6;
     EXTI->RTSR |= EXTI_RTSR_TR6;
-    EXTI->PR=EXTI_PR_PR6; //Clear eventual pending IRQ 
+    EXTI->PR=EXTI_PR_PR6; //Clear eventual pending IRQ
+    #elif defined(_BOARD_POLINODE)
+    GPIO->INSENSE |= 1<<0;
+    GPIO->EXTIPSELL &= ~(0x7<<4);
+    GPIO->EXTIPSELL |= (0x3<<4);
+    GPIO->EXTIRISE |= 1<<1;
+    GPIO->IEN |= 1<<1;
+    #endif
+
     xoscInterrupt=false;
     while(!xoscInterrupt)
     {

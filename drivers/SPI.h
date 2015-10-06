@@ -5,17 +5,23 @@
 
 class SPI
 {
-    public:
+public:
 
-        SPI();
+    SPI();
 
-        unsigned char sendRecv(unsigned char data = 0);
+    unsigned char sendRecv(unsigned char data = 0);
+    
+    #ifdef _BOARD_POLINODE
+    void enable();
+    void disable();
+    #endif
 
-    protected:
-    private:
+private:
 
-        typedef miosix::Gpio<GPIOA_BASE, 6> miso;
-        typedef miosix::Gpio<GPIOA_BASE, 7> mosi;
+    #ifdef _BOARD_STM32VLDISCOVERY
+    typedef miosix::Gpio<GPIOA_BASE, 6> miso;
+    typedef miosix::Gpio<GPIOA_BASE, 7> mosi;
+    #endif
 };
 
 #endif // SPI_H

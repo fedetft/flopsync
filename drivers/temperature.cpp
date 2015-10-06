@@ -2,6 +2,8 @@
 #include "temperature.h"
 #include <miosix.h>
 
+#ifdef _BOARD_STM32VLDISCOVERY
+
 unsigned short getRawTemperature()
 {
     {
@@ -49,3 +51,17 @@ unsigned short getADCTemperature()
     ADC1->CR2=0; //Turn ADC OFF
     return result;
 }
+
+#elif defined(_BOARD_POLINODE)
+
+unsigned short getRawTemperature()
+{
+    return 0; //TODO: implement me
+}
+
+unsigned short getADCTemperature()
+{
+    return 0; //TODO: implement me
+}
+
+#endif
