@@ -7,6 +7,8 @@
 #include "../drivers/timer.h"
 #include "../drivers/BarraLed.h"
 
+#ifdef _BOARD_STM32VLDISCOVERY
+
 class RttEstimator
 {
 public:
@@ -38,5 +40,7 @@ private:
     Cc2520& transceiver;
     Timer& timer;   
 };
+
+#endif //_BOARD_STM32VLDISCOVERY
 
 #endif //RTT_ESTIMATOR_H

@@ -31,16 +31,25 @@
 
 #define TIMER_DEBUG 2 // 0 no debug; 1 soft debug; 2 pedantic debug; 4 for test;
 #if TIMER_DEBUG >0
-#include <cstdio> 
+#include <cstdio>
 #include "../board_setup.h"
 #endif//TIMER_DEBUG
 
+#ifdef _BOARD_STM32VLDISCOVERY
 #define ccoRtc 32768ll
 #define ccoVht 24000000ll
 #define rtcPrescaler 1    //rtcFreq = ccoRtc/(rtcPrescaler+1) go from 1 to 2^20
 #define vhtPrescaler 1-1   //vhtFreq = ccoVht/(vhtPrescaler+1) go from 0 to 2^16 
 #define rtcFreq ccoRtc/(rtcPrescaler+1)
 #define vhtFreq ccoVht/(vhtPrescaler+1)
+#elif defined(_BOARD_POLINODE)
+#define ccoRtc 32768ll
+#define ccoVht 48000000ll
+#define rtcPrescaler 0 //rtcFreq = ccoRtc/(rtcPrescaler+1) go from 0 to 15
+#define vhtPrescaler 0 //vhtFreq = ccoVht/(vhtPrescaler+1) go from 0 to ? 
+#define rtcFreq ccoRtc/(rtcPrescaler+1)
+#define vhtFreq ccoVht/(vhtPrescaler+1)
+#endif
 
 #if TIMER_DEBUG==4
 struct typeTimer
@@ -88,14 +97,14 @@ public:
      */
     virtual void absoluteWait(unsigned long long value)=0;
     
-    /**
-     * Set the timer interrupt to occur at an absolute value.
-     * When the timer interrupt will occur, the associated GPIO passes 
-     * from a low logic level to a high logic level for few us. 
-     * \param value absolute value when the interrupt will occur, expressed in 
-     * number of tick of the count rate of timer.
-     */
-    virtual void absoluteTrigger(unsigned long long value)=0;
+//    /**
+//     * Set the timer interrupt to occur at an absolute value.
+//     * When the timer interrupt will occur, the associated GPIO passes 
+//     * from a low logic level to a high logic level for few us. 
+//     * \param value absolute value when the interrupt will occur, expressed in 
+//     * number of tick of the count rate of timer.
+//     */
+//    virtual void absoluteTrigger(unsigned long long value)=0;
     
     /**
      * Set the timer interrupt to occur at an absolute value and put the 
@@ -186,13 +195,13 @@ public:
      */
     void absoluteWait(unsigned long long value);
     
-    /**
-     * Set the timer interrupt to occur at an absolute value.
-     * When the timer interrupt will occur, the associated GPIO passes 
-     * from a low logic level to a high logic level for few us. 
-     * number of tick of the count rate of timer.
-     */
-    void absoluteTrigger(unsigned long long value);
+//    /**
+//     * Set the timer interrupt to occur at an absolute value.
+//     * When the timer interrupt will occur, the associated GPIO passes 
+//     * from a low logic level to a high logic level for few us. 
+//     * number of tick of the count rate of timer.
+//     */
+//    void absoluteTrigger(unsigned long long value);
     
     /**
      * Set the timer interrupt to occur at an absolute value and put the 
@@ -246,6 +255,9 @@ private:
      */
     Rtc();  
 };
+
+//FIXME: implement VHT for other boards
+#ifdef _BOARD_STM3220G_EVAL
 
 /**
  * Virtual high resolution timer. 
@@ -306,14 +318,14 @@ public:
      */
     void absoluteWait(unsigned long long value);
     
-    /**
-     * Set the timer interrupt to occur at an absolute value.
-     * When the timer interrupt will occur, the associated GPIO passes 
-     * from a low logic level to a high logic level for few us.
-     * \param value absolute value when the interrupt will occur, expressed in 
-     * number of tick of the count rate of timer.
-     */
-    void absoluteTrigger(unsigned long long value);
+//    /**
+//     * Set the timer interrupt to occur at an absolute value.
+//     * When the timer interrupt will occur, the associated GPIO passes 
+//     * from a low logic level to a high logic level for few us.
+//     * \param value absolute value when the interrupt will occur, expressed in 
+//     * number of tick of the count rate of timer.
+//     */
+//    void absoluteTrigger(unsigned long long value);
     
     /**
      * Set the timer interrupt to occur at an absolute value and put the 
@@ -404,6 +416,7 @@ private:
     bool autoSync;
 };
 
+#endif //_BOARD_STM3220G_EVAL
 
 struct typeVecInt{
     
@@ -413,8 +426,5 @@ struct typeVecInt{
     unsigned char sync    : 1;
     unsigned char flag    : 1;
 };
-
-
-
 
 #endif //TIMER_H

@@ -28,6 +28,8 @@
 #ifndef CRITICAL_SECTION_H
 #define	CRITICAL_SECTION_H
 
+#if 0
+
 #include "protocol_constants.h"
 #include <miosix.h>
 
@@ -52,5 +54,7 @@ public:
      */
     ~CriticalSection();
 };
+
+#endif
 
 #endif //CRITICAL_SECTION_H

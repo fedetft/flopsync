@@ -95,7 +95,7 @@ Cc2520& Cc2520::instance()
     return singleton;
 }
 
-Cc2520::Cc2520() : autoFCS(true), power(P_0), mode(DEEP_SLEEP), timer(VHT::instance())
+Cc2520::Cc2520() : autoFCS(true), power(P_0), mode(DEEP_SLEEP), timer(Rtc::instance())
 {
     cc2520GpioInit();
     setMode(DEEP_SLEEP);  //entry state of FSM
@@ -130,7 +130,7 @@ void Cc2520::setMode(Mode mode)
                     //reset device whit RESETn that automatically start crystal osc.
                     cc2520::reset::low(); //take low for >= 0.1ms     
                     cc2520::vreg::high();
-                    timer.wait(static_cast<unsigned long long> (0.0001f*vhtFreq+0.5f));
+                    timer.wait(static_cast<unsigned long long> (0.0001f*rtcFreq+0.5f));
                     cc2520::reset::high();
                     cc2520::cs::low();
                     //wait until SO=1 (clock stable and running)
@@ -175,7 +175,7 @@ void Cc2520::setMode(Mode mode)
                     //reset device whit RESETn that automatically start crystal osc.
                     cc2520::reset::low(); //take low for 0.2ms     
                     cc2520::vreg::high();
-                    timer.wait(static_cast<unsigned long long> (0.0001f*vhtFreq+0.5f));
+                    timer.wait(static_cast<unsigned long long> (0.0001f*rtcFreq+0.5f));
                     cc2520::reset::high();
                     cc2520::cs::low();
                     //wait until SO=1 (clock stable and running)
@@ -245,7 +245,7 @@ void Cc2520::setMode(Mode mode)
                 case IDLE:
                     //reset device will remove side effect 
                     cc2520::reset::low(); //take low for 0.1ms
-                    timer.wait(static_cast<unsigned long long> (0.0001f*vhtFreq+0.5f));
+                    timer.wait(static_cast<unsigned long long> (0.0001f*rtcFreq+0.5f));
                     cc2520::cs::high();        
                     cc2520::vreg::low();
                     cc2520::reset::high();
@@ -273,7 +273,7 @@ void Cc2520::setMode(Mode mode)
                     //reset device whit RESETn that automatically start crystal osc.
                     cc2520::reset::low(); //take low for 0.1ms     
                     cc2520::vreg::high();
-                    timer.wait(static_cast<unsigned long long> (0.0001f*vhtFreq+0.5f));
+                    timer.wait(static_cast<unsigned long long> (0.0001f*rtcFreq+0.5f));
                     cc2520::reset::high();
                     cc2520::cs::low();
                     //wait until SO=1 (clock stable and running)

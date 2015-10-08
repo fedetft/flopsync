@@ -27,6 +27,8 @@
  ***************************************************************************/
 #include "critical_section.h"
 
+#if 0
+
 CriticalSection::CriticalSection()
 {
     SysTick->CTRL=0;
@@ -38,3 +40,5 @@ CriticalSection::~CriticalSection()
                     | SysTick_CTRL_TICKINT
                     | SysTick_CTRL_CLKSOURCE;
 }
+
+#endif

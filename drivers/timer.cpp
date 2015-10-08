@@ -30,11 +30,10 @@
 #include <../miosix/kernel/scheduler/scheduler.h>
 #include "timer.h"
 
-
-
 using namespace miosix;
 
-#ifdef _BOARD_STM32VLDISCOVERY
+//FIXME: implement VHT for other boards
+#ifdef _BOARD_STM3220G_EVAL
 
 #define delay_oc 5 //the OCREF go hight 5 tick after real time
 
@@ -456,23 +455,23 @@ bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
     return result;
 }
 
-void Rtc::absoluteTrigger(unsigned long long value)
-{
-    FastInterruptDisableLock dLock;
-    trigger::low();
-    RTC->CRL =~RTC_CRL_ALRF;
-    RTC->CRH |= RTC_CRH_ALRIE;
-    RTC->CRL |= RTC_CRL_CNF;
-    RTC->ALRL=value;
-    RTC->ALRH=value>>16;
-    RTC->CRL &= ~RTC_CRL_CNF;
-    vhtSyncPointRtc=value;
-    rtcTriggerEnable=true;
-    while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
-    if(value <= getValue()) 
-        rtcTriggerEnable=false;
-    FastInterruptEnableLock eLock(dLock);
-}
+//void Rtc::absoluteTrigger(unsigned long long value)
+//{
+//    FastInterruptDisableLock dLock;
+//    trigger::low();
+//    RTC->CRL =~RTC_CRL_ALRF;
+//    RTC->CRH |= RTC_CRH_ALRIE;
+//    RTC->CRL |= RTC_CRL_CNF;
+//    RTC->ALRL=value;
+//    RTC->ALRH=value>>16;
+//    RTC->CRL &= ~RTC_CRL_CNF;
+//    vhtSyncPointRtc=value;
+//    rtcTriggerEnable=true;
+//    while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
+//    if(value <= getValue()) 
+//        rtcTriggerEnable=false;
+//    FastInterruptEnableLock eLock(dLock);
+//}
 
 void Rtc::absoluteWaitTrigger(unsigned long long value)
 {
@@ -616,7 +615,6 @@ Rtc::Rtc()
     NVIC_EnableIRQ(EXTI9_5_IRQn);
 }
 
-
 //
 // class VHT
 //
@@ -744,32 +742,32 @@ bool VHT::absoluteWaitTimeoutOrEvent(unsigned long long value)
     return result;
 }
 
-void VHT::absoluteTrigger(unsigned long long value)
-{
-    FastInterruptDisableLock dLock;
-    //base case: wakeup is not in this turn 
-    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset-delay_oc;
-    TIM4->SR =~TIM_SR_CC4IF;  //reset interrupt flag channel 4
-    TIM4->CCR4=vhtWakeupWait;  //set match register channel 4
-    TIM4->DIER |= TIM_DIER_CC4IE;  
-    vhtInt.trigger=false; 
-    long long diff = vhtWakeupWait-((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0)) | TIM4->CNT);
-    //check if wakeup is in this turn
-    if(diff>0 && diff<= 0xFFFFll)
-    {
-        TIM4->CCMR2 |=TIM_CCMR2_OC4M_0; //active level on match
-    }
-    else
-    {
-        // else check if wakeup is in the past
-        if(diff<=0)
-        {
-            TIM4->DIER &=~TIM_DIER_CC4IE;
-            vhtInt.trigger = true;
-            TIM4->CCMR2 &=~TIM_CCMR2_OC4M; //frozen mode
-        }
-    } 
-}
+//void VHT::absoluteTrigger(unsigned long long value)
+//{
+//    FastInterruptDisableLock dLock;
+//    //base case: wakeup is not in this turn 
+//    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset-delay_oc;
+//    TIM4->SR =~TIM_SR_CC4IF;  //reset interrupt flag channel 4
+//    TIM4->CCR4=vhtWakeupWait;  //set match register channel 4
+//    TIM4->DIER |= TIM_DIER_CC4IE;  
+//    vhtInt.trigger=false; 
+//    long long diff = vhtWakeupWait-((vhtOverflows+((TIM4->SR & TIM_SR_UIF)?1<<16:0)) | TIM4->CNT);
+//    //check if wakeup is in this turn
+//    if(diff>0 && diff<= 0xFFFFll)
+//    {
+//        TIM4->CCMR2 |=TIM_CCMR2_OC4M_0; //active level on match
+//    }
+//    else
+//    {
+//        // else check if wakeup is in the past
+//        if(diff<=0)
+//        {
+//            TIM4->DIER &=~TIM_DIER_CC4IE;
+//            vhtInt.trigger = true;
+//            TIM4->CCMR2 &=~TIM_CCMR2_OC4M; //frozen mode
+//        }
+//    } 
+//}
 
 void VHT::absoluteWaitTrigger(unsigned long long value)
 {
@@ -969,6 +967,297 @@ void VHT::enableAutoSyncHelper(unsigned int period)
     while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
 }
 
-#else //_BOARD_STM32VLDISCOVERY
-#error "rtc.cpp not implemented for the selected board"
-#endif //_BOARD_STM32VLDISCOVERY
+#elif defined(_BOARD_POLINODE)
+
+static Thread *rtcWaiting=0;        ///< Thread waiting for the RTC interrupt
+//static Thread *vhtWaiting=0;        ///< Thread waiting on VHT
+
+static volatile typeVecInt rtcInt;
+//static unsigned int syncVhtRtcPeriod=VHT::defaultAutoSyncPeriod;
+//static volatile typeVecInt vhtInt;
+//static volatile unsigned long long vhtBase=0;
+//static volatile long long vhtOffset=0;
+static volatile bool rtcTriggerEnable=false;
+//static void (*eventHandler)(unsigned int)=0; ///< Called when event received
+//static unsigned long long vhtSyncPointRtc=0;     ///< Rtc time corresponding to vht time
+//static volatile unsigned long long vhtSyncPointVht=0;     ///< Vht time corresponding to rtc time
+//static volatile unsigned long long vhtOverflows=0;  //< counter VHT overflows
+static volatile unsigned long long timestampEvent=0; ///< input capture timestamp
+static unsigned long long swCounter=0;     ///< RTC software counter
+static unsigned int lastHwCounter=0;       ///< variable for evaluate overflow
+//static unsigned long long vhtWakeupWait=0;
+
+typedef miosix::transceiver::stxon trigger;
+//typedef miosix::loopback32KHzOut   resyncVHTout;
+//typedef miosix::loopback32KHzIn    resyncVHTin;
+
+//#if TIMER_DEBUG ==4
+//typeTimer info;
+//#endif //TIMER_DEBUG
+
+static inline unsigned long long readRtc()
+{
+    unsigned int hwCounter=RTC->CNT;
+    if(hwCounter<lastHwCounter) swCounter+=(1<<24); //RTC is 24 bit
+    lastHwCounter=hwCounter;
+    return swCounter | hwCounter;
+}
+
+/**
+ * RTC interrupt
+ */
+void __attribute__((naked)) RTC_IRQHandler()
+{
+    saveContext();
+	asm volatile("bl _Z14RTChandlerImplv");
+	restoreContext();
+}
+
+/**
+ * RTC interrupt actual implementation
+ */
+void __attribute__((used)) RTChandlerImpl()
+{
+    if(rtcTriggerEnable)
+    {
+        trigger::high();
+        rtcTriggerEnable=false;
+        rtcInt.trigger=true;
+        trigger::low();
+    }
+    
+    RTC->IFC=RTC_IFC_COMP0;
+    rtcInt.wait=true;
+    
+    if(!rtcWaiting) return;
+    rtcWaiting->IRQwakeup();
+	if(rtcWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+		Scheduler::IRQfindNextThread();
+    rtcWaiting=0;
+}
+
+void __attribute__((naked)) GPIO_EVEN_IRQHandler()
+{
+    saveContext();
+    asm volatile("bl _Z16GPIO8HandlerImplv");
+    restoreContext();
+}
+
+void __attribute__((used)) GPIO8HandlerImpl()
+{
+    timestampEvent=readRtc();
+    GPIO->IFC = 1<<8;
+    rtcInt.event=true;
+    if(!rtcWaiting) return;
+    rtcWaiting->IRQwakeup();
+	  if(rtcWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+		Scheduler::IRQfindNextThread();
+    rtcWaiting=0;
+}
+
+//
+// class Rtc
+//
+
+Rtc& Rtc::instance()
+{
+    static Rtc timer;
+    return timer;
+}
+
+unsigned long long Rtc::getValue() const
+{
+    return readRtc();
+}
+
+void Rtc::setValue(unsigned long long value)
+{
+    //Stop timer and wait for it to be stopped
+    while(RTC->SYNCBUSY & RTC_SYNCBUSY_CTRL) ;
+    RTC->CTRL=0;
+    while(RTC->SYNCBUSY & RTC_SYNCBUSY_CTRL) ;
+    
+    RTC->CNT=value  & 0x0000000000ffffffull;
+    
+    //Restart timer as soon as possible
+    RTC->CTRL=RTC_CTRL_EN;
+    
+    swCounter=value & 0xffffffffff000000ull;
+    lastHwCounter=0;
+}
+
+unsigned long long Rtc::getExtEventTimestamp() const
+{
+    return timestampEvent;
+}
+
+void Rtc::absoluteWait(unsigned long long value)
+{
+    FastInterruptDisableLock dLock;
+    RTC->COMP0=value & 0xffffff;
+    RTC->IEN |= RTC_IEN_COMP0;
+//    vhtSyncPointRtc=value;
+    rtcInt.wait=false;
+    while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP0) ;
+    if(value > getValue())
+    {
+       while(!rtcInt.wait) 
+       {
+            rtcWaiting=Thread::IRQgetCurrentThread();
+            Thread::IRQwait();
+            {
+                FastInterruptEnableLock eLock(dLock);
+                Thread::yield();
+            }
+        }
+    }
+    RTC->IEN &= ~RTC_IEN_COMP0;
+}
+
+bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
+{
+    if(value==0)
+    {
+        FastInterruptDisableLock dLock;
+        GPIO->IEN |= 1<<8;
+        rtcInt.event=false;
+        while(!rtcInt.event)
+        {
+            rtcWaiting=Thread::IRQgetCurrentThread();
+            Thread::IRQwait();
+            {
+                FastInterruptEnableLock eLock(dLock);
+                Thread::yield();
+            }
+        }
+        GPIO->IEN &= ~(1<<8);
+        return true;
+    }
+    
+    bool result=false;
+    FastInterruptDisableLock dLock;
+    RTC->COMP0=value & 0xffffff;
+    RTC->IEN |= RTC_IEN_COMP0;
+    GPIO->IEN |= 1<<8;
+//    vhtSyncPointRtc=value;
+    rtcInt.wait=false;
+    rtcInt.event=false;
+    if(value > getValue())
+    {
+        while(!rtcInt.wait && !rtcInt.event)
+        {
+            rtcWaiting=Thread::IRQgetCurrentThread();
+            Thread::IRQwait();
+            {
+                FastInterruptEnableLock eLock(dLock);
+                Thread::yield();
+            }
+        }
+        result=rtcInt.wait;
+    }
+    RTC->IEN &= ~RTC_IEN_COMP0;
+    GPIO->IEN &= ~(1<<8);
+    return result;
+}
+
+void Rtc::absoluteWaitTrigger(unsigned long long value)
+{
+    rtcTriggerEnable=true;
+    absoluteWait(value);
+    rtcTriggerEnable=false;
+}
+
+void Rtc::wait(unsigned long long value)
+{
+    absoluteWait(getValue()+value);
+}
+
+void Rtc::absoluteSleep(unsigned long long value)
+{
+    ioctl(STDOUT_FILENO,IOCTL_SYNC,0);
+    
+    PauseKernelLock kLock;
+    
+    RTC->COMP0=value & 0xffffff;
+    RTC->IEN |= RTC_IEN_COMP0;
+
+    #if TIMER_DEBUG >0
+    assert(getValue()<value); 
+    #endif //TIMER_DEBUG
+    if(getValue()<value)
+    {        
+        {
+            FastInterruptDisableLock dLock;
+            SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+            EMU->CTRL=0;
+            for(;;)
+            {
+                //First, try to go to sleep. If an interrupt occurred since when
+                //we have disabled them, this is executed as a nop
+                __WFI();
+                //Restart HFXO
+                CMU->OSCENCMD=CMU_OSCENCMD_HFXOEN;
+                CMU->CMD=CMU_CMD_HFCLKSEL_HFXO; //This locks the CPU till clock is stable
+                CMU->OSCENCMD=CMU_OSCENCMD_HFRCODIS;
+                //If the interrupt we want is now pending, it's time to wake up
+                if(NVIC_GetPendingIRQ(RTC_IRQn)) break;
+                //Else we are in an uncomfortable situation: we're waiting for
+                //a specific interrupt, but we didn't go to sleep as another
+                //interrupt occur. The core won't allow thw WFI to put us to
+                //sleep till we serve the interrupt, so let's do it.
+                //Note that since the kernel is paused the interrupt we're
+                //serving can't cause a context switch and fuck up things.
+                
+                {
+                    FastInterruptEnableLock eLock(dLock);
+                    //Here interrupts are enabled, so the interrupt gets served
+                    __NOP();
+                }
+            }
+            SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
+        }
+    }
+    
+    RTC->IEN &= ~RTC_IEN_COMP0;
+}
+
+void Rtc::sleep(unsigned long long value)
+{
+    absoluteSleep(getValue()+value);
+}
+
+
+Rtc::Rtc()
+{
+    FastInterruptDisableLock dLock;
+    trigger::mode(Mode::OUTPUT_LOW);
+    
+    //The LFXO is already started by the BSP
+    CMU->HFCORECLKEN0 |= CMU_HFCORECLKEN0_LE; //Enable clock to LE peripherals
+    CMU->LFACLKEN0 |= CMU_LFACLKEN0_RTC;
+    while(CMU->SYNCBUSY & CMU_SYNCBUSY_LFACLKEN0) ;
+    
+    RTC->CNT=0;
+    
+    RTC->CTRL=RTC_CTRL_EN;
+    while(RTC->SYNCBUSY & RTC_SYNCBUSY_CTRL) ;
+    
+    //SFD is PA8
+    GPIO->INSENSE |= 1<<0;
+    GPIO->EXTIPSELH &= ~0x7;
+    GPIO->EXTIRISE |= 1<<8;
+    //Note: interrupt not yet enabled as we're not setting GPIO->IEN
+    NVIC_EnableIRQ(GPIO_EVEN_IRQn);
+    NVIC_SetPriority(GPIO_EVEN_IRQn,10); //Low priority
+    
+    NVIC_EnableIRQ(RTC_IRQn);
+    NVIC_SetPriority(RTC_IRQn,10); //Low priority
+}
+
+//
+// class VHT
+//
+
+//TODO: implement me
+
+#endif

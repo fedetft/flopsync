@@ -3,6 +3,8 @@
 
 using namespace std;
 
+#ifdef _BOARD_STM32VLDISCOVERY
+
 typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
 
 /**
@@ -172,3 +174,5 @@ void RttEstimator::rttServer(unsigned long long frameStart, int cumulatedPropaga
     
     transceiver.setMode(Cc2520::DEEP_SLEEP);
 }
+
+#endif //_BOARD_STM32VLDISCOVERY
