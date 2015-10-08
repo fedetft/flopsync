@@ -1,11 +1,10 @@
 
 #include "rtt_estimator.h"
+#include "../drivers/leds.h"
 
 using namespace std;
 
 #ifdef _BOARD_STM32VLDISCOVERY
-
-typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
 
 /**
  * Temporarily disable VHT to RTC resync. Also, turn on blue led.
@@ -22,7 +21,7 @@ private:
 
 VHTScopedUnsync::VHTScopedUnsync(Timer& timer) : vht(dynamic_cast<VHT*>(&timer))
 {
-    blueLed::high();
+    led2::high();
     if(!vht) return;
     syncWasEnabled=vht->isAutoSync();
     if(syncWasEnabled) vht->disableAutoSyncWithRtc();
@@ -31,7 +30,7 @@ VHTScopedUnsync::VHTScopedUnsync(Timer& timer) : vht(dynamic_cast<VHT*>(&timer))
 VHTScopedUnsync::~VHTScopedUnsync()
 {
     if(vht && syncWasEnabled) vht->enableAutoSyncWhitRtc();
-    blueLed::low();
+    led2::low();
 }
 
 //
@@ -40,7 +39,7 @@ VHTScopedUnsync::~VHTScopedUnsync()
 
 RttEstimator::RttEstimator(char hopCount, Cc2520& transceiver, Timer& timer) : hopCount(hopCount), transceiver(transceiver), timer(timer)
 {
-    blueLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
 }
 
 std::pair<int, int> RttEstimator::rttClient(unsigned long long frameStart)

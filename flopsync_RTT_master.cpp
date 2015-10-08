@@ -29,6 +29,7 @@
 #include "drivers/cc2520.h"
 #include "drivers/timer.h"
 #include "drivers/frame.h"
+#include "drivers/leds.h"
 #include "flopsync_v3/protocol_constants.h"
 #include "flopsync_v3/flooder_root_node.h"
 #include "flopsync_v3/synchronizer.h"
@@ -40,13 +41,11 @@
 #define numb_nodes 9
 using namespace std;
 
-typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
-
 int main()
 {
     lowPowerSetup();
     puts(experimentName);
-    blueLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setTxPower(Cc2520::P_5);
     transceiver.setFrequency(2450);
@@ -74,19 +73,19 @@ int main()
         unsigned long long y=nominalPeriod/3;
         unsigned long long x=flooder.getMeasuredFrameStart()+y;
         timer.absoluteSleep(x-jitterAbsorption);
-        blueLed::high();
+        led2::high();
         transceiver.setMode(Cc2520::IDLE);
         timer.absoluteWaitTrigger(x);
         transceiver.setMode(Cc2520::DEEP_SLEEP);
-        blueLed::low();
+        led2::low();
         
         x+=y;
         timer.absoluteSleep(x-jitterAbsorption);
-        blueLed::high();
+        led2::high();
         transceiver.setMode(Cc2520::IDLE);
         timer.absoluteWaitTrigger(x);
         transceiver.setMode(Cc2520::DEEP_SLEEP);
-        blueLed::low();
+        led2::low();
         
         #ifdef COMB
         
@@ -100,7 +99,7 @@ int main()
             unsigned long long wakeupTime=frameStart+i-
                 (jitterAbsorption+rxTurnaroundTime+w);
             timer.absoluteSleep(wakeupTime);
-            greenLed::high();
+            led1::high();
             transceiver.setMode(Cc2520::IDLE);
             #if FLOPSYNC_DEBUG > 0   
             assert(timer.getValue()<wakeupTime+jitterAbsorption);
@@ -127,7 +126,7 @@ int main()
                 }
                 if(packet.check==0 || (packet.check & 0xf0)==0x10) break;
             }
-            greenLed::low();
+            led1::low();
             transceiver.setMode(Cc2520::DEEP_SLEEP);
             if(timeout) printf("node%d timeout\n",(j % numb_nodes)+1);
             else {
@@ -155,7 +154,7 @@ int main()
         {
             unsigned long long wakeupTime=frameStart+i-(jitterAbsorption+w);
             timer.absoluteSleep(wakeupTime);
-            greenLed::high();
+            led1::high();
             bool timeout;
             unsigned long long measuredTime;
             Packet packet;
@@ -165,7 +164,7 @@ int main()
                 measuredTime=timer.getExtEventTimestamp();
                 break;
             }
-            greenLed::low();
+            led1::low();
             if(timeout) 
                 printf("node1 timeout\n");
             else 

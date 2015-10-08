@@ -11,11 +11,10 @@
 #include "test_config.h"
 #include "../drivers/timer.h"
 #include "../drivers/frame.h"
+#include "../drivers/leds.h"
 
 using namespace std;
 
-typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
-typedef miosix::Gpio<GPIOC_BASE,9> greenLed;
 typedef miosix::Gpio<GPIOA_BASE,0> userButton;
 
 Frame *pFrame ;
@@ -26,8 +25,6 @@ Frame *pFrame ;
 int main(int argc, char** argv) {
 
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::INPUT);
 
     Timer& timer=VHT::instance();
@@ -43,15 +40,15 @@ int main(int argc, char** argv) {
     cc2520.setMode(Cc2520::TX);
     cc2520.setAutoFCS(true);
     
-    greenLed::high();
-    blueLed::low();
+    led1::high();
+    led2::low();
     
 //    for(;;)
 //    {        
 //        if (userButton::value()==1)
 //        {
 //           //MemoryProfiling::print();
-//            blueLed::high();
+//            led2::high();
 //            cont++;
 //            cc2520.writeFrame(1,pCont);
 //            timer.wait(1*vhtFreq);
@@ -59,7 +56,7 @@ int main(int argc, char** argv) {
 //            pin15::low();
 //            while(!cc2520.isTxFrameDone()) printf("TX busy\n"); //Wait
 //            cc2520.isSFDRaised();
-//            blueLed::low();
+//            led2::low();
 //            printf("Ho inviato: %x \n",cont);
 //        }
 //        //delayMs(500);
@@ -78,11 +75,11 @@ int main(int argc, char** argv) {
         //cc2520.writeFrame(2,packet);
         cc2520.stxcal();
         timer.absoluteWaitTrigger(1*vhtFreq*i);
-        blueLed::high();
+        led2::high();
         i++;
         while(!cc2520.isTxFrameDone()) printf("TX busy\n"); //Wait
         cc2520.isSFDRaised();
-        blueLed::low();
+        led2::low();
         printf("Ho inviato: %x \n",cont);
      }
 }

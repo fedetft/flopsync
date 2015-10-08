@@ -14,12 +14,11 @@
 #include "drivers/HW_mapping.h"
 #include "drivers/SPI.h"
 #include "drivers/BarraLed.h"
+#include "drivers/leds.h"
 
 using namespace std;
 // using namespace miosix;
 
-typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
-typedef miosix::Gpio<GPIOC_BASE,9> greenLed;
 typedef miosix::Gpio<GPIOB_BASE,0> rx_irq;
 
 typedef miosix::Gpio<GPIOB_BASE,9> trigger_1;
@@ -33,7 +32,7 @@ typedef miosix::Gpio<GPIOC_BASE,4> cs_2;
 
 int main(int argc, char** argv)
 {
-    blueLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
     rx_irq::mode(miosix::Mode::INPUT);
 
     cc2520::cs::mode(miosix::Mode::OUTPUT);
@@ -56,11 +55,11 @@ int main(int argc, char** argv)
     {
         if(cc2520.isRxFrameDone() == 1)
         {
-            blueLed::high();
+            led2::high();
             length=64;
             cc2520.readFrame(length,packet);
             miosix::memDump(packet,length);
-            blueLed::low();
+            led2::low();
             
             switch(length)
             {

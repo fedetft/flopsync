@@ -32,6 +32,7 @@
 #include "drivers/cc2520.h"
 #include "drivers/timer.h"
 #include "drivers/temperature.h"
+#include "drivers/leds.h"
 #include "flopsync_v3/protocol_constants.h"
 #include "flopsync_v3/flooder_sync_node.h"
 #include "flopsync_v3/synchronizer.h"
@@ -49,8 +50,6 @@
 #define numb_nodes 9
 
 using namespace std;
-
-typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
 
 int identifyNode()
 {
@@ -70,7 +69,7 @@ int main()
 {
     lowPowerSetup();
     puts(experimentName);
-    blueLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setTxPower(Cc2520::P_5);
     transceiver.setFrequency(2450);
@@ -145,19 +144,19 @@ int main()
         unsigned long long y=nominalPeriod/3;
         unsigned long long x=clock->localTime(y);
         timer.absoluteSleep(x-jitterAbsorption);
-        blueLed::high();
+        led2::high();
         transceiver.setMode(Cc2520::IDLE);
         timer.absoluteWaitTrigger(x-static_cast<int>(rttFiltered+0.5f)); /// <-- WITH RTT COMPENSATION
         transceiver.setMode(Cc2520::DEEP_SLEEP);
-        blueLed::low();
+        led2::low();
         
         x=clock->localTime(2*y);
         timer.absoluteSleep(x-jitterAbsorption);
-        blueLed::high();
+        led2::high();
         transceiver.setMode(Cc2520::IDLE);
         timer.absoluteWaitTrigger(x);  /// <-- WITHOUT RTT COMPENSATION
         transceiver.setMode(Cc2520::DEEP_SLEEP);
-        blueLed::low();
+        led2::low();
         
         #ifdef COMB
 
@@ -173,7 +172,7 @@ int main()
                 (jitterAbsorption+txTurnaroundTime+trasmissionTime);
             unsigned long long frameStart=wakeupTime+jitterAbsorption+txTurnaroundTime+trasmissionTime;
             timer.absoluteSleep(wakeupTime);
-            blueLed::high();
+            led2::high();
             transceiver.setAutoFCS(true);
             transceiver.setMode(Cc2520::TX);
 
@@ -200,7 +199,7 @@ int main()
             transceiver.isSFDRaised();
             timer.absoluteWaitTimeoutOrEvent(frameStart-trasmissionTime+packetTime+delaySendPacketTime);
             transceiver.isTxFrameDone();
-            blueLed::low();
+            led2::low();
             transceiver.setMode(Cc2520::DEEP_SLEEP);
         }
         #else//SYNC_BY_WIRE
@@ -211,9 +210,9 @@ int main()
             unsigned long long wakeupTime=clock->localTime(i)-jitterAbsorption-j*w;
             unsigned long long frameStart=wakeupTime+jitterAbsorption+j*w;
             timer.absoluteSleep(wakeupTime);
-            blueLed::high();
+            led2::high();
             timer.absoluteWaitTrigger(frameStart);
-            blueLed::low();
+            led2::low();
         }
         #endif//SYNC_BY_WIRE
         #endif//COMB*/

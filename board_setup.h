@@ -166,6 +166,9 @@ inline void lowPowerSetup()
     //The board support package of this board should take care of providing
     //good defaults for low power
     
+    //This increases current draw, but is useful for debugging with an oscope
+    miosix::currentSense::enable::high();
+    
     probe_int_dis::mode(miosix::Mode::OUTPUT);
     probe_wakeup::mode(miosix::Mode::OUTPUT);
     probe_pll_boot::mode(miosix::Mode::OUTPUT);

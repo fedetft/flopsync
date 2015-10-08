@@ -8,23 +8,22 @@
 #include <cassert>
 #include <cstdio>
 #include "../drivers/timer.h"
+#include "../drivers/leds.h"
 #include "test_config.h"
 #include <miosix.h>
 
 using namespace std;
 
-typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
-typedef miosix::Gpio<GPIOC_BASE,9> greenLed;
 typedef miosix::Gpio<GPIOA_BASE,0> userButton;
 
 static void inline testRtcAbsoluteSleep()
 {
     puts("---------------Test timer RTC absoluteSleep----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     Timer& rtc=Rtc::instance();
     
     int i=1;
@@ -32,9 +31,9 @@ static void inline testRtcAbsoluteSleep()
     printf("Timestamp:  %016llX\n",rtc.getValue());
     for(;;)
     {        
-        blueLed::low(); 
+        led2::low(); 
         rtc.absoluteSleep((0xFFFFFFFFll-5/2*rtcFreq) + (i*rtcFreq)); //1 secondo
-        blueLed::high();  
+        led2::high();  
         printf("Timestamp:  %016llX\n",rtc.getValue());
         i++;
     }
@@ -44,20 +43,20 @@ static void inline testRtcSleep()
 {
     puts("---------------Test timer RTC absoluteSleep----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
-    blueLed::high();
+    led1::high();
+    led2::high();
     Timer& rtc=Rtc::instance();
     
     rtc.setValue(0xFFFFFFFFll - 5/2*rtcFreq); 
     printf("Timestamp:  %016llX\n",rtc.getValue());
     for(;;)
     {        
-        blueLed::low(); 
+        led2::low(); 
         rtc.sleep(static_cast<unsigned long long>(1*rtcFreq)); //1 secondo
-        blueLed::high();  
+        led2::high();  
         printf("Timestamp:  %016llX\n",rtc.getValue());
     }
 }
@@ -66,10 +65,10 @@ static void inline testRtcAbsoluteWait()
 {
     puts("---------------Test timer RTC absoluteWait----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     Timer& rtc=Rtc::instance();
     
     int i=1;
@@ -77,9 +76,9 @@ static void inline testRtcAbsoluteWait()
     printf("Timestamp:  %016llX\n",rtc.getValue());
     for(;;)
     {        
-        blueLed::low(); 
+        led2::low(); 
         rtc.absoluteWait((0xFFFFFFFFll-5/2*rtcFreq) + (i*rtcFreq)); //1 secondo
-        blueLed::high();  
+        led2::high();  
         printf("Timestamp:  %016llX\n",rtc.getValue());
         i++;
     }
@@ -89,10 +88,10 @@ static void inline testRtcWaitExtEventOrTimeout()
 {
     puts("---------------Test timer RTC wait for event or timeout----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     Timer& rtc=Rtc::instance();
     
     rtc.setValue(0xFFFFFFFFll - 5/2*rtcFreq);
@@ -101,9 +100,9 @@ static void inline testRtcWaitExtEventOrTimeout()
     bool timeout;
     for(;;)
     {        
-        blueLed::low(); 
+        led2::low(); 
         timeout = rtc.absoluteWaitTimeoutOrEvent((0xFFFFFFFFll-5/2*rtcFreq) + (rtcFreq*i)); //un secondo
-        blueLed::high(); 
+        led2::high(); 
         timeout?
             printf("Timestamp:  %016llX\n",rtc.getValue()):
             printf("Packet   :  %016llX\n",rtc.getExtEventTimestamp());
@@ -115,9 +114,9 @@ static void inline testRtcTriggerEvent()
 {
     puts("---------------Test timer RTC trigger----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::INPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led2::mode(miosix::Mode::INPUT);
+    led1::mode(miosix::Mode::OUTPUT);
+    led1::high();
     Timer& rtc=Rtc::instance();
     
     int i=1;
@@ -136,9 +135,9 @@ static void inline testRtcTriggerEventWait()
 {
     puts("---------------Test timer RTC wait trigger ----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::INPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led2::mode(miosix::Mode::INPUT);
+    led1::mode(miosix::Mode::OUTPUT);
+    led1::high();
     Timer& rtc=Rtc::instance();
     
     int i=1;
@@ -156,10 +155,10 @@ static void inline testVhtAbsoluteSleep()
 {
     puts("---------------Test timer VHT absoluteSleep----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     Timer& vht=VHT::instance();
     
     int i=1;
@@ -167,9 +166,9 @@ static void inline testVhtAbsoluteSleep()
     printf("Timestamp:  %016llX\n",vht.getValue());
     for(;;)
     {    
-        blueLed::low(); 
+        led2::low(); 
         vht.absoluteSleep(vhtFreq*1/2+vhtFreq*i); //un secondo
-        blueLed::high(); 
+        led2::high(); 
         printf("Timestamp:  %016llX\n",vht.getValue());
         i++;
     }
@@ -179,19 +178,19 @@ static void inline testVhtSleep()
 {
     puts("---------------Test timer VHT sleep----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     Timer& vht=VHT::instance();
     
     vht.setValue(vhtFreq*1/2); //mezzo secondo 
     printf("Timestamp:  %016llX\n",vht.getValue());
     for(;;)
     {    
-        blueLed::low(); 
+        led2::low(); 
         vht.sleep(1*vhtFreq); //un secondo
-        blueLed::high(); 
+        led2::high(); 
         printf("Timestamp:  %016llX\n",vht.getValue());
     }
 }
@@ -200,11 +199,11 @@ static void inline testVhtGetEventTimestamp()
 {
     puts("---------------Test timer VHT get timestamp event----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
-    blueLed::low();
+    led1::high();
+    led2::low();
     Timer& vht=VHT::instance();
     for(;;)
     {        
@@ -218,10 +217,10 @@ static void inline testVhtAbsoluteWait()
 {
     puts("---------------Test timer VHT absoluteWait----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     Timer& vht=VHT::instance();
     
     vht.setValue(vhtFreq*1/2); //mezzo secondo 
@@ -229,9 +228,9 @@ static void inline testVhtAbsoluteWait()
     int i=1;
     for(;;)
     {        
-        blueLed::low();
+        led2::low();
         vht.absoluteWait(vhtFreq*1/2+vhtFreq*i); //un secondo
-        blueLed::high();
+        led2::high();
         printf("Timestamp:  %016llX\n",vht.getValue());
         i++;
     }
@@ -241,11 +240,11 @@ static void inline testVhtWait()
 {
     puts("---------------Test timer VHT wait----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
-    blueLed::high();
+    led1::high();
+    led2::high();
     Timer& vht=VHT::instance();
     
     vht.setValue(vhtFreq*1/20); //mezzo secondo 
@@ -253,9 +252,9 @@ static void inline testVhtWait()
     int i=1;
     for(;;)
     {        
-        blueLed::low();
+        led2::low();
         vht.wait(static_cast<unsigned long long>(1*vhtFreq));
-        blueLed::high();
+        led2::high();
         printf("Timestamp:  %016llX\n",vht.getValue());
         i++;
     }
@@ -265,11 +264,11 @@ static void inline testVhtWaitExtEventOrTimeout()
 {
     puts("---------------Test timer VHT wait for event or timeout----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
-    blueLed::high();
+    led1::high();
+    led2::high();
     Timer& vht=VHT::instance();
     
     vht.setValue(vhtFreq*1/2); //mezzo secondo 
@@ -278,9 +277,9 @@ static void inline testVhtWaitExtEventOrTimeout()
     bool timeout;
     for(;;)
     {        
-        blueLed::low(); 
+        led2::low(); 
         timeout=vht.absoluteWaitTimeoutOrEvent(vhtFreq*1/2+vhtFreq*i); //un secondo
-        blueLed::high(); 
+        led2::high(); 
         timeout?
             printf("Timestamp:  %016llX\n",vht.getValue()):
             printf("Packet   :  %016llX\n",vht.getExtEventTimestamp());
@@ -292,11 +291,11 @@ static void inline testVhtWaitExtEvent()
 {
     puts("---------------Test timer wait for event---------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
-    blueLed::high();
+    led1::high();
+    led2::high();
     Timer& vht=VHT::instance();
     
     vht.setValue(vhtFreq*1/2); //mezzo secondo
@@ -304,9 +303,9 @@ static void inline testVhtWaitExtEvent()
     bool timeout;
     for(;;)
     {        
-        blueLed::low(); 
+        led2::low(); 
         timeout=vht.absoluteWaitTimeoutOrEvent(0);
-        blueLed::high(); 
+        led2::high(); 
         timeout?
             printf("Timestamp:  %016llX\n",vht.getValue()):
             printf("Packet   :  %016llX\n",vht.getExtEventTimestamp());
@@ -317,8 +316,8 @@ static void inline testVhtMonotonic()
 {
     puts("---------------Test timer VHT monotonic----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
     unsigned long long prec=0;
     unsigned long long last=0;
@@ -327,18 +326,18 @@ static void inline testVhtMonotonic()
     typeTimer precInfo;
     typeTimer lastInfo;
     #endif//TIMER_DEBUG
-    greenLed::high();
+    led1::high();
     VHT& vht=VHT::instance();
     printf("Clock monotonic....\n");
     for(;;)
     {        
-        blueLed::low(); 
+        led2::low(); 
         prec = last;
         #if TIMER_DEBUG ==4
         //precInfo = lastInfo;
         #endif//TIMER_DEBUG
         vht.absoluteWaitTimeoutOrEvent(0); 
-        blueLed::high(); 
+        led2::high(); 
         last = vht.getExtEventTimestamp();
         #if TIMER_DEBUG < 4
         assert(last>prec);
@@ -359,17 +358,17 @@ static void inline generetCasualEvent()
 {
     puts("---------------Test timer VHT generate event----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     for(;;)
     {
-        blueLed::low();
+        led2::low();
         userButton::low();
         unsigned int delay = rand() % 3000 + 1;
         miosix::delayUs(delay);
-        blueLed::high();
+        led2::high();
         userButton::high();
         miosix::delayUs(10);
     }
@@ -380,10 +379,10 @@ static void inline testVhtTriggerEvent()
 {
     puts("---------------Test timer VHT trigger event----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::INPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::INPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     Timer& vht=VHT::instance();
     vht.setValue(0); //mezzo secondo 
     printf("Timestamp:  %016llX\n",vht.getValue());
@@ -401,10 +400,10 @@ static void inline testVhtWaitTriggerEvent()
 {
     puts("---------------Test timer VHT wait trigger event----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::INPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::INPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     Timer& vht=VHT::instance();
     vht.setValue(0); //mezzo secondo 
     printf("Timestamp:  %016llX\n",vht.getValue());
@@ -423,10 +422,10 @@ static void inline testVhtTriggerEventOscilloscope()
 {
     puts("---------------Test timer VHT trigger event----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::INPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::INPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     Timer& vht=VHT::instance();
     vht.setValue(0); //mezzo secondo 
     printf("Timestamp:  %016llX\n",vht.getValue());
@@ -442,8 +441,8 @@ static void inline testOutputCompare()
 {
     puts("---------------Test timer VHT output compare----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::INPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::INPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
      typedef miosix::Gpio<GPIOB_BASE,1> trigger;
      trigger::mode(miosix::Mode::ALTERNATE);
@@ -473,7 +472,7 @@ static void inline testOutputCompare()
     NVIC_ClearPendingIRQ(TIM3_IRQn);
     NVIC_EnableIRQ(TIM3_IRQn);
     
-    greenLed::high(); 
+    led1::high(); 
     for(;;)
     {
         miosix::delayMs(1000);
@@ -485,10 +484,10 @@ static void inline testMeasureDriftRtcVHT()
 {
     puts("---------------Test timer drift rtc-vht----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::INPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::INPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     Timer& vht=VHT::instance();
     Timer& rtc=Rtc::instance();
     
@@ -514,10 +513,10 @@ static void inline testOutputCompareDelay()
 {
     puts("---------------Test timer output compare delay----------------");
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::INPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::INPUT);
+    led1::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::OUTPUT);
-    greenLed::high();
+    led1::high();
     Timer& vht=VHT::instance();
     
     int i=1;

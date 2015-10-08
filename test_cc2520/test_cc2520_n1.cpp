@@ -8,14 +8,12 @@
 #include <cstdio>
 #include <miosix.h>
 #include "../drivers/cc2520.h"
+#include "../drivers/leds.h"
 #include "test_config.h"
 
 using namespace std;
 using namespace miosix;
 
-
-typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
-typedef miosix::Gpio<GPIOC_BASE,9> greenLed;
 typedef miosix::Gpio<GPIOA_BASE,0> userButton;
 typedef miosix::Gpio<GPIOB_BASE,0> rx_irq;
 
@@ -25,8 +23,6 @@ typedef miosix::Gpio<GPIOB_BASE,0> rx_irq;
 int main(int argc, char** argv) {
 
     lowPowerSetup();
-    blueLed::mode(miosix::Mode::OUTPUT);
-    greenLed::mode(miosix::Mode::OUTPUT);
     userButton::mode(miosix::Mode::INPUT);
     rx_irq::mode(miosix::Mode::INPUT);
 
@@ -40,18 +36,18 @@ int main(int argc, char** argv) {
     cc2520.setMode(Cc2520::RX);
     cc2520.setAutoFCS(true);
     
-    greenLed::high();
-    blueLed::low();
+    led1::high();
+    led2::low();
     for(;;)
     {
         //printf("Result isRxFrameDone: %d\n",cc2520.isRxFrameDone());
         if(cc2520.isRxFrameDone()==1)
         {
-            blueLed::high();
+            led2::high();
             unsigned char len =1;
             printf("readFrame ret: %d\n",cc2520.readFrame(len,packet));
             printf("Ho ricevuto: %x\n",*packet);
-            blueLed::low(); 
+            led2::low(); 
         }
      }
 }

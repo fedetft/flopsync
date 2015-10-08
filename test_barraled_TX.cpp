@@ -16,12 +16,11 @@
 #include "drivers/SPI.h"
 #include "drivers/BarraLed.h"
 #include "drivers/fast_trigger.h"
+#include "drivers/leds.h"
 
 using namespace std;
 // using namespace miosix;
 
-typedef miosix::Gpio<GPIOC_BASE,8> blueLed;
-typedef miosix::Gpio<GPIOC_BASE,9> greenLed;
 typedef miosix::Gpio<GPIOB_BASE,0> rx_irq;
 typedef miosix::Gpio<GPIOB_BASE,9> trigger_1;
 
@@ -67,7 +66,7 @@ void sendBarraLed(Cc2520& cc2520_1, Cc2520& cc2520_2, Cc2520& cc2520_3,
     
     for(int i=0;i<40;i++)
     {
-        greenLed::high();
+        led1::high();
         
         switch(power)
         {
@@ -139,7 +138,7 @@ void sendBarraLed(Cc2520& cc2520_1, Cc2520& cc2520_2, Cc2520& cc2520_3,
         cc2520_2.isSFDRaised();
         if(power>0) cc2520_3.isSFDRaised();
         
-        greenLed::low();
+        led1::low();
         miosix::Thread::sleep(500);
     }
     delete pkt_1;
@@ -149,8 +148,8 @@ void sendBarraLed(Cc2520& cc2520_1, Cc2520& cc2520_2, Cc2520& cc2520_3,
 
 int main(int argc, char** argv)
 {
-    greenLed::mode(miosix::Mode::OUTPUT);
-    blueLed::mode(miosix::Mode::OUTPUT);
+    led1::mode(miosix::Mode::OUTPUT);
+    led2::mode(miosix::Mode::OUTPUT);
 
     trigger_1::mode(miosix::Mode::OUTPUT);
     trigger_1::low();
