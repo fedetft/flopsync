@@ -257,7 +257,7 @@ private:
 };
 
 //FIXME: implement VHT for other boards
-#ifdef _BOARD_STM3220G_EVAL
+#ifdef _BOARD_STM32VLDISCOVERY
 
 /**
  * Virtual high resolution timer. 
@@ -416,7 +416,7 @@ private:
     bool autoSync;
 };
 
-#endif //_BOARD_STM3220G_EVAL
+#endif //_BOARD_STM32VLDISCOVERY
 
 struct typeVecInt{
     

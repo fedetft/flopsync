@@ -33,7 +33,7 @@
 using namespace miosix;
 
 //FIXME: implement VHT for other boards
-#ifdef _BOARD_STM3220G_EVAL
+#ifdef _BOARD_STM32VLDISCOVERY
 
 #define delay_oc 5 //the OCREF go hight 5 tick after real time
 
