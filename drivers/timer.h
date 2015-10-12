@@ -63,6 +63,11 @@ struct typeTimer
 };
 #endif //TIMER_DEUB
 
+#ifdef _BOARD_STM32VLDISCOVERY
+typedef void (*pinirq)();
+pinirq IRQreplaceExtiIrq(pinirq newirq);
+#endif //_BOARD_STM32VLDISCOVERY
+
 class Timer
 {
 public:

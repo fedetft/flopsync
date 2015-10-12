@@ -106,41 +106,55 @@ void __attribute__((used)) RTChandlerImpl()
     rtcWaiting=0;
 }
 
-//Commented because EXTI9_5_IRQHandler() is implemented also in the cc2520.
-//I can not implement the same Handler in two classes.
+static void defaultIrq()
+{
+     //Get a timestamp of the event
+    unsigned int a,b;
+    do {
+        a=RTC->CNTL;
+        b=RTC->CNTH;
+    } while(a!=RTC->CNTL); //Ensure no updates in the middle
+    timestampEvent=getRTC64bit(a|b<<16);
+    
+    EXTI->PR=EXTI_PR_PR8;
+    EXTI->IMR &= ~EXTI_IMR_MR8;
+    EXTI->RTSR &= ~EXTI_RTSR_TR8;
+    rtcInt.event=true;
+    if(!rtcWaiting) return;
+    rtcWaiting->IRQwakeup();
+	  if(rtcWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+		Scheduler::IRQfindNextThread();
+    rtcWaiting=0;
+}
+
+static volatile pinirq irqHandler=defaultIrq;
+
+pinirq IRQreplaceExtiIrq(pinirq newirq)
+{
+    pinirq result=irqHandler;
+    irqHandler=newirq;
+    return result;
+}
+
 /**
  * EXTI9_5 is connected to PB8, this for SFD, FRM_DONE interrupt
  */
-//void __attribute__((naked)) EXTI9_5_IRQHandler()
-//{
-//	saveContext();
-//	asm volatile("bl _Z19eventIrqhandlerImplv");
-//	restoreContext();
-//}
+void __attribute__((naked)) EXTI9_5_IRQHandler()
+{
+	saveContext();
+	asm volatile("bl _Z19eventIrqhandlerImplv");
+	restoreContext();
+}
 
 /**
  * Interrupt SFD, FRM_DONE actual implementation
  */
-//void __attribute__((used)) eventIrqhandlerImpl()
-//{
-//     //Get a timestamp of the event
-//    unsigned int a,b;
-//    do {
-//        a=RTC->CNTL;
-//        b=RTC->CNTH;
-//    } while(a!=RTC->CNTL); //Ensure no updates in the middle
-//    timestampEvent=getRTC64bit(a|b<<16);
-//    
-//    EXTI->PR=EXTI_PR_PR8;
-//    EXTI->IMR &= ~EXTI_IMR_MR8;
-//    EXTI->RTSR &= ~EXTI_RTSR_TR8;
-//    rtcInt.event=true;
-//    if(!rtcWaiting) return;
-//    rtcWaiting->IRQwakeup();
-//	  if(rtcWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
-//		Scheduler::IRQfindNextThread();
-//    rtcWaiting=0;
-//}
+void __attribute__((used)) eventIrqhandlerImpl()
+{
+    irqHandler();
+}
+
+//EXTI9_5_IRQHandler() is needed also in the cc2520.
 
 
 /**

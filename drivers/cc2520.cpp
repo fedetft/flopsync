@@ -40,15 +40,16 @@ static volatile bool xoscInterrupt=false;
 
 #ifdef _BOARD_STM32VLDISCOVERY
 
-/**
- * EXTI9_5 is connected to the so(PA6) of spi pin, this for irq xosc start
- */
-void __attribute__((naked)) EXTI9_5_IRQHandler()
-{
-	saveContext();
-	asm volatile("bl _Z18xoscIrqhandlerImplv");
-	restoreContext();
-}
+//Can't simply declare this, as it's also used in the timer
+///**
+// * EXTI9_5 is connected to the so(PA6) of spi pin, this for irq xosc start
+// */
+//void __attribute__((naked)) EXTI9_5_IRQHandler()
+//{
+//	saveContext();
+//	asm volatile("bl _Z18xoscIrqhandlerImplv");
+//	restoreContext();
+//}
 
 #elif defined(_BOARD_POLINODE)
 
@@ -867,6 +868,7 @@ void Cc2520::wait()
     EXTI->IMR |= EXTI_IMR_MR6;
     EXTI->RTSR |= EXTI_RTSR_TR6;
     EXTI->PR=EXTI_PR_PR6; //Clear eventual pending IRQ
+    pinirq saved=IRQreplaceExtiIrq(xoscIrqhandlerImpl);
     #elif defined(_BOARD_POLINODE)
     GPIO->INSENSE |= 1<<0;
     GPIO->EXTIPSELL &= ~(0x7<<4);
@@ -890,6 +892,7 @@ void Cc2520::wait()
         }
     }
     #ifdef _BOARD_STM32VLDISCOVERY
+    IRQreplaceExtiIrq(saved);
     EXTI->IMR &= ~EXTI_IMR_MR6;
     EXTI->RTSR &= ~EXTI_RTSR_TR6;
     #elif defined(_BOARD_POLINODE)
