@@ -69,11 +69,8 @@ void __attribute__((used)) xoscIrqhandlerImpl()
      //Disable interrupt, not just pending bit
     #ifdef _BOARD_STM32VLDISCOVERY
     EXTI->PR=EXTI_PR_PR6;
-    EXTI->IMR &= ~EXTI_IMR_MR6;
-    EXTI->RTSR &= ~EXTI_RTSR_TR6;
     #elif defined(_BOARD_POLINODE)
     GPIO->IFC = 1<<1;
-    GPIO->IEN &= ~(1<<1);
     #endif
 
     xoscInterrupt=true;
@@ -875,17 +872,27 @@ void Cc2520::wait()
     GPIO->EXTIPSELL &= ~(0x7<<4);
     GPIO->EXTIPSELL |= (0x3<<4);
     GPIO->EXTIRISE |= 1<<1;
+    GPIO->IFC = 1<<1; //Clear eventual pending IRQ
     GPIO->IEN |= 1<<1;
     #endif
 
-    xoscInterrupt=false;
-    while(!xoscInterrupt)
+    if(cc2520::miso::value()==0)
     {
-        waiting=Thread::IRQgetCurrentThread();
-        Thread::IRQwait();
+        xoscInterrupt=false;
+        while(!xoscInterrupt)
         {
-            FastInterruptEnableLock eLock(dLock);
-            Thread::yield();
+            waiting=Thread::IRQgetCurrentThread();
+            Thread::IRQwait();
+            {
+                FastInterruptEnableLock eLock(dLock);
+                Thread::yield();
+            }
         }
     }
+    #ifdef _BOARD_STM32VLDISCOVERY
+    EXTI->IMR &= ~EXTI_IMR_MR6;
+    EXTI->RTSR &= ~EXTI_RTSR_TR6;
+    #elif defined(_BOARD_POLINODE)
+    GPIO->IEN &= ~(1<<1);
+    #endif
 }

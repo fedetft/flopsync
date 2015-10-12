@@ -113,7 +113,7 @@ const unsigned char controller=1; //@@ Filled in by mkpackage.pl
 const unsigned long long nominalPeriod=static_cast<unsigned long long>(60*hz+0.5f); //@@ Filled in by mkpackage.pl
 
 //Sync window (fixed window), or maximum sync window (dynamic window)
-const unsigned long long w=static_cast<unsigned long long>(0.005f*hz+0.5f);
+const unsigned long long w=static_cast<unsigned long long>(0.006f*hz+0.5f);
 
 //Minimum sync window (dynamic window only)
 #ifndef USE_VHT

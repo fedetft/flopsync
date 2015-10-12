@@ -26,7 +26,7 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
 #include "flooder_root_node.h"
-
+#include "../drivers/leds.h"
 #include "critical_section.h"
 #include <cassert>
 
@@ -80,7 +80,7 @@ bool FlooderRootNode::synchronize()
     #if FLOPSYNC_DEBUG  >0
     assert(timer.getValue()<frameStart-txTurnaroundTime-trasmissionTime);
     #endif//FLOPSYNC_DEBUG
-    miosix::ledOn();
+    led1::high();
     timer.absoluteWaitTrigger(frameStart-txTurnaroundTime-trasmissionTime);
     timer.absoluteWaitTimeoutOrEvent(frameStart-trasmissionTime+preambleFrameTime+delaySendPacketTime);
     transceiver.isSFDRaised();
@@ -89,7 +89,7 @@ bool FlooderRootNode::synchronize()
     
     transceiver.setMode(Cc2520::DEEP_SLEEP);
     wakeupTime+=nominalPeriod;
-    miosix::ledOff(); //Falling edge signals synchronization packet sent
+    led1::low(); //Falling edge signals synchronization packet sent
     
     return false; //Root node does not desynchronize
 }
@@ -123,9 +123,9 @@ bool FlooderRootNode::synchronize()
     #if FLOPSYNC_DEBUG  >0
     assert(timer.getValue()<frameStart);
     #endif//FLOPSYNC_DEBUG
-    miosix::ledOn();
+    led1::high();
     timer.absoluteWaitTrigger(frameStart);
-    miosix::ledOff(); //Falling edge signals synchronization packet sent
+    led1::low(); //Falling edge signals synchronization packet sent
     wakeupTime+=nominalPeriod;
     return false; //Root node does not desynchronize
 }

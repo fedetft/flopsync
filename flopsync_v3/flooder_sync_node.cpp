@@ -26,6 +26,7 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
 #include "flooder_sync_node.h"
+#include "../drivers/leds.h"
 #include <cassert>
 #include "critical_section.h"
 #include <cstdio>
@@ -72,7 +73,7 @@ bool FlooderSyncNode::synchronize()
     timer.absoluteWait(computedFrameStart-rxTurnaroundTime-receiverWindow);
     transceiver.setMode(Cc2520::RX);
     bool timeout;
-    miosix::ledOn();
+    led1::high();
     for(;;)
     {
         
@@ -82,7 +83,7 @@ bool FlooderSyncNode::synchronize()
         //and absoluteWaitTimeoutOrEvent() than we are going in timeout.
         timeout = timer.absoluteWaitTimeoutOrEvent(computedFrameStart+receiverWindow+preambleFrameTime);
         measuredFrameStart=timer.getExtEventTimestamp()-preambleFrameTime;
-        miosix::ledOff();
+        led1::low();
         if(timeout) break;
         
         
@@ -129,7 +130,7 @@ bool FlooderSyncNode::synchronize()
         delete syncFrame;
         transceiver.flushRxFifoBuffer();
         transceiver.flushRxFifoBuffer();
-        miosix::ledOn();
+        led1::high();
     }
 
     if(!timeout)
@@ -163,12 +164,12 @@ bool FlooderSyncNode::synchronize()
         probe_pin15::low();
         #endif//FLOPSYNC_DEBUG
         timer.absoluteWaitTrigger(rebreoadcastStart-txTurnaroundTime-trasmissionTime);
-        miosix::ledOn();
+        led1::high();
         timer.absoluteWaitTimeoutOrEvent(rebreoadcastStart-trasmissionTime+preambleFrameTime+delaySendPacketTime);
         transceiver.isSFDRaised();
         timer.absoluteWaitTimeoutOrEvent(rebreoadcastStart-trasmissionTime+frameTime+delaySendPacketTime);
         transceiver.isTxFrameDone();
-        miosix::ledOff();
+        led1::low();
         #endif //MULTI_HOP
         delete syncFrame;
     }
@@ -218,7 +219,7 @@ void FlooderSyncNode::resynchronize()
     transceiver.setAutoFCS(true);
     #endif //SEND_TIMESTAMPS
     transceiver.setMode(Cc2520::RX);
-    miosix::ledOn();
+    led1::high();
     for(;;)
     {
         //this is very important to prevent the pin of sfd and frm done is 
@@ -271,7 +272,7 @@ void FlooderSyncNode::resynchronize()
         }
         delete syncFrame;
     }
-    miosix::ledOff();
+    led1::low();
     transceiver.setMode(Cc2520::DEEP_SLEEP);
     delete syncFrame;
     clockCorrection=0;
@@ -317,14 +318,14 @@ bool FlooderSyncNode::synchronize()
     #endif//FLOPSYNC_DEBUG
     timer.absoluteSleep(wakeupTime);
     bool timeout;
-    miosix::ledOn();
+    led1::high();
     for(;;)
     {
         timeout = timer.absoluteWaitTimeoutOrEvent(computedFrameStart+receiverWindow);
         measuredFrameStart=timer.getExtEventTimestamp();
-        miosix::ledOff();
+        led1::low();
         break;
-        miosix::ledOn();
+        led1::high();
     }
 
     
@@ -363,7 +364,7 @@ void FlooderSyncNode::resynchronize()
     puts("Resynchronize...");
     #endif//FLOPSYNC_DEBUG
     synchronizer.reset();
-    miosix::ledOn();
+    led1::high();
     for(;;)
     {
         timer.absoluteWaitTimeoutOrEvent(0);
@@ -372,7 +373,7 @@ void FlooderSyncNode::resynchronize()
         computedFrameStart=measuredFrameStart;    
         break;
     }
-    miosix::ledOff();
+    led1::low();
     clockCorrection=0;
     receiverWindow=w;
     missPackets=0;
