@@ -114,7 +114,9 @@ namespace cc2520 {
     typedef miosix::transceiver::gpio1  fifo_irq; //GPIO1
     typedef miosix::transceiver::gpio2  fifop_irq; //GPIO2
     typedef miosix::transceiver::excChB exc_channelB; //GPIO3
+    #if WANDSTEM_HW_REV<13
     typedef miosix::transceiver::gpio4  sfd; //GPIO4
+    #endif
     typedef miosix::internalSpi::sck    sck;
     typedef miosix::internalSpi::miso   miso;
     typedef miosix::internalSpi::mosi   mosi;
@@ -131,7 +133,9 @@ static inline void cc2520GpioInit() {
         //mosi, miso, sck, cs already configured by bsp
         cc2520::fifo_irq::mode(miosix::Mode::INPUT);
         cc2520::fifop_irq::mode(miosix::Mode::INPUT);
+        #if WANDSTEM_HW_REV<13
         cc2520::sfd::mode(miosix::Mode::INPUT);
+        #endif
         
         cc2520::exc_channelB::mode(miosix::Mode::INPUT);
         cc2520::vreg::mode(miosix::Mode::OUTPUT_LOW);

@@ -1202,6 +1202,12 @@ void Rtc::absoluteSleep(unsigned long long value)
     {        
         {
             FastInterruptDisableLock dLock;
+
+            //Save SPI status and disable it as otherwise MOSI may remain
+            //high and cause the flash to draw excessive current
+            unsigned int temp=USART1->ROUTE;
+            USART1->ROUTE=0;
+
             SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
             EMU->CTRL=0;
             for(;;)
@@ -1229,6 +1235,9 @@ void Rtc::absoluteSleep(unsigned long long value)
                 }
             }
             SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
+
+            //Restore SPI status
+            USART1->ROUTE=temp;
         }
     }
     
