@@ -66,22 +66,34 @@ void IRQbspInit()
     loopback32KHzIn::mode(Mode::INPUT);
     loopback32KHzOut::mode(Mode::OUTPUT);
     
+    #if WANDSTEM_HW_REV>=13
+    voltageSelect::mode(Mode::OUTPUT_LOW); //Default VDD=2.3V
+    #endif
+    
     internalSpi::mosi::mode(Mode::OUTPUT_LOW);
-    internalSpi::miso::mode(Mode::INPUT_PULL_DOWN); //To avoid floating
+    internalSpi::miso::mode(Mode::INPUT_PULL_DOWN);   //To prevent it floating
     internalSpi::sck::mode(Mode::OUTPUT_LOW);
     
-    transceiver::cs::mode(Mode::OUTPUT_HIGH);
+    transceiver::cs::mode(Mode::OUTPUT_LOW);
     transceiver::reset::mode(Mode::OUTPUT_LOW);
     transceiver::vregEn::mode(Mode::OUTPUT_LOW);
-    transceiver::gpio1::mode(Mode::OUTPUT_LOW);
-    transceiver::gpio1::mode(Mode::OUTPUT_LOW);
-    transceiver::gpio2::mode(Mode::OUTPUT_LOW);
-    transceiver::excChB::mode(Mode::OUTPUT_LOW);
-    transceiver::gpio4::mode(Mode::OUTPUT_LOW);
+    transceiver::gpio1::mode(Mode::INPUT_PULL_DOWN);  //To prevent it floating
+    transceiver::gpio2::mode(Mode::INPUT_PULL_DOWN);  //To prevent it floating
+    transceiver::excChB::mode(Mode::INPUT_PULL_DOWN); //To prevent it floating
+    #if WANDSTEM_HW_REV<13
+    transceiver::gpio4::mode(Mode::INPUT_PULL_DOWN);  //To prevent it floating
+    #endif
     transceiver::stxon::mode(Mode::OUTPUT_LOW);
     
-    flash::cs::mode(Mode::OUTPUT_HIGH);
-    flash::hold::mode(Mode::OUTPUT_HIGH);
+    #if WANDSTEM_HW_REV>10
+    //Flash is gated, keeping low prevents current from flowing in gated domain
+    flash::cs::mode(Mode::OUTPUT_LOW);
+    flash::hold::mode(Mode::OUTPUT_LOW);
+    #else
+    //Flash not power gated in earlier boards
+    flash::cs::mode(Mode::OUTPUT_LOW);
+    flash::hold::mode(Mode::OUTPUT_LOW);
+    #endif
     
     currentSense::enable::mode(Mode::OUTPUT_LOW);
     //currentSense sense pin remains disabled as it is an analog channel
@@ -90,15 +102,25 @@ void IRQbspInit()
     // Setup clocks, as when we get here we're still running with HFRCO
     //
 
+    //HFXO startup time seems slightly dependent on supply voltage, with
+    //higher voltage resulting in longer startup time (changes by a few us at
+    //most). Also, HFXOBOOST greatly affects startup time, as shown in the
+    //following table
+    //BOOST sample#1  sample#2
+    //100%    94us     100us
+    // 80%   104us     111us
+    // 70%   117us     125us
+    // 50%   205us     223us
+
     //Configure oscillator parameters for HFXO and LFXO
     unsigned int dontChange=CMU->CTRL & CMU_CTRL_LFXOBUFCUR;
     CMU->CTRL=CMU_CTRL_HFLE                  //We run at a frequency > 32MHz
-            | CMU_CTRL_CLKOUTSEL1_LFXOQ      //For when we will enable clock out
-            | CMU_CTRL_LFXOTIMEOUT_32KCYCLES //Long timeout for LFXO startup
-            | CMU_CTRL_HFXOTIMEOUT_1KCYCLES  //Small timeout for HFXO startup...
-            | CMU_CTRL_HFXOGLITCHDETEN       //...but restart if any glitch
+            | CMU_CTRL_CLKOUTSEL1_LFXOQ      //Used for the 32KHz loopback
+            | CMU_CTRL_LFXOTIMEOUT_16KCYCLES //16K cyc timeout for LFXO startup
+            | CMU_CTRL_LFXOBOOST_70PCENT     //Use recomended value
+            | CMU_CTRL_HFXOTIMEOUT_1KCYCLES  //1K cyc timeout for HFXO startup
             | CMU_CTRL_HFXOBUFCUR_BOOSTABOVE32MHZ //We run at a freq > 32MHz
-            | CMU_CTRL_HFXOBOOST_100PCENT    //Maximum startup boost current
+            | CMU_CTRL_HFXOBOOST_70PCENT     //We want a startup time >=100us
             | dontChange;                    //Don't change some of the bits
             
     //Start HFXO and LFXO.
