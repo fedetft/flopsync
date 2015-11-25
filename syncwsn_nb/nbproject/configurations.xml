@@ -13,6 +13,7 @@
         <in>cc2520_config.h</in>
         <in>frame.cpp</in>
         <in>frame.h</in>
+        <in>leds.h</in>
         <in>temperature.cpp</in>
         <in>temperature.h</in>
         <in>timer.cpp</in>
@@ -463,13 +464,10 @@
         <in>miosix.h</in>
       </df>
       <in>board_setup.h</in>
-      <in>fast_trigger.h</in>
       <in>flopsync_RTT_master.cpp</in>
       <in>flopsync_RTT_slave.cpp</in>
       <in>flopsync_dynamic_comb.cpp</in>
       <in>flopsync_rootnode_comb.cpp</in>
-      <in>gh.h</in>
-      <in>prova.cpp</in>
       <in>test_barraled_RX.cpp</in>
       <in>test_barraled_TX.cpp</in>
     </df>
@@ -539,6 +537,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/arm7_lpc2000/common/arch_settings.h"
             ex="false"
             tool="3"
@@ -1269,6 +1269,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/arm7_lpc2000/lpc2138_miosix_board/interfaces-impl/bsp.cpp"
             ex="false"
             tool="1"
@@ -1793,6 +1795,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Source/Templates/system_stm32f10x.c"
             ex="false"
             tool="0"
@@ -2390,6 +2394,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Source/Templates/system_stm32f10x.c"
             ex="false"
             tool="0"
@@ -3011,6 +3017,8 @@
       </item>
       <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../drivers/temperature.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/temperature.h" ex="false" tool="3" flavor2="0">
@@ -3018,8 +3026,6 @@
       <item path="../drivers/timer.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../drivers/timer.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../fast_trigger.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../flopsync_RTT_master.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -3146,8 +3152,6 @@
       <item path="../flopsync_v3/synchronizer.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../flopsync_v3/synchronizer.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="../gh.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Source/Templates/system_stm32f10x.c"
             ex="false"
@@ -3415,8 +3419,6 @@
           </incDir>
         </ccTool>
       </item>
-      <item path="../prova.cpp" ex="false" tool="1" flavor2="0">
-      </item>
       <item path="../test_barraled_RX.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../test_barraled_TX.cpp" ex="false" tool="1" flavor2="0">
@@ -3604,6 +3606,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Source/Templates/system_stm32f10x.c"
             ex="false"
             tool="0"
@@ -4204,6 +4208,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Source/Templates/system_stm32f10x.c"
             ex="false"
             tool="0"
@@ -4806,6 +4812,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c"
             ex="false"
             tool="0"
@@ -5417,6 +5425,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F2xx/Source/Templates/system_stm32f2xx.c"
             ex="false"
             tool="0"
@@ -6027,6 +6037,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F2xx/Source/Templates/system_stm32f2xx.c"
             ex="false"
             tool="0"
@@ -6637,6 +6649,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F2xx/Source/Templates/system_stm32f2xx.c"
             ex="false"
             tool="0"
@@ -7086,6 +7100,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32L1xx/Source/Templates/system_stm32l1xx.c"
             ex="false"
             tool="0"
@@ -7550,6 +7566,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c"
             ex="false"
             tool="0"
@@ -8161,6 +8179,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F2xx/Source/Templates/system_stm32f2xx.c"
             ex="false"
             tool="0"
@@ -8625,6 +8645,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c"
             ex="false"
             tool="0"
@@ -9271,6 +9293,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Source/Templates/system_stm32f10x.c"
             ex="false"
             tool="0"
@@ -9740,6 +9764,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Source/Templates/system_stm32f10x.c"
             ex="false"
             tool="0"
@@ -10208,6 +10234,8 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c"
             ex="false"
             tool="0"
@@ -10838,6 +10866,617 @@
             <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm4/hardfp/fpv4/bits</pElem>
             <pElem>../miosix/arch/common/CMSIS/Include</pElem>
             <pElem>../miosix/arch/cortexM4_stm32f4/common/interfaces-impl</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="0/miosix/util">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/util</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+    </conf>
+    <conf name="efm32gg332_polinode" type="0">
+      <toolsSet>
+        <compilerSet>ARM_MIOSIX_EABI|GNU</compilerSet>
+        <dependencyChecking>false</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <codeAssistance>
+      </codeAssistance>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>..</buildCommandWorkingDir>
+          <buildCommand>${MAKE} -f Makefile</buildCommand>
+          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
+          <executablePath>../main.elf</executablePath>
+          <cTool>
+            <preprocessorList>
+              <Elem>COMPILING_MIOSIX</Elem>
+              <Elem>EFM32GG332F1024</Elem>
+              <Elem>PARSING_FROM_IDE</Elem>
+              <Elem>_ARCH_CORTEXM3_EFM32GG</Elem>
+              <Elem>_BOARD_POLINODE</Elem>
+            </preprocessorList>
+          </cTool>
+          <ccTool>
+            <preprocessorList>
+              <Elem>COMPILING_MIOSIX</Elem>
+              <Elem>EFM32GG332F1024</Elem>
+              <Elem>PARSING_FROM_IDE</Elem>
+              <Elem>_ARCH_CORTEXM3_EFM32GG</Elem>
+              <Elem>_BOARD_POLINODE</Elem>
+            </preprocessorList>
+          </ccTool>
+        </makeTool>
+      </makefileType>
+      <item path="../board_setup.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/BarraLed.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/BarraLed.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/HW_mapping.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/SPI.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/SPI.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/cc2520_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/frame.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/frame.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/leds.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/temperature.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/temperature.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../drivers/timer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../drivers/timer.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_RTT_master.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_RTT_slave.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_dynamic_comb.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_rootnode_comb.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/controller_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/controller_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/critical_section.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/critical_section.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/dummy_synchronizer.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/dummy_synchronizer.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/dummy_synchronizer2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/dummy_synchronizer2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/fbs.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/fbs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/flooder_root_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/flooder_root_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/flooder_sync_node.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/flooder_sync_node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/flooding_scheme.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/flooding_scheme.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/flopsync2.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/flopsync2.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/ftsp.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/ftsp.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/monotonic_clock.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/monotonic_clock.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/non_monotonic_clock.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/non_monotonic_clock.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/optimized_ramp_flopsync.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/optimized_ramp_flopsync.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/optimized_ramp_flopsync2.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/optimized_ramp_flopsync2.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/protocol_constants.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../flopsync_v3/rtt_estimator.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/rtt_estimator.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/synchronizer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../flopsync_v3/synchronizer.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Source/Templates/system_stm32f10x.c"
+            ex="false"
+            tool="0"
+            flavor2="2">
+      </item>
+      <item path="../miosix/arch/common/core/interrupts_cortexMx.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../miosix/arch/common/drivers/serial_stm32.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../miosix/arch/cortexM3_stm32/common/interfaces-impl/delays.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/arch/cortexM3_stm32/common/interfaces-impl/portability.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/kernel/scheduler</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Include</pElem>
+            <pElem>../miosix/kernel/scheduler/priority</pElem>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/stdlib_integration</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix</pElem>
+            <pElem>../miosix/arch/common</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery/core/stage_1_boot.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery/interfaces-impl/bsp.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../miosix/filesystem/console/console_device.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../miosix/filesystem/devfs/devfs.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../miosix/filesystem/file.cpp" ex="false" tool="1" flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/filesystem</pElem>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/filesystem/file_access.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/filesystem</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>../miosix/filesystem/mountpointfs</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix/filesystem/devfs</pElem>
+            <pElem>../miosix/filesystem/console</pElem>
+            <pElem>../miosix/filesystem/fat32</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/filesystem/stringpart.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/filesystem</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/kernel/error.cpp" ex="false" tool="1" flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>../miosix/filesystem/console</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/kernel/kernel.cpp" ex="false" tool="1" flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>../miosix/kernel/scheduler</pElem>
+            <pElem>../miosix/kernel/scheduler/priority</pElem>
+            <pElem>../miosix/stdlib_integration</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/kernel/pthread.cpp" ex="false" tool="1" flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/kernel/scheduler/priority</pElem>
+            <pElem>../miosix/stdlib_integration</pElem>
+            <pElem>../miosix/kernel/scheduler</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/kernel/scheduler/priority/priority_scheduler.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../miosix/kernel/stage_2_boot.cpp" ex="false" tool="1" flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix/filesystem/console</pElem>
+            <pElem>../miosix/util</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/stdlib_integration/libc_integration.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/stdlib_integration</pElem>
+            <pElem>../miosix/filesystem</pElem>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/kernel/scheduler/priority</pElem>
+            <pElem>../miosix/kernel/scheduler</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/stdlib_integration/libstdcpp_integration.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/stdlib_integration</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>../miosix/kernel/scheduler/priority</pElem>
+            <pElem>../miosix/kernel/scheduler</pElem>
+            <pElem>../miosix/filesystem/console</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/util/util.cpp" ex="false" tool="1" flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>../miosix/stdlib_integration</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../miosix/util/version.cpp" ex="false" tool="1" flavor2="0">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../test_barraled_RX.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../test_barraled_TX.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <folder path="0/miosix/arch/common/core">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/arch/common/core</pElem>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/filesystem/console</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="0/miosix/arch/common/drivers">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/arch/common/drivers</pElem>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>../miosix/filesystem/devfs</pElem>
+            <pElem>../miosix/kernel/scheduler</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/kernel/scheduler/priority</pElem>
+            <pElem>../miosix/stdlib_integration</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>../miosix/filesystem</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix</pElem>
+            <pElem>../miosix/arch/common</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="0/miosix/arch/cortexM3_stm32/common">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="0/miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery/core">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery/core</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Include</pElem>
+            <pElem>../miosix/arch/common/core</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="0/miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery/interfaces-impl">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery/interfaces-impl</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/filesystem</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Device/ST/STM32F10x/Include</pElem>
+            <pElem>../miosix/filesystem/console</pElem>
+            <pElem>../miosix/arch/common/drivers</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix</pElem>
+            <pElem>../miosix/arch/common</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="0/miosix/filesystem/console">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/filesystem/console</pElem>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>../miosix/filesystem/devfs</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/kernel/scheduler/priority</pElem>
+            <pElem>../miosix/stdlib_integration</pElem>
+            <pElem>../miosix/kernel/scheduler</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="0/miosix/filesystem/devfs">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/filesystem/devfs</pElem>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/filesystem</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/interfaces</pElem>
+            <pElem>../miosix/kernel/scheduler/priority</pElem>
+            <pElem>../miosix/stdlib_integration</pElem>
+            <pElem>../miosix/kernel/scheduler</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>../miosix</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="0/miosix/kernel/scheduler">
+        <ccTool>
+          <incDir>
+            <pElem>../miosix/kernel/scheduler/priority</pElem>
+            <pElem>../miosix/kernel</pElem>
+            <pElem>../miosix/stdlib_integration</pElem>
+            <pElem>../miosix/kernel/scheduler</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/stm32f100rb_stm32vldiscovery</pElem>
+            <pElem>../miosix/config</pElem>
+            <pElem>../miosix/kernel/scheduler/control</pElem>
+            <pElem>/opt/arm-miosix-eabi/arm-miosix-eabi/include/c++/4.7.3/arm-miosix-eabi/thumb/cm3/bits</pElem>
+            <pElem>../miosix/arch/common/CMSIS/Include</pElem>
+            <pElem>../miosix/arch/cortexM3_stm32/common/interfaces-impl</pElem>
             <pElem>../miosix</pElem>
           </incDir>
         </ccTool>

@@ -10,12 +10,7 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/1"/>
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
-        <group>
-            <file>file:/home/fede/Documents/P/Dottorato%20anno%201/control%20design%20of%20sw/syncwsn/syncwsn_code/flopsync/drivers/cc2520.h</file>
-            <file>file:/home/fede/Documents/P/Dottorato%20anno%201/control%20design%20of%20sw/syncwsn/syncwsn_code/flopsync/flopsync_RTT_master.cpp</file>
-            <file>file:/home/fede/Documents/P/Dottorato%20anno%201/control%20design%20of%20sw/syncwsn/syncwsn_code/flopsync/drivers/cc2520.cpp</file>
-            <file>file:/home/fede/Documents/P/Dottorato%20anno%201/control%20design%20of%20sw/syncwsn/syncwsn_code/flopsync/flopsync_RTT_slave.cpp</file>
-        </group>
+        <group/>
     </open-files>
     <preferences xmlns="http://www.netbeans.org/ns/auxiliary-configuration-preferences/1">
         <module name="org-netbeans-modules-cnd-discovery">

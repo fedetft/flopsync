@@ -86,6 +86,10 @@
                     <name>stm32f429zi_oledboard2</name>
                     <type>0</type>
                 </confElem>
+                <confElem>
+                    <name>efm32gg332_polinode</name>
+                    <type>0</type>
+                </confElem>
             </confList>
             <formatting>
                 <project-formatting-style>false</project-formatting-style>
