@@ -1001,6 +1001,12 @@ static unsigned long long swCounter=0;     ///< RTC software counter
 static unsigned int lastHwCounter=0;       ///< variable for evaluate overflow
 //static unsigned long long vhtWakeupWait=0;
 
+/* Because the timers have only three compare channels, we 
+ * use this variable in the same way rtcTriggerEnable is used 
+ * in the RTC driver */
+
+static volatile bool vhtTriggerEnable = false;
+
 typedef miosix::transceiver::stxon trigger;
 //typedef miosix::loopback32KHzOut   resyncVHTout;
 //typedef miosix::loopback32KHzIn    resyncVHTin;
@@ -1032,6 +1038,12 @@ void __attribute__((naked)) RTC_IRQHandler()
  */
 void __attribute__((used)) RTChandlerImpl()
 {
+    if((RTC->IF & RTC_IF_COMP1) && (RTC->IEN & RTC_IEN_COMP1))
+    {
+        RTC->IFC = RTC_IFC_COMP1;
+        //here enable timer 2 input capture
+    }
+    
     if(rtcTriggerEnable)
     {
         trigger::high();
@@ -1281,6 +1293,118 @@ Rtc::Rtc()
 // class VHT
 //
 
-//TODO: implement me
+VHT& VHT::instance()
+{
+    static VHT timer;
+    return timer;
+}
+
+unsigned long long VHT::getValue() const
+{
+    FastInterruptDisableLock dLock;
+    return ((vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0))|TIMER2->CNT)-vhtSyncPointVht+vhtBase+vhtOffset;
+}
+
+void VHT::setValue(unsigned long long value)
+{
+    //We don't actually overwrite the RTC in this case, as the VHT
+    //is a bit complicated, so we translate between the two times at
+    //the boundary of this class.
+    FastInterruptDisableLock dLock;
+    vhtOffset+=value-(((vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0))|TIMER2->CNT)-vhtSyncPointVht+vhtBase+vhtOffset);
+}
+    
+unsigned long long VHT::getExtEventTimestamp() const
+{
+    return timestampEvent;
+}
+
+void VHT::absoluteWait(unsigned long long value)
+{
+    FastInterruptDisableLock dLock;
+    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset;
+    TIMER2->IFC = TIMER_IFC_CC1;    //reset interrupt flag channel 1
+    TIMER2->CC[1].CCV = vhtWakeupWait;     //set match register channel 1
+    TIMER2->IEN |= TIMER_IEN_CC1;   //enable interrupt channel 1
+    //Check that wakeup is not in the past.
+    if(vhtWakeupWait > 
+            ((vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0)) | TIMER2->CNT))
+    {
+        vhtInt.wait=false;
+        while(!vhtInt.wait)
+        {
+            vhtWaiting=Thread::IRQgetCurrentThread();
+            Thread::IRQwait();
+            {
+                FastInterruptEnableLock eLock(dLock);
+                Thread::yield();
+            }
+        }
+    }
+    TIMER2->IEN &= ~TIMER_IEN_CC1;
+    vhtInt.wait=false;
+}
+
+bool VHT::absoluteWaitTimeoutOrEvent(unsigned long long value)
+{
+    bool result=false;
+    FastInterruptDisableLock dLock;
+    if(value!=0)
+    {
+        vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset;
+        TIMER2->IFC = TIMER_IFC_CC0 | TIMER_IFC_CC1;     //Clear interrupts for channels 0 and 1
+        TIMER2->CC[1].CCV = vhtWakeupWait;              //set match register channel 1
+        TIMER2->IEN |= TIMER_IEN_CC0 | TIMER_IEN_CC1;   //enable interrupt for channels 0 and 1
+        
+        bool notInThePast = vhtWakeupWait > ((vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0)) | TIMER2->CNT); //Check that wakeup is not in the past.
+        
+        if(notInThePast)
+        {
+            vhtInt.wait=false;
+            vhtInt.event=false;
+            while(!vhtInt.wait && !vhtInt.event)
+            {
+                vhtWaiting=Thread::IRQgetCurrentThread();
+                Thread::IRQwait();
+                {
+                    FastInterruptEnableLock eLock(dLock);
+                    Thread::yield();
+                }
+            }
+        }
+        TIMER2->IEN &= ~(TIMER_IEN_CC0 | TIMER_IEN_CC1);
+        if(vhtInt.wait && vhtInt.event)
+        {
+            (timestampEvent<=value)? result=false:result=true;
+        }
+        else
+        {
+            result = vhtInt.wait;
+        }
+        vhtInt.wait=false;
+        vhtInt.event=false;
+        
+        if(notInThePast==false) result = true; //Force timeout if time value is in the past
+    }
+    else
+    {
+        TIMER2->IFC = TIMER_IFC_CC0;           //reset interrupt flag channel 0
+        TIMER2->IEN |= TIMER_IEN_CC0;          //Enable interrupt channel 0
+        vhtInt.event=false;
+        while(!vhtInt.event)
+        {
+            vhtWaiting=Thread::IRQgetCurrentThread();
+            Thread::IRQwait();
+            {
+                FastInterruptEnableLock eLock(dLock);
+                Thread::yield();
+            }
+        }
+        TIMER2->IEN &= ~TIMER_IEN_CC0;
+        vhtInt.event=false;
+        return false;
+    }
+    return result;
+}
 
 #endif
