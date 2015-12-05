@@ -160,6 +160,10 @@ public:
 
 /**
  * Manages the 16384Hz hardware timer that runs also in low power mode
+ * 
+ * NOTE: in EFM32GG332F1024 the RTC has two compare channels, used in this way:
+ * -CMP0 -> used for wait and trigger
+ * -CMP1 -> used for VHT resync
  */
 class Rtc : public Timer
 {
@@ -261,8 +265,7 @@ private:
     Rtc();  
 };
 
-//FIXME: implement VHT for other boards
-#ifdef _BOARD_STM32VLDISCOVERY
+// #ifdef _BOARD_STM32VLDISCOVERY
 
 /**
  * Virtual high resolution timer. 
@@ -279,6 +282,12 @@ private:
  * Note:
  * do not use channel 1 or 2 of TIM3 for output compare in non frozen mode because
  * doesn't work.
+ * 
+ * EFM32GG332F1024 function mapping
+ * 
+ * CH0 -> timestamp in
+ * CH1 -> external trigger & wait
+ * CH2 -> 32kHz input 
  */
 class VHT : public Timer
 {
