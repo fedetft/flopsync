@@ -430,7 +430,6 @@ private:
     bool autoSync;
 };
 
-#endif //_BOARD_STM32VLDISCOVERY
 
 struct typeVecInt{
     
