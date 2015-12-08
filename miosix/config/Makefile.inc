@@ -14,7 +14,7 @@
 #OPT_BOARD := lpc2138_miosix_board
 #OPT_BOARD := stm32f103ze_stm3210e-eval
 #OPT_BOARD := stm32f103ve_mp3v2
-OPT_BOARD := stm32f100rb_stm32vldiscovery
+#OPT_BOARD := stm32f100rb_stm32vldiscovery
 #OPT_BOARD := stm32f103ve_strive_mini
 #OPT_BOARD := stm32f103ze_redbull_v2
 #OPT_BOARD := stm32f407vg_stm32f4discovery
@@ -28,7 +28,7 @@ OPT_BOARD := stm32f100rb_stm32vldiscovery
 #OPT_BOARD := stm32f103cb_als_mainboard_rev2
 #OPT_BOARD := stm32f100cb_tempsensor
 #OPT_BOARD := stm32f429zi_oledboard2
-#OPT_BOARD := efm32gg332f1024_polinode
+OPT_BOARD := efm32gg332f1024_polinode
 #OPT_BOARD := stm32f411re_nucleo
 
 ##
@@ -331,7 +331,7 @@ endif
 ## a new board or porting Miosix to a new architecture                    ##
 ############################################################################
 
-ifneq ($(MAKEFILE_VERSION),1.06)
+ifneq ($(MAKEFILE_VERSION),1.07)
     $(info You are using an incompatible makefile. Make sure it matches \
       the one distributed with the current version of the kernel)
     $(error Error)

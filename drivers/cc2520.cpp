@@ -129,6 +129,9 @@ void Cc2520::setMode(Mode mode)
                     cc2520::reset::low(); //take low for >= 0.1ms     
                     cc2520::vreg::high();
                     timer.wait(static_cast<unsigned long long> (0.0001f*rtcFreq+0.5f));
+                    #if WANDSTEM_HW_REV>10
+                    flash::cs::high();
+                    #endif
                     cc2520::reset::high();
                     cc2520::cs::low();
                     //wait until SO=1 (clock stable and running)
@@ -174,6 +177,9 @@ void Cc2520::setMode(Mode mode)
                     cc2520::reset::low(); //take low for 0.2ms     
                     cc2520::vreg::high();
                     timer.wait(static_cast<unsigned long long> (0.0001f*rtcFreq+0.5f));
+                    #if WANDSTEM_HW_REV>10
+                    flash::cs::high();
+                    #endif
                     cc2520::reset::high();
                     cc2520::cs::low();
                     //wait until SO=1 (clock stable and running)
@@ -242,6 +248,9 @@ void Cc2520::setMode(Mode mode)
                 case SLEEP:                  
                 case IDLE:
                     //reset device will remove side effect 
+                    #if WANDSTEM_HW_REV>10
+                    flash::cs::low();
+                    #endif
                     cc2520::reset::low(); //take low for 0.1ms
                     timer.wait(static_cast<unsigned long long> (0.0001f*rtcFreq+0.5f));
                     cc2520::cs::high();        
@@ -272,6 +281,9 @@ void Cc2520::setMode(Mode mode)
                     cc2520::reset::low(); //take low for 0.1ms     
                     cc2520::vreg::high();
                     timer.wait(static_cast<unsigned long long> (0.0001f*rtcFreq+0.5f));
+                    #if WANDSTEM_HW_REV>10
+                    flash::cs::high();
+                    #endif
                     cc2520::reset::high();
                     cc2520::cs::low();
                     //wait until SO=1 (clock stable and running)
