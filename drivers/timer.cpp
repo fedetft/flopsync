@@ -983,6 +983,8 @@ void VHT::enableAutoSyncHelper(unsigned int period)
 
 #elif defined(_BOARD_POLINODE)
 
+#define delay_oc 0 //FIXME: legacy from STM32F100 node
+
 static Thread *rtcWaiting=0;        ///< Thread waiting for the RTC interrupt
 static Thread *vhtWaiting=0;        ///< Thread waiting on VHT
 
@@ -1161,7 +1163,7 @@ void __attribute__((used)) tim2handlerImpl()
         RTC->COMP1 = vhtSyncPointRtc & 0xffffff;
         while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;
         
-        TIMER2->CC[2].CTRL |= TIMER_CC_CTRL_MODE_NONE;  //disable input capture (it will be re-enabled at next sync point)
+        TIMER2->CC[2].CTRL |= TIMER_CC_CTRL_MODE_OFF;  //disable input capture (it will be re-enabled at next sync point)
         
         #if TIMER_DEBUG>0
         probe_sync_vht::high();
@@ -1173,9 +1175,9 @@ void __attribute__((used)) tim2handlerImpl()
     //VHT wait output compare channel 1
     if((TIMER2->IF & TIMER_IF_CC1) && (TIMER2->IEN & TIMER_IEN_CC1) && !(TIMER2->ROUTE |= TIMER_ROUTE_CC1PEN))
     {
-        TIMER2->IFC |= TIMER_IFC_CC1
+        TIMER2->IFC |= TIMER_IFC_CC1;
         //check if overflow interrupt happened before OC2 interrupt
-        bool ovf=(TIMER2->IF & TIMER_IF_OF) && (TIMER2->CC[1].CCV <= TIMER2->CNT);
+        bool ovf = (TIMER2->IF & TIMER_IF_OF) && (TIMER2->CC[1].CCV <= TIMER2->CNT);
         //<= is necessary for allow wakeup missed
         if((vhtWakeupWait & 0xFFFFFFFFFFFF0000) <= (vhtOverflows+(ovf?1<<16:0)))
         {    
@@ -1201,7 +1203,7 @@ void __attribute__((used)) tim2handlerImpl()
         info.cnt = TIMER2->CNT;
         #endif //TIMER_DEBUG
         //check if overflow interrupt happened before IC3 interrupt
-        if((TIMER2->IF & TIM_IF_OF) && (timeCapture <= TIMER2->CNT))
+        if((TIMER2->IF & TIMER_IF_OF) && (timeCapture <= TIMER2->CNT))
             timestampEvent+=1<<16;
         timestampEvent=timestampEvent-vhtSyncPointVht+vhtBase+vhtOffset;
         #if TIMER_DEBUG ==4
@@ -1216,7 +1218,7 @@ void __attribute__((used)) tim2handlerImpl()
         TIMER2->IFC |= TIMER_IFC_CC1;
         //calculating the remaining slots
         long long remainingSlot = vhtWakeupWait -
-                            (vhtOverflows+(((TIMER2->IF & TIM_IF_OF) && (TIMER2->CC[1].CCV <= TIMER2->CNT))?1<<16:0));
+                            (vhtOverflows+(((TIMER2->IF & TIMER_IF_OF) && (TIMER2->CC[1].CCV <= TIMER2->CNT))?1<<16:0));
         remainingSlot >>=16;
         
         //<= is necessary for allow wakeup missed
@@ -1659,7 +1661,7 @@ void VHT::wait(unsigned long long value)
     unsigned short vhtCnt;
     do {
         a=vhtOverflows;
-        vhtCnt = TIMER->CNT;
+        vhtCnt = TIMER2->CNT;
     } while(a!=vhtOverflows); //Ensure no updates in the middle
     
     vhtWakeupWait=(vhtOverflows|vhtCnt)+value;
@@ -1739,8 +1741,7 @@ void VHT::setAutoSyncWhitRtcPeriod(unsigned int period)
 
 VHT::VHT() : rtc(Rtc::instance()), autoSync(true)
 {
-    trigger::mode(Mode::ALTERNATE);
-    trigger::alternateFunction(0);
+    trigger::mode(Mode::OUTPUT_ALT_LOW);
     
 //     resyncVHTout::mode(Mode::OUTPUT);
 //     resyncVHTin::mode(Mode::INPUT);
