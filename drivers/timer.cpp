@@ -1743,6 +1743,12 @@ VHT::VHT() : rtc(Rtc::instance()), autoSync(true)
 {
     trigger::mode(Mode::OUTPUT_ALT_LOW);
     
+    TIMER2->ROUTE |= TIMER_ROUTE_CC0PEN; //Connect channels to respective pins
+    TIMER2->ROUTE |= TIMER_ROUTE_CC2PEN;
+    
+    TIMER2->ROUTE &= ~TIMER_ROUTE_CC1PEN; //channel 1 is disconnected to avoid false packet sendings
+    
+    
 //     resyncVHTout::mode(Mode::OUTPUT);
 //     resyncVHTin::mode(Mode::INPUT);
 //     BKP->RTCCR=BKP_RTCCR_ASOE; //Enable RTC alarm out
