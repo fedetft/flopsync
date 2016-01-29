@@ -83,6 +83,9 @@ bool FlooderSyncNode::synchronize()
         //and absoluteWaitTimeoutOrEvent() than we are going in timeout.
         timeout = timer.absoluteWaitTimeoutOrEvent(computedFrameStart+receiverWindow+preambleFrameTime);
         measuredFrameStart=timer.getExtEventTimestamp()-preambleFrameTime;
+
+        //Prevent infinite loop in RX under yet to be investigated circumstances
+        if(measuredFrameStart>computedFrameStart+receiverWindow) timeout=true;
         led1::low();
         if(timeout) break;
         

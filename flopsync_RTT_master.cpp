@@ -114,6 +114,10 @@ int main()
             {
                 timeout=timer.absoluteWaitTimeoutOrEvent(frameStart+i+w+preambleFrameTime);
                 measuredTime=timer.getExtEventTimestamp()-preambleFrameTime;
+                
+                //Prevent infinite loop in RX under yet to be investigated circumstances
+                if(measuredTime>frameStart+i+w) timeout=true;
+
                 if(timeout) break;
                 transceiver.isSFDRaised();
                 timer.absoluteWaitTimeoutOrEvent(measuredTime+packetTime+delaySendPacketTime);
