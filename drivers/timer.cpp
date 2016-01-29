@@ -1092,13 +1092,13 @@ void __attribute__((naked)) TIMER2_IRQHandler()
  */
 void __attribute__((used)) tim2handlerImpl()
 {   
-    
+ 
     //vhtSyncRtc, input capture channel 2
     if((TIMER2->IF & TIMER_IF_CC2) && (TIMER2->IEN & TIMER_IEN_CC2))
     {             
         TIMER2->IEN &= ~TIMER_IEN_CC2;
         TIMER2->IFC |= TIMER_IFC_CC2;
-
+        
         if(vhtInt.flag) 
         {
             vhtInt.sync=true;
@@ -1127,7 +1127,7 @@ void __attribute__((used)) tim2handlerImpl()
             conversion/=rtcFreq;
             vhtBase=conversion;
         }
-        
+ 
         //Update output compare channel if enabled
         if((TIMER2->IF & TIMER_IF_CC1) && (TIMER2->IEN & TIMER_IEN_CC1))
         {
@@ -1150,6 +1150,7 @@ void __attribute__((used)) tim2handlerImpl()
                     //check if wakeup is in this turn
                     if(diff>0 && diff<= 0xFFFFll)
                     {
+                        TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_NONE;
                         TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_SET; //active level on match
                     }
                 }
@@ -1168,12 +1169,12 @@ void __attribute__((used)) tim2handlerImpl()
         while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;       
         
         #if TIMER_DEBUG>0
-        probe_sync_vht::high();
-        probe_sync_vht::low();
+//         probe_sync_vht::high();
+//         probe_sync_vht::low();
         #endif
     }
-    
-    
+
+ 
     //VHT wait, output compare channel 1
     if((TIMER2->IF & TIMER_IF_CC1) && (TIMER2->IEN & TIMER_IEN_CC1) && !(TIMER2->ROUTE & TIMER_ROUTE_CC1PEN))
     {                
@@ -1231,6 +1232,7 @@ void __attribute__((used)) tim2handlerImpl()
         {
             vhtInt.trigger=true;
             TIMER2->IEN &= ~TIMER_IEN_CC1;
+            TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_SET;
             TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_NONE;  //frozen mode
             trigger::low(); //force trigger low
         }
@@ -1238,6 +1240,7 @@ void __attribute__((used)) tim2handlerImpl()
         {
             if(remainingSlot==1)
             {
+                TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_NONE;
                 TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_SET; //active level on match 
             }
         }
@@ -1600,19 +1603,22 @@ void VHT::absoluteWaitTrigger(unsigned long long value)
     //base case: wakeup is not in this turn 
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset-delay_oc;
     
+    TIMER2->CMD |= TIMER_CMD_STOP;
+    TIMER2->CMD |= TIMER_CMD_START;
+    
     TIMER2->IFC |= TIMER_IFC_CC1;                    //Clear interrupts for channel 1
     TIMER2->CC[1].CCV = vhtWakeupWait;              //set match register channel 1
     TIMER2->ROUTE |= TIMER_ROUTE_CC1PEN;            //"Connect" trigger pin to timer output compare channel
+    probe_sync_vht::high();
     
     TIMER2->IEN |= TIMER_IEN_CC1;                    //enable interrupt for channel 1
-        
-    
-    
+
     vhtInt.trigger=false; 
     long long diff = vhtWakeupWait-((vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0)) | TIMER2->CNT);
     //check if wakeup is in this turn
     if(diff>0 && diff<= 0xFFFFll)
     {
+        TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_NONE;
         TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_SET; //active level on match
     }
     else
@@ -1622,6 +1628,7 @@ void VHT::absoluteWaitTrigger(unsigned long long value)
         {
             TIMER2->IEN &= ~TIMER_IEN_CC1;
             vhtInt.trigger = true;
+            TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_SET;
             TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_NONE; //frozen mode
         }
     }
@@ -1634,7 +1641,10 @@ void VHT::absoluteWaitTrigger(unsigned long long value)
             Thread::yield();
         }
     }
+    
+    probe_sync_vht::low();
     TIMER2->IEN &= ~TIMER_IEN_CC1;
+    TIMER2->ROUTE &= ~TIMER_ROUTE_CC1PEN;
     vhtInt.trigger=false;
 }
 
@@ -1648,6 +1658,7 @@ void VHT::absoluteSleep(unsigned long long value)
     //64bit numbers for intermendiate results. If the main XTAL was
     //8.388608MHz instead of 8MHz a simple shift operation on 32bit
     //numbers would suffice.
+    
     if(t<0) t=0;
     unsigned long long conversion=t;
     conversion*=rtcFreq;
@@ -1707,7 +1718,7 @@ void VHT::syncWithRtc()
     //enable tamper in the previous cycle of match between counter register and
     //alarm register
     TIMER2->IFC |= TIMER_IFC_CC2; 
-    vhtSyncPointRtc = rtc.getValue()+2; //FIXME: is it correct for emf32??
+    vhtSyncPointRtc = rtc.getValue()+2;
     
     RTC->COMP1 = vhtSyncPointRtc & 0xffffff;
     while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;
@@ -1751,7 +1762,7 @@ void VHT::setAutoSyncWhitRtcPeriod(unsigned int period)
 
 VHT::VHT() : rtc(Rtc::instance()), autoSync(true)
 {
-    trigger::mode(Mode::OUTPUT_ALT_LOW); 
+    trigger::mode(Mode::OUTPUT_LOW); 
     
     TIMER2->ROUTE |= TIMER_ROUTE_CC0PEN; //Connect channels to respective pins
     TIMER2->ROUTE |= TIMER_ROUTE_CC2PEN;
