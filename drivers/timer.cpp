@@ -1234,14 +1234,6 @@ void __attribute__((used)) tim2handlerImpl()
             TIMER2->IEN &= ~TIMER_IEN_CC1;
             TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_SET;
             TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_NONE;  //frozen mode
-//             trigger::low(); //force trigger low
-
-//             TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_MODE_OUTPUTCOMPARE;
-//             TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_MODE_OFF;
-//             TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_MODE_OFF;
-//             TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_MODE_OUTPUTCOMPARE;
-            
-//             probe_sync_vht::high();
         }
         else 
         {
@@ -1612,7 +1604,6 @@ void VHT::absoluteWaitTrigger(unsigned long long value)
     TIMER2->IFC |= TIMER_IFC_CC1;                    //Clear interrupts for channel 1
     TIMER2->CC[1].CCV = vhtWakeupWait;              //set match register channel 1
     TIMER2->ROUTE |= TIMER_ROUTE_CC1PEN;            //"Connect" trigger pin to timer output compare channel
-//     probe_sync_vht::high();
     
     TIMER2->IEN |= TIMER_IEN_CC1;                    //enable interrupt for channel 1
 
@@ -1645,7 +1636,8 @@ void VHT::absoluteWaitTrigger(unsigned long long value)
         }
     }
     
-//     probe_sync_vht::low();
+    /* the blob of code written above clears trigger pin after compare match,
+       otherwise it will remain at high level   */
     
     TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_MODE_OUTPUTCOMPARE;
     TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_MODE_OFF;
