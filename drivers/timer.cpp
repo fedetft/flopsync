@@ -1188,6 +1188,10 @@ void Rtc::wait(unsigned long long value)
 
 void Rtc::absoluteSleep(unsigned long long value)
 {
+	//HACK: HIPEAC+EWSN demo stuff: disable deep sleep
+	absoluteWait(value);
+    return;
+	
     ioctl(STDOUT_FILENO,IOCTL_SYNC,0);
     
     PauseKernelLock kLock;

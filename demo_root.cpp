@@ -38,7 +38,7 @@
 
 using namespace std;
 
-//HIPEAC demo stuff -- begin
+//HIPEAC+EWSN demo stuff -- begin
 void initAdc()
 {
     {
@@ -132,7 +132,7 @@ void ADC0_IRQHandler()
     USART0->TXDATA=read >> 8;
     USART0->TXDATA=read & 0xff;
 }
-//HIPEAC demo stuff -- end
+//HIPEAC+EWSN demo stuff -- end
 
 void readSensor(Timer& timer, Cc2520& transceiver, unsigned long long& when, int node)
 {
@@ -180,10 +180,10 @@ int main()
     lowPowerSetup();
     puts(experimentName);
 
-    //HIPEAC demo stuff -- begin
-//     miosix::currentSense::enable::high();
-//     initAdc();
-    //HIPEAC demo stuff -- end
+    //HIPEAC+EWSN demo stuff -- begin
+    miosix::currentSense::enable::high();
+    initAdc();
+    //HIPEAC+EWSN demo stuff -- end
 
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setTxPower(Cc2520::P_5);

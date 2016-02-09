@@ -160,8 +160,9 @@ void IRQbspInit()
     //
     // Setup serial port
     //
-    DefaultConsole::instance().IRQset(intrusive_ref_ptr<Device>(
-        new EFM32Serial(defaultSerial,defaultSerialSpeed)));
+	//HACK: HIPEAC+EWSN demo stuff: disable serial port from kernel as it is used by temporary power meter driver
+//     DefaultConsole::instance().IRQset(intrusive_ref_ptr<Device>(
+//         new EFM32Serial(defaultSerial,defaultSerialSpeed)));
 }
 
 void bspInit2()
