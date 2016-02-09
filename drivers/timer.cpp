@@ -1505,7 +1505,7 @@ void VHT::absoluteWait(unsigned long long value)
     vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset;
     TIMER2->IFC |= TIMER_IFC_CC1;    //reset interrupt flag channel 1
     TIMER2->CC[1].CCV = vhtWakeupWait;     //set match register channel 1
-    TIMER2->ROUTE &= ~TIMER_ROUTE_CC1PEN;   //disconnect from timer, in oder to avoid unwanded triggers
+    TIMER2->ROUTE &= ~TIMER_ROUTE_CC1PEN;   //disconnect from timer, in order to avoid unwanded triggers
     
     TIMER2->IEN |= TIMER_IEN_CC1;   //enable interrupt channel 1
     
@@ -1636,8 +1636,8 @@ void VHT::absoluteWaitTrigger(unsigned long long value)
         }
     }
     
-    /* the blob of code written above clears trigger pin after compare match,
-       otherwise it will remain at high level   */
+    /* the code blob written below clears trigger pin after compare match,
+       otherwise it will stay at high level   */
     
     TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_MODE_OUTPUTCOMPARE;
     TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_MODE_OFF;
