@@ -86,8 +86,14 @@ double convert(unsigned char c1, unsigned char c2)
 	unsigned int dd=static_cast<unsigned int>(c1)<<8 | c2;
 	dd=dd*208000/4095;
 	
+#define FILTER
+	
+#ifdef FILTER
 	const double factor=0.95;
 	bb=factor*bb+(1.0-factor)*dd;
+#else //FILTER
+	bb=dd;
+#endif //FILTER
 	
 	return bb/1000;
 }
