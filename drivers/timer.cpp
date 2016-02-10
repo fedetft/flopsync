@@ -983,31 +983,33 @@ void VHT::enableAutoSyncHelper(unsigned int period)
 
 #elif defined(_BOARD_POLINODE)
 
+#define delay_oc 0 //FIXME: legacy from STM32F100 node
+
 static Thread *rtcWaiting=0;        ///< Thread waiting for the RTC interrupt
-//static Thread *vhtWaiting=0;        ///< Thread waiting on VHT
+static Thread *vhtWaiting=0;        ///< Thread waiting on VHT
 
 static volatile typeVecInt rtcInt;
-//static unsigned int syncVhtRtcPeriod=VHT::defaultAutoSyncPeriod;
-//static volatile typeVecInt vhtInt;
-//static volatile unsigned long long vhtBase=0;
-//static volatile long long vhtOffset=0;
+static unsigned int syncVhtRtcPeriod=VHT::defaultAutoSyncPeriod;
+static volatile typeVecInt vhtInt;
+static volatile unsigned long long vhtBase=0;
+static volatile long long vhtOffset=0;
 static volatile bool rtcTriggerEnable=false;
-//static void (*eventHandler)(unsigned int)=0; ///< Called when event received
-//static unsigned long long vhtSyncPointRtc=0;     ///< Rtc time corresponding to vht time
-//static volatile unsigned long long vhtSyncPointVht=0;     ///< Vht time corresponding to rtc time
-//static volatile unsigned long long vhtOverflows=0;  //< counter VHT overflows
+static void (*eventHandler)(unsigned int)=0; ///< Called when event received
+static unsigned long long vhtSyncPointRtc=0;     ///< Rtc time corresponding to vht time
+static volatile unsigned long long vhtSyncPointVht=0;     ///< Vht time corresponding to rtc time
+static volatile unsigned long long vhtOverflows=0;  //< counter VHT overflows
 static volatile unsigned long long timestampEvent=0; ///< input capture timestamp
 static unsigned long long swCounter=0;     ///< RTC software counter
 static unsigned int lastHwCounter=0;       ///< variable for evaluate overflow
-//static unsigned long long vhtWakeupWait=0;
+static unsigned long long vhtWakeupWait=0;
 
 typedef miosix::transceiver::stxon trigger;
-//typedef miosix::loopback32KHzOut   resyncVHTout;
-//typedef miosix::loopback32KHzIn    resyncVHTin;
+typedef miosix::loopback32KHzOut   resyncVHTout;
+typedef miosix::loopback32KHzIn    resyncVHTin;
 
-//#if TIMER_DEBUG ==4
-//typeTimer info;
-//#endif //TIMER_DEBUG
+#if TIMER_DEBUG ==4
+typeTimer info;
+#endif //TIMER_DEBUG
 
 static inline unsigned long long readRtc()
 {
@@ -1032,6 +1034,12 @@ void __attribute__((naked)) RTC_IRQHandler()
  */
 void __attribute__((used)) RTChandlerImpl()
 {
+    if((RTC->IF & RTC_IF_COMP1) && (RTC->IEN & RTC_IEN_COMP1))
+    {
+        RTC->IFC |= RTC_IFC_COMP1;
+        TIMER2->IEN |= TIMER_IEN_CC2; //enable timer 2 input capture
+    }
+    
     if(rtcTriggerEnable)
     {
         trigger::high();
@@ -1067,6 +1075,188 @@ void __attribute__((used)) GPIO8HandlerImpl()
 	  if(rtcWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
 		Scheduler::IRQfindNextThread();
     rtcWaiting=0;
+}
+
+/**
+ * TIMER2 is the vht timer
+ */
+void __attribute__((naked)) TIMER2_IRQHandler()
+{
+    saveContext();
+    asm volatile("bl _Z15tim2handlerImplv");
+    restoreContext();
+}
+
+/**
+ * TIMER2 irq actual implementation
+ */
+void __attribute__((used)) tim2handlerImpl()
+{   
+ 
+    //vhtSyncRtc, input capture channel 2
+    if((TIMER2->IF & TIMER_IF_CC2) && (TIMER2->IEN & TIMER_IEN_CC2))
+    {             
+        TIMER2->IEN &= ~TIMER_IEN_CC2;
+        TIMER2->IFC |= TIMER_IFC_CC2;
+        
+        if(vhtInt.flag) 
+        {
+            vhtInt.sync=true;
+            vhtInt.flag=false;
+        }
+        unsigned long long old_vhtBase = vhtBase;
+        unsigned long long old_vhtSyncPointVht=vhtSyncPointVht;
+        unsigned long long old_vhtWakeupWait=vhtWakeupWait;                   
+        
+        vhtSyncPointVht = vhtOverflows | TIMER2->CC[2].CCV;
+        //check if overflow interrupt happened before IC1 interrupt
+        if((TIMER2->IF & TIMER_IF_OF) && ((vhtSyncPointVht & 0xFFFFll) <= TIMER2->CNT))
+            vhtSyncPointVht+=1<<16;
+        
+        //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
+        //while the other timer run at a submultiple of 24MHz, 1MHz in
+        //the current setting, and since 1MHz is not a multiple of 16384
+        //the conversion is a little complex and requires the use of
+        //64bit numbers for intermendiate results. If the main XTAL was
+        //8.388608MHz instead of 8MHz a simple bitmask operation on 32bit
+        //numbers would suffice.
+        {
+            unsigned long long conversion=vhtSyncPointRtc;
+            conversion*=vhtFreq;
+            conversion+=rtcFreq/2; //Round to nearest
+            conversion/=rtcFreq;
+            vhtBase=conversion;
+        }
+ 
+        //Update output compare channel if enabled
+        if((TIMER2->IF & TIMER_IF_CC1) && (TIMER2->IEN & TIMER_IEN_CC1))
+        {
+            TIMER2->IFC |= TIMER_IFC_CC1;
+            
+            vhtWakeupWait+=old_vhtBase-old_vhtSyncPointVht-vhtBase+vhtSyncPointVht;
+            unsigned long long time = (vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0)) | TIMER2->CNT;
+            long long diff = vhtWakeupWait-time;
+            long long old_diff = old_vhtWakeupWait-time;
+            
+            //Update only if the event are at least 100 tick in the future.
+            //100 is calibrate for avoid miss event (it is assumed that the following
+            //instructions which set the registers of the output compare employing 
+            //less than 100 clock cycles)
+            if(old_diff>100 && diff>100)
+            {
+                if(TIMER2->ROUTE & TIMER_ROUTE_CC1PEN)
+                {
+                    TIMER2->CC[1].CCV = vhtWakeupWait; 
+                    //check if wakeup is in this turn
+                    if(diff>0 && diff<= 0xFFFFll)
+                    {
+                        TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_NONE;
+                        TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_SET; //active level on match
+                    }
+                }
+                TIMER2->CC[1].CCV = vhtWakeupWait;  //also updates if not enabled
+            }
+            else
+            {
+                vhtWakeupWait = old_vhtWakeupWait;
+            }
+        }
+        
+        //set next resync vht
+        vhtSyncPointRtc += syncVhtRtcPeriod;
+        
+        RTC->COMP1 = vhtSyncPointRtc & 0xffffff;
+        while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;       
+        
+        #if TIMER_DEBUG>0
+//         probe_sync_vht::high();
+//         probe_sync_vht::low();
+        #endif
+    }
+
+ 
+    //VHT wait, output compare channel 1
+    if((TIMER2->IF & TIMER_IF_CC1) && (TIMER2->IEN & TIMER_IEN_CC1) && !(TIMER2->ROUTE & TIMER_ROUTE_CC1PEN))
+    {                
+        TIMER2->IFC |= TIMER_IFC_CC1;                
+        
+        //check if overflow interrupt happened before OC2 interrupt
+        bool ovf = (TIMER2->IF & TIMER_IF_OF) && (TIMER2->CC[1].CCV <= TIMER2->CNT);
+        //<= is necessary for allow wakeup missed
+        if((vhtWakeupWait & 0xFFFFFFFFFFFF0000) <= (vhtOverflows+(ovf?1<<16:0)))
+        {    
+            vhtInt.wait=true;
+        }
+    }
+    
+    //IRQ input capture channel 0
+    if((TIMER2->IF & TIMER_IF_CC0) && (TIMER2->IEN & TIMER_IEN_CC0))
+    {
+        TIMER2->IFC |= TIMER_IFC_CC0;
+        
+        #if TIMER_DEBUG ==4
+        info.ts = vhtOverflows | TIMER2->CC[0].CCV;
+        info.ovf= vhtOverflows;
+        info.sr = TIMER2->STATUS;
+        #endif //TIMER_DEBUG
+        
+        vhtInt.event=true;
+        unsigned short timeCapture = TIMER2->CC[0].CCV;
+        timestampEvent=vhtOverflows|timeCapture;
+      
+        #if TIMER_DEBUG ==4
+        info.cnt = TIMER2->CNT;
+        #endif //TIMER_DEBUG
+        //check if overflow interrupt happened before IC3 interrupt
+        if((TIMER2->IF & TIMER_IF_OF) && (timeCapture <= TIMER2->CNT))
+            timestampEvent+=1<<16;
+        timestampEvent=timestampEvent-vhtSyncPointVht+vhtBase+vhtOffset;
+        #if TIMER_DEBUG ==4
+        info.cntFirstUIF = TIMER2->CNT;
+        info.srFirstUIF = TIMER2->IF;
+        #endif //TIMER_DEBUG        
+     }
+    
+    //Send packet output compare channel 1
+    if((TIMER2->IF & TIMER_IF_CC1) && (TIMER2->IEN & TIMER_IEN_CC1) && (TIMER2->ROUTE & TIMER_ROUTE_CC1PEN))
+    {  
+        TIMER2->IFC |= TIMER_IFC_CC1;
+        
+        //calculating the remaining slots
+        long long remainingSlot = vhtWakeupWait -
+                            (vhtOverflows+(((TIMER2->IF & TIMER_IF_OF) && (TIMER2->CC[1].CCV <= TIMER2->CNT))?1<<16:0));
+        remainingSlot >>=16;
+        
+        //<= is necessary for allow wakeup missed
+        if(remainingSlot <= 0)    
+        {
+            vhtInt.trigger=true;
+            TIMER2->IEN &= ~TIMER_IEN_CC1;
+            TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_SET;
+            TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_NONE;  //frozen mode
+        }
+        else 
+        {
+            if(remainingSlot==1)
+            {
+                TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_NONE;
+                TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_SET; //active level on match 
+            }
+        }        
+    }
+    
+    //IRQ overflow
+    if(TIMER2->IF & TIMER_IF_OF)
+    {
+        TIMER2->IFC |= TIMER_IFC_OF;
+        vhtOverflows+=1<<16;
+    }
+    
+    if((!vhtInt.event && !vhtInt.sync && !vhtInt.trigger && !vhtInt.wait ) || !vhtWaiting) return;
+    vhtWaiting->IRQwakeup();
+    if(vhtWaiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+        Scheduler::IRQfindNextThread();
+    vhtWaiting=0;
 }
 
 //
@@ -1281,6 +1471,357 @@ Rtc::Rtc()
 // class VHT
 //
 
-//TODO: implement me
+VHT& VHT::instance()
+{
+    static VHT timer;
+    return timer;
+}
 
+unsigned long long VHT::getValue() const
+{
+    FastInterruptDisableLock dLock;
+    return ((vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0))|TIMER2->CNT)-vhtSyncPointVht+vhtBase+vhtOffset;
+}
+
+void VHT::setValue(unsigned long long value)
+{
+    //We don't actually overwrite the RTC in this case, as the VHT
+    //is a bit complicated, so we translate between the two times at
+    //the boundary of this class.
+    FastInterruptDisableLock dLock;
+    vhtOffset+=value-(((vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0))|TIMER2->CNT)-vhtSyncPointVht+vhtBase+vhtOffset);    
+}
+    
+unsigned long long VHT::getExtEventTimestamp() const
+{
+    return timestampEvent;
+}
+
+void VHT::absoluteWait(unsigned long long value)
+{
+    FastInterruptDisableLock dLock;
+    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset;
+    TIMER2->IFC |= TIMER_IFC_CC1;    //reset interrupt flag channel 1
+    TIMER2->CC[1].CCV = vhtWakeupWait;     //set match register channel 1
+    TIMER2->ROUTE &= ~TIMER_ROUTE_CC1PEN;   //disconnect from timer, in order to avoid unwanded triggers
+    
+    TIMER2->IEN |= TIMER_IEN_CC1;   //enable interrupt channel 1
+    
+    //Check that wakeup is not in the past.
+    if(vhtWakeupWait > 
+            ((vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0)) | TIMER2->CNT))
+    {
+        vhtInt.wait=false;
+        while(!vhtInt.wait)
+        {
+            vhtWaiting=Thread::IRQgetCurrentThread();
+            Thread::IRQwait();
+            {
+                FastInterruptEnableLock eLock(dLock);
+                Thread::yield();
+            }
+        }
+    }
+    TIMER2->IEN &= ~TIMER_IEN_CC1;
+    vhtInt.wait=false;
+}
+
+bool VHT::absoluteWaitTimeoutOrEvent(unsigned long long value)
+{
+    bool result=false;
+    FastInterruptDisableLock dLock;
+    
+    if(value!=0)
+    {
+        vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset;
+        TIMER2->IFC |= TIMER_IFC_CC0 | TIMER_IFC_CC1;     //Clear interrupts for channels 0 and 1
+        TIMER2->CC[1].CCV = vhtWakeupWait;              //set match register channel 1
+        TIMER2->ROUTE &= ~TIMER_ROUTE_CC1PEN;           //disconnect pin output from timer, in oder to avoid unwanted triggers
+        
+        TIMER2->IEN |= TIMER_IEN_CC0 | TIMER_IEN_CC1;   //enable interrupt for channels 0 and 1
+        
+        bool notInThePast = vhtWakeupWait > ((vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0)) | TIMER2->CNT); //Check that wakeup is not in the past.
+        
+        if(notInThePast)         
+        {            
+            vhtInt.wait=false;
+            vhtInt.event=false;
+            while(!vhtInt.wait && !vhtInt.event)
+            {
+                vhtWaiting=Thread::IRQgetCurrentThread();
+                Thread::IRQwait();
+                {
+                    FastInterruptEnableLock eLock(dLock);
+                    Thread::yield();
+                }
+            }
+        }
+                
+        TIMER2->IEN &= ~(TIMER_IEN_CC0 | TIMER_IEN_CC1);        
+        
+        if(vhtInt.wait && vhtInt.event)
+        {
+            (timestampEvent<=value)? result=false:result=true;
+        }
+        else
+        {
+            result = vhtInt.wait;
+        }
+        vhtInt.wait=false;
+        vhtInt.event=false;
+        
+        if(notInThePast==false) result = true; //Force timeout if time value is in the past
+    }
+    else
+    {        
+        TIMER2->IFC |= TIMER_IFC_CC0;           //reset interrupt flag channel 0
+        TIMER2->IEN |= TIMER_IEN_CC0;          //Enable interrupt channel 0
+        vhtInt.event=false;
+        while(!vhtInt.event)
+        {
+            vhtWaiting=Thread::IRQgetCurrentThread();
+            Thread::IRQwait();
+            {
+                FastInterruptEnableLock eLock(dLock);
+                Thread::yield();
+            }
+        }
+        TIMER2->IEN &= ~TIMER_IEN_CC0;
+        vhtInt.event=false;
+        return false;
+    }
+    return result;
+}
+
+void VHT::absoluteWaitTrigger(unsigned long long value)
+{
+    FastInterruptDisableLock dLock;
+    //base case: wakeup is not in this turn 
+    vhtWakeupWait=value-vhtBase+vhtSyncPointVht-vhtOffset-delay_oc;
+    
+    TIMER2->IFC |= TIMER_IFC_CC1;                    //Clear interrupts for channel 1
+    TIMER2->CC[1].CCV = vhtWakeupWait;              //set match register channel 1
+    TIMER2->ROUTE |= TIMER_ROUTE_CC1PEN;            //"Connect" trigger pin to timer output compare channel
+    
+    TIMER2->IEN |= TIMER_IEN_CC1;                    //enable interrupt for channel 1
+
+    vhtInt.trigger=false; 
+    long long diff = vhtWakeupWait-((vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0)) | TIMER2->CNT);
+    //check if wakeup is in this turn
+    if(diff>0 && diff<= 0xFFFFll)
+    {
+        TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_NONE;
+        TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_SET; //active level on match
+    }
+    else
+    {
+        // else check if wakeup is in the past
+        if(diff<=0)
+        {
+            TIMER2->IEN &= ~TIMER_IEN_CC1;
+            vhtInt.trigger = true;
+            TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_SET;
+            TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_NONE; //frozen mode
+        }
+    }
+    while(!vhtInt.trigger)
+    {
+        vhtWaiting=Thread::IRQgetCurrentThread();
+        Thread::IRQwait();
+        {
+            FastInterruptEnableLock eLock(dLock);
+            Thread::yield();
+        }
+    }
+    
+    /* the code blob written below clears trigger pin after compare match,
+       otherwise it will stay at high level   */
+    
+    TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_MODE_OUTPUTCOMPARE;
+    TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_MODE_OFF;
+    TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_MODE_OFF;
+    TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_MODE_OUTPUTCOMPARE;
+    
+    TIMER2->IEN &= ~TIMER_IEN_CC1;
+    TIMER2->ROUTE &= ~TIMER_ROUTE_CC1PEN;
+    vhtInt.trigger=false;
+}
+
+void VHT::absoluteSleep(unsigned long long value)
+{      
+    long long t = value - vhtOffset;
+    //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
+    //while the other timer run at a submultiple of 24MHz, 24MHz in
+    //the current setting, and since 24MHz is not a multiple of 16384
+    //the conversion is a little complex and requires the use of
+    //64bit numbers for intermendiate results. If the main XTAL was
+    //8.388608MHz instead of 8MHz a simple shift operation on 32bit
+    //numbers would suffice.
+    
+    if(t<0) t=0;
+    unsigned long long conversion=t;
+    conversion*=rtcFreq;
+    conversion+=vhtFreq/2; //Round to nearest
+    conversion/=vhtFreq;
+
+    RTC->IEN &= ~RTC_IEN_COMP1; //Disable RTC alarm out
+    rtc.absoluteSleep(conversion);
+    RTC->IEN |= RTC_IEN_COMP1; //Enable RTC alarm out    
+    syncWithRtc();   
+}
+
+void VHT::sleep(unsigned long long value)
+{
+    absoluteSleep(getValue()+value);
+}
+
+void VHT::wait(unsigned long long value)
+{
+    FastInterruptDisableLock dLock;
+    
+    unsigned long long a; 
+    unsigned short vhtCnt;
+    do {
+        a=vhtOverflows;
+        vhtCnt = TIMER2->CNT;
+    } while(a!=vhtOverflows); //Ensure no updates in the middle
+    
+    vhtWakeupWait=(vhtOverflows|vhtCnt)+value;
+    
+    TIMER2->IFC |= TIMER_IFC_CC1;                    //Clear interrupts for channel 1
+    TIMER2->CC[1].CCV = vhtWakeupWait;              //set match register channel 1
+    TIMER2->ROUTE &= ~TIMER_ROUTE_CC1PEN;           //disconnect trigger pin to timer output compare channel
+    
+    TIMER2->IEN |= TIMER_IEN_CC1;                    //enable interrupt for channel 1
+
+    if(vhtWakeupWait > ((vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0)) | TIMER2->CNT))
+    {
+        vhtInt.wait=false;
+        while(!vhtInt.wait)
+        {
+            vhtWaiting=Thread::IRQgetCurrentThread();
+            Thread::IRQwait();
+            {
+                FastInterruptEnableLock eLock(dLock);
+                Thread::yield();
+            }
+        }
+    }
+    TIMER2->IEN &= ~TIMER_IEN_CC1;
+    vhtInt.wait=false;
+}
+
+void VHT::syncWithRtc()
+{
+    FastInterruptDisableLock dLock;
+    //at least 2 tick is necessary for resynchronize because rtc alarm 
+    //enable tamper in the previous cycle of match between counter register and
+    //alarm register
+    TIMER2->IFC |= TIMER_IFC_CC2; 
+    vhtSyncPointRtc = rtc.getValue()+2;
+    
+    RTC->COMP1 = vhtSyncPointRtc & 0xffffff;
+    while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;
+    
+    vhtInt.sync=false;
+    vhtInt.flag=true;
+    while(!vhtInt.sync)
+    {
+        vhtWaiting=Thread::IRQgetCurrentThread();
+        Thread::IRQwait();
+        {
+            FastInterruptEnableLock eLock(dLock);
+            Thread::yield();
+        }
+    }
+    if(!autoSync)  TIMER2->IEN &= ~TIMER_IEN_CC2;
+    vhtInt.sync=false;
+}
+
+void VHT::enableAutoSyncWhitRtc()
+{
+    enableAutoSyncHelper(syncVhtRtcPeriod);
+}
+
+void VHT::disableAutoSyncWithRtc()
+{
+    autoSync=false;
+    TIMER2->IFC |= TIMER_IFC_CC2;                    
+    TIMER2->IEN &= ~TIMER_IEN_CC2;                  
+}
+
+bool VHT::isAutoSync()
+{
+    return autoSync;
+}
+
+void VHT::setAutoSyncWhitRtcPeriod(unsigned int period)
+{
+    enableAutoSyncHelper(period);
+}
+
+VHT::VHT() : rtc(Rtc::instance()), autoSync(true)
+{
+    //VHT uses COMP1 channel of RTC, put here as when instantiationg the Rtc
+    //alone this additional interrupt would interfere with Rtc::absoluteSleep()
+    RTC->IEN |= RTC_IEN_COMP1;
+
+    trigger::mode(Mode::OUTPUT_LOW); 
+    
+    TIMER2->ROUTE |= TIMER_ROUTE_CC0PEN; //Connect channels to respective pins
+    TIMER2->ROUTE |= TIMER_ROUTE_CC2PEN;
+    
+    TIMER2->ROUTE &= ~TIMER_ROUTE_CC1PEN; //channel 1 is disconnected to avoid false packet sendings
+    
+    {
+        FastInterruptDisableLock dLock;
+        CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_TIMER2;
+    }
+
+    TIMER2->CNT = 0;
+    TIMER2->CTRL |= TIMER_CTRL_PRESC_DIV1;  //Timer runs @48MHz
+    TIMER2->TOP = 0xFFFF; //auto reload if counter register go in overflow
+    
+    
+    //channel 0 is transceiver timestamp input, so is set as input capture on rising edges
+    TIMER2->CC[0].CTRL |= TIMER_CC_CTRL_MODE_INPUTCAPTURE |
+                          TIMER_CC_CTRL_ICEDGE_RISING |
+                          TIMER_CC_CTRL_INSEL_PIN;    
+    
+    //channel 1 is used for trigger/wait, so is set as output compare set on match
+    TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_MODE_OUTPUTCOMPARE |
+                          TIMER_CC_CTRL_CMOA_SET |
+                          TIMER_CC_CTRL_INSEL_PIN;   
+                          
+    //channel 2 is 32KHz resynchronize input, so is set as input capture on rising edges
+    TIMER2->CC[2].CTRL |= TIMER_CC_CTRL_MODE_INPUTCAPTURE |
+                          TIMER_CC_CTRL_ICEDGE_RISING |
+                          TIMER_CC_CTRL_INSEL_PIN;
+                   
+    TIMER2->IFC |= TIMER_IFC_OF | TIMER_IF_CC0 | TIMER_IF_CC1 | TIMER_IF_CC2;
+                          
+    //interrupts enabled for counter overflow                       
+    TIMER2->IEN |= TIMER_IEN_OF;
+
+    NVIC_SetPriority(TIMER2_IRQn,5); //Low priority    
+    NVIC_ClearPendingIRQ(TIMER2_IRQn);
+    NVIC_EnableIRQ(TIMER2_IRQn);
+    
+    TIMER2->CMD |= TIMER_CMD_START;
+    
+    syncWithRtc();    
+}
+
+void VHT::enableAutoSyncHelper(unsigned int period)
+{
+    FastInterruptDisableLock dLock;
+    if(period == syncVhtRtcPeriod && autoSync) return;
+    autoSync=true;
+    if (period<2) syncVhtRtcPeriod = 2;
+    TIMER2->IFC |= TIMER_IFC_CC2;                    //Clear interrupts for channel 2 
+    vhtSyncPointRtc = rtc.getValue()+syncVhtRtcPeriod;
+    
+    RTC->COMP1 = vhtSyncPointRtc & 0xffffff;
+    while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;
+}
 #endif
