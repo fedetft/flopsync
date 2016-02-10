@@ -181,8 +181,8 @@ int main()
     puts(experimentName);
 
     //HIPEAC+EWSN demo stuff -- begin
-    miosix::currentSense::enable::high();
-    initAdc();
+//     miosix::currentSense::enable::high();
+//     initAdc();
     //HIPEAC+EWSN demo stuff -- end
 
     Cc2520& transceiver=Cc2520::instance();
