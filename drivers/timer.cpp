@@ -1452,8 +1452,6 @@ Rtc::Rtc()
     
     RTC->CNT=0;
     
-    RTC->IEN |= RTC_IEN_COMP1;
-    
     RTC->CTRL=RTC_CTRL_EN;
     while(RTC->SYNCBUSY & RTC_SYNCBUSY_CTRL) ;
     
@@ -1764,6 +1762,10 @@ void VHT::setAutoSyncWhitRtcPeriod(unsigned int period)
 
 VHT::VHT() : rtc(Rtc::instance()), autoSync(true)
 {
+    //VHT uses COMP1 channel of RTC, put here as when instantiationg the Rtc
+    //alone this additional interrupt would interfere with Rtc::absoluteSleep()
+    RTC->IEN |= RTC_IEN_COMP1;
+
     trigger::mode(Mode::OUTPUT_LOW); 
     
     TIMER2->ROUTE |= TIMER_ROUTE_CC0PEN; //Connect channels to respective pins
