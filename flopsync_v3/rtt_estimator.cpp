@@ -4,8 +4,6 @@
 
 using namespace std;
 
-#ifdef _BOARD_STM32VLDISCOVERY
-
 /**
  * Temporarily disable VHT to RTC resync. Also, turn on blue led.
  */
@@ -173,5 +171,3 @@ void RttEstimator::rttServer(unsigned long long frameStart, int cumulatedPropaga
     
     transceiver.setMode(Cc2520::DEEP_SLEEP);
 }
-
-#endif //_BOARD_STM32VLDISCOVERY

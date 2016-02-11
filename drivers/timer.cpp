@@ -1037,7 +1037,8 @@ void __attribute__((used)) RTChandlerImpl()
     if((RTC->IF & RTC_IF_COMP1) && (RTC->IEN & RTC_IEN_COMP1))
     {
         RTC->IFC |= RTC_IFC_COMP1;
-        TIMER2->IEN |= TIMER_IEN_CC2; //enable timer 2 input capture
+        //FIXME: HRT works, VHT doesn't
+//         TIMER2->IEN |= TIMER_IEN_CC2; //enable timer 2 input capture
     }
     
     if(rtcTriggerEnable)
@@ -1104,74 +1105,75 @@ void __attribute__((used)) tim2handlerImpl()
             vhtInt.sync=true;
             vhtInt.flag=false;
         }
-        unsigned long long old_vhtBase = vhtBase;
-        unsigned long long old_vhtSyncPointVht=vhtSyncPointVht;
-        unsigned long long old_vhtWakeupWait=vhtWakeupWait;                   
-        
-        vhtSyncPointVht = vhtOverflows | TIMER2->CC[2].CCV;
-        //check if overflow interrupt happened before IC1 interrupt
-        if((TIMER2->IF & TIMER_IF_OF) && ((vhtSyncPointVht & 0xFFFFll) <= TIMER2->CNT))
-            vhtSyncPointVht+=1<<16;
-        
-        //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
-        //while the other timer run at a submultiple of 24MHz, 1MHz in
-        //the current setting, and since 1MHz is not a multiple of 16384
-        //the conversion is a little complex and requires the use of
-        //64bit numbers for intermendiate results. If the main XTAL was
-        //8.388608MHz instead of 8MHz a simple bitmask operation on 32bit
-        //numbers would suffice.
-        {
-            unsigned long long conversion=vhtSyncPointRtc;
-            conversion*=vhtFreq;
-            conversion+=rtcFreq/2; //Round to nearest
-            conversion/=rtcFreq;
-            vhtBase=conversion;
-        }
- 
-        //Update output compare channel if enabled
-        if((TIMER2->IF & TIMER_IF_CC1) && (TIMER2->IEN & TIMER_IEN_CC1))
-        {
-            TIMER2->IFC = TIMER_IFC_CC1;
-            
-            vhtWakeupWait+=old_vhtBase-old_vhtSyncPointVht-vhtBase+vhtSyncPointVht;
-            unsigned long long time = (vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0)) | TIMER2->CNT;
-            long long diff = vhtWakeupWait-time;
-            long long old_diff = old_vhtWakeupWait-time;
-            
-            //Update only if the event are at least 100 tick in the future.
-            //100 is calibrate for avoid miss event (it is assumed that the following
-            //instructions which set the registers of the output compare employing 
-            //less than 100 clock cycles)
-            if(old_diff>100 && diff>100)
-            {
-                if(TIMER2->ROUTE & TIMER_ROUTE_CC1PEN)
-                {
-                    TIMER2->CC[1].CCV = vhtWakeupWait; 
-                    //check if wakeup is in this turn
-                    if(diff>0 && diff<= 0xFFFFll)
-                    {
-                        TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_NONE;
-                        TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_SET; //active level on match
-                    }
-                }
-                TIMER2->CC[1].CCV = vhtWakeupWait;  //also updates if not enabled
-            }
-            else
-            {
-                vhtWakeupWait = old_vhtWakeupWait;
-            }
-        }
-        
-        //set next resync vht
-        vhtSyncPointRtc += syncVhtRtcPeriod;
-        
-        RTC->COMP1 = vhtSyncPointRtc & 0xffffff;
-        while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;       
-        
-        #if TIMER_DEBUG>0
-//         probe_sync_vht::high();
-//         probe_sync_vht::low();
-        #endif
+        //FIXME: HRT works, VHT doesn't
+//         unsigned long long old_vhtBase = vhtBase;
+//         unsigned long long old_vhtSyncPointVht=vhtSyncPointVht;
+//         unsigned long long old_vhtWakeupWait=vhtWakeupWait;                   
+//         
+//         vhtSyncPointVht = vhtOverflows | TIMER2->CC[2].CCV;
+//         //check if overflow interrupt happened before IC1 interrupt
+//         if((TIMER2->IF & TIMER_IF_OF) && ((vhtSyncPointVht & 0xFFFFll) <= TIMER2->CNT))
+//             vhtSyncPointVht+=1<<16;
+//         
+//         //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
+//         //while the other timer run at a submultiple of 24MHz, 1MHz in
+//         //the current setting, and since 1MHz is not a multiple of 16384
+//         //the conversion is a little complex and requires the use of
+//         //64bit numbers for intermendiate results. If the main XTAL was
+//         //8.388608MHz instead of 8MHz a simple bitmask operation on 32bit
+//         //numbers would suffice.
+//         {
+//             unsigned long long conversion=vhtSyncPointRtc;
+//             conversion*=vhtFreq;
+//             conversion+=rtcFreq/2; //Round to nearest
+//             conversion/=rtcFreq;
+//             vhtBase=conversion;
+//         }
+//  
+//         //Update output compare channel if enabled
+//         if((TIMER2->IF & TIMER_IF_CC1) && (TIMER2->IEN & TIMER_IEN_CC1))
+//         {
+//             TIMER2->IFC = TIMER_IFC_CC1;
+//             
+//             vhtWakeupWait+=old_vhtBase-old_vhtSyncPointVht-vhtBase+vhtSyncPointVht;
+//             unsigned long long time = (vhtOverflows+((TIMER2->IF & TIMER_IF_OF)?1<<16:0)) | TIMER2->CNT;
+//             long long diff = vhtWakeupWait-time;
+//             long long old_diff = old_vhtWakeupWait-time;
+//             
+//             //Update only if the event are at least 100 tick in the future.
+//             //100 is calibrate for avoid miss event (it is assumed that the following
+//             //instructions which set the registers of the output compare employing 
+//             //less than 100 clock cycles)
+//             if(old_diff>100 && diff>100)
+//             {
+//                 if(TIMER2->ROUTE & TIMER_ROUTE_CC1PEN)
+//                 {
+//                     TIMER2->CC[1].CCV = vhtWakeupWait; 
+//                     //check if wakeup is in this turn
+//                     if(diff>0 && diff<= 0xFFFFll)
+//                     {
+//                         TIMER2->CC[1].CTRL &= ~TIMER_CC_CTRL_CMOA_NONE;
+//                         TIMER2->CC[1].CTRL |= TIMER_CC_CTRL_CMOA_SET; //active level on match
+//                     }
+//                 }
+//                 TIMER2->CC[1].CCV = vhtWakeupWait;  //also updates if not enabled
+//             }
+//             else
+//             {
+//                 vhtWakeupWait = old_vhtWakeupWait;
+//             }
+//         }
+//         
+//         //set next resync vht
+//         vhtSyncPointRtc += syncVhtRtcPeriod;
+//         
+//         RTC->COMP1 = vhtSyncPointRtc & 0xffffff;
+//         while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;       
+//         
+//         #if TIMER_DEBUG>0
+// //         probe_sync_vht::high();
+// //         probe_sync_vht::low();
+//         #endif
     }
 
  
@@ -1378,10 +1380,10 @@ void Rtc::wait(unsigned long long value)
 
 void Rtc::absoluteSleep(unsigned long long value)
 {
-	//HACK: HIPEAC+EWSN demo stuff: disable deep sleep
-// 	absoluteWait(value);
-//     return;
-	
+    //HACK: HIPEAC+EWSN demo stuff: disable deep sleep
+    absoluteWait(value);
+    return;
+
     ioctl(STDOUT_FILENO,IOCTL_SYNC,0);
     
     PauseKernelLock kLock;
@@ -1652,7 +1654,11 @@ void VHT::absoluteWaitTrigger(unsigned long long value)
 }
 
 void VHT::absoluteSleep(unsigned long long value)
-{      
+{
+    //HACK: HIPEAC+EWSN demo stuff: disable deep sleep
+    absoluteWait(value);
+    return;
+    
     long long t = value - vhtOffset;
     //Unfortunately on the stm32vldiscovery the rtc runs at 16384,
     //while the other timer run at a submultiple of 24MHz, 24MHz in
@@ -1717,29 +1723,30 @@ void VHT::wait(unsigned long long value)
 
 void VHT::syncWithRtc()
 {
-    FastInterruptDisableLock dLock;
-    //at least 2 tick is necessary for resynchronize because rtc alarm 
-    //enable tamper in the previous cycle of match between counter register and
-    //alarm register
-    TIMER2->IFC = TIMER_IFC_CC2; 
-    vhtSyncPointRtc = rtc.getValue()+2;
-    
-    RTC->COMP1 = vhtSyncPointRtc & 0xffffff;
-    while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;
-    
-    vhtInt.sync=false;
-    vhtInt.flag=true;
-    while(!vhtInt.sync)
-    {
-        vhtWaiting=Thread::IRQgetCurrentThread();
-        Thread::IRQwait();
-        {
-            FastInterruptEnableLock eLock(dLock);
-            Thread::yield();
-        }
-    }
-    if(!autoSync)  TIMER2->IEN &= ~TIMER_IEN_CC2;
-    vhtInt.sync=false;
+    //FIXME: HRT works, VHT doesn't
+//     FastInterruptDisableLock dLock;
+//     //at least 2 tick is necessary for resynchronize because rtc alarm 
+//     //enable tamper in the previous cycle of match between counter register and
+//     //alarm register
+//     TIMER2->IFC = TIMER_IFC_CC2; 
+//     vhtSyncPointRtc = rtc.getValue()+2;
+//     
+//     RTC->COMP1 = vhtSyncPointRtc & 0xffffff;
+//     while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;
+//     
+//     vhtInt.sync=false;
+//     vhtInt.flag=true;
+//     while(!vhtInt.sync)
+//     {
+//         vhtWaiting=Thread::IRQgetCurrentThread();
+//         Thread::IRQwait();
+//         {
+//             FastInterruptEnableLock eLock(dLock);
+//             Thread::yield();
+//         }
+//     }
+//     if(!autoSync)  TIMER2->IEN &= ~TIMER_IEN_CC2;
+//     vhtInt.sync=false;
 }
 
 void VHT::enableAutoSyncWhitRtc()
@@ -1768,7 +1775,8 @@ VHT::VHT() : rtc(Rtc::instance()), autoSync(true)
 {
     //VHT uses COMP1 channel of RTC, put here as when instantiationg the Rtc
     //alone this additional interrupt would interfere with Rtc::absoluteSleep()
-    RTC->IEN |= RTC_IEN_COMP1;
+    //FIXME: HRT works, VHT doesn't
+//     RTC->IEN |= RTC_IEN_COMP1;
 
     trigger::mode(Mode::OUTPUT_LOW); 
     
@@ -1802,7 +1810,7 @@ VHT::VHT() : rtc(Rtc::instance()), autoSync(true)
                           TIMER_CC_CTRL_ICEDGE_RISING |
                           TIMER_CC_CTRL_INSEL_PIN;
                    
-    TIMER2->IFC = TIMER_IFC_OF | TIMER_IF_CC0 | TIMER_IF_CC1 | TIMER_IF_CC2;
+    TIMER2->IFC = TIMER_IFC_OF | TIMER_IF_CC0 | TIMER_IF_CC1 ;//| TIMER_IF_CC2; //FIXME: HRT works, VHT doesn't
                           
     //interrupts enabled for counter overflow                       
     TIMER2->IEN |= TIMER_IEN_OF;
@@ -1818,14 +1826,15 @@ VHT::VHT() : rtc(Rtc::instance()), autoSync(true)
 
 void VHT::enableAutoSyncHelper(unsigned int period)
 {
-    FastInterruptDisableLock dLock;
-    if(period == syncVhtRtcPeriod && autoSync) return;
-    autoSync=true;
-    if (period<2) syncVhtRtcPeriod = 2;
-    TIMER2->IFC = TIMER_IFC_CC2;                    //Clear interrupts for channel 2 
-    vhtSyncPointRtc = rtc.getValue()+syncVhtRtcPeriod;
-    
-    RTC->COMP1 = vhtSyncPointRtc & 0xffffff;
-    while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;
+    //FIXME: HRT works, VHT doesn't
+//     FastInterruptDisableLock dLock;
+//     if(period == syncVhtRtcPeriod && autoSync) return;
+//     autoSync=true;
+//     if (period<2) syncVhtRtcPeriod = 2;
+//     TIMER2->IFC = TIMER_IFC_CC2;                    //Clear interrupts for channel 2 
+//     vhtSyncPointRtc = rtc.getValue()+syncVhtRtcPeriod;
+//     
+//     RTC->COMP1 = vhtSyncPointRtc & 0xffffff;
+//     while(RTC->SYNCBUSY & RTC_SYNCBUSY_COMP1) ;
 }
 #endif
