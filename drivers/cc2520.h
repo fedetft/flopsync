@@ -262,6 +262,13 @@ public:
      */ 
     int stxcal();
     
+    int getRssi() const
+    {
+        int rawRssi=(rssiData>>8) & 0xff;
+        if(rawRssi & 0x80) rawRssi-=256; //Convert 8 bit 2's complement to int
+        return rawRssi-76; //See datasheet
+    }
+    
     
 private:
     /**
@@ -592,6 +599,7 @@ private:
     unsigned short frequency;
     unsigned char panId[2];
     unsigned char shortAddress[2];
+    mutable unsigned short rssiData; //RSSI data of last rx operation, if autoFCS==true
     bool autoFCS;
     Power power;
     Mode mode; //< Operating mode

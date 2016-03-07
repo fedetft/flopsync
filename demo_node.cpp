@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013 by Terraneo Federico                               *
+ *   Copyright (C) 2015 by Terraneo Federico                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,11 +45,10 @@
 #include "flopsync_v3/critical_section.h"
 #include "board_setup.h"
 #include <cassert>
+#include "demo.h"
 #define numb_nodes 9
 
 using namespace std;
-
-#include "currentsensor.h"
 
 int identifyNode()
 {
@@ -65,41 +64,51 @@ int identifyNode()
     return 9;
 }
 
+short readThermocouple()
+{
+    ThermocoupleReader reader;
+    miosix::Thread::sleep(150);
+    short result=reader.readTemperature(1);
+    #if WANDSTEM_HW_REV>12
+    miosix::voltageSelect::low(); //Reset voltage to low value
+    #endif
+    return result;
+}
+
+void senseAndSend(Timer& timer, Cc2520& transceiver, Clock& clock,
+                  unsigned long long when, DemoPacket& packet)
+{
+    //The last param is true and means that voltage is increased to 3.1V as soon
+    //as we exit deep sleep
+    waitAndStartTransceiver(timer,transceiver,clock.localTime(when),true);
+    packet.thermocoupleTemperature=readThermocouple(); 
+    transceiver.setMode(Cc2520::DEEP_SLEEP);
+    
+    int id=identifyNode()-1;
+    when+=spacing*(1+sendCount*id);
+    for(int i=0;i<sendCount;i++)
+    {
+        sendPacketAt(timer,transceiver,clock,&packet,sizeof(packet),when,sendFrequencies[i]);
+        when+=spacing;
+    }
+}
+
 int main()
 {
     lowPowerSetup();
     
     led2::mode(miosix::Mode::OUTPUT);
-    
-    //HIPEAC+EWSN demo stuff -- begin
-//     miosix::currentSense::enable::high();
-//     initAdc();
-    //HIPEAC+EWSN demo stuff -- end
-    
     puts(experimentName);
     Cc2520& transceiver=Cc2520::instance();
-    transceiver.setFrequency(2450);
+    transceiver.setTxPower(Cc2520::P_5);
     #ifndef USE_VHT
     Timer& timer=Rtc::instance();
     #else //USE_VHT
     Timer& timer=VHT::instance();
     #endif //USE_VHT
-    Synchronizer *sync;
-    bool monotonic=false;
-    //For comparison between sincnrfhronization schemes
-    switch(controller)
-    {
-     case 1: 
-         sync=new FLOPSYNC2; 
-         monotonic=true; 
-         break;
-     case 2: 
-         sync=new FBS(timer); 
-         break;
-     case 3: 
-         sync=new FTSP; 
-         break;
-    }
+    
+    Synchronizer *sync=new FLOPSYNC2; 
+
     #ifndef MULTI_HOP
     FlooderSyncNode flooder(timer,*sync);
     #elif defined(GLOSSY)
@@ -108,71 +117,21 @@ int main()
     FlooderSyncNode flooder(timer,*sync,node_hop);
     #endif//MULTI_HOP
 
-    Clock *clock;
-    if(monotonic) clock=new MonotonicClock(*sync,flooder);
-    else clock=new NonMonotonicClock(*sync,flooder);
+    MonotonicClock clock(*sync,flooder);
     
+    unsigned int missedSyncPackets=0;
     for(;;)
     {
+        transceiver.setFrequency(2450);
         if(flooder.synchronize()) flooder.resynchronize();
+        if(flooder.isPacketMissed()) missedSyncPackets++;
         
-        #ifdef COMB
+        DemoPacket packet;
+        packet.flopsyncError=sync->getSyncError();
+        packet.flopsyncMissCount=missedSyncPackets;
+        packet.nodeId=nodeIds[identifyNode()-1];
         
-        #ifndef SYNC_BY_WIRE
-        unsigned long long start=identifyNode()*combSpacing;
-        for(unsigned long long i=start;i<nominalPeriod-combSpacing/2;i+=numb_nodes*combSpacing)
-        {   
-            #ifdef SENSE_TEMPERATURE
-            unsigned short temperature=getADCTemperature();
-            #endif //SENSE_TEMPERATURE
-            
-            unsigned long long wakeupTime=clock->localTime(i)-
-                (jitterAbsorption+txTurnaroundTime+trasmissionTime);
-            unsigned long long frameStart=wakeupTime+jitterAbsorption+txTurnaroundTime+trasmissionTime;
-            timer.absoluteSleep(wakeupTime);
-            led2::high();
-            transceiver.setAutoFCS(true);
-            transceiver.setMode(Cc2520::TX);
-    
-            Packet packet;
-            packet.e=sync->getSyncError();
-            packet.u=sync->getClockCorrection();
-            packet.w=sync->getReceiverWindow();
-                  
-            #ifndef SENSE_TEMPERATURE
-            packet.miss=flooder.isPacketMissed() ? 1 : 0;
-            packet.check=0;
-            #else //SENSE_TEMPERATURE
-            packet.miss=temperature & 0xff;
-            packet.check=(temperature>>8) | 0x10;
-            #endif //SENSE_TEMPERATURE
-            unsigned char len=sizeof(Packet);
-            unsigned char *data=reinterpret_cast<unsigned char*>(&packet);
-            transceiver.writeFrame(len,data);
-            #if FLOPSYNC_DEBUG  >0
-            assert(timer.getValue()<frameStart-txTurnaroundTime-trasmissionTime);
-            #endif//FLOPSYNC_DEBUG
-            timer.absoluteWaitTrigger(frameStart-txTurnaroundTime-trasmissionTime);
-            timer.absoluteWaitTimeoutOrEvent(frameStart-trasmissionTime+preambleFrameTime+delaySendPacketTime);
-            transceiver.isSFDRaised();
-            timer.absoluteWaitTimeoutOrEvent(frameStart-trasmissionTime+packetTime+delaySendPacketTime);
-            transceiver.isTxFrameDone();
-            led2::low();
-            transceiver.setMode(Cc2520::DEEP_SLEEP);
-        }
-        #else//SYNC_BY_WIRE
-        unsigned long long start=identifyNode()*combSpacing;
-        unsigned int j=0;
-        for(unsigned long long i=start;i<nominalPeriod-combSpacing/2;i+=combSpacing)
-        {   
-            unsigned long long wakeupTime=clock->localTime(i)-jitterAbsorption-j*w;
-            unsigned long long frameStart=wakeupTime+jitterAbsorption+j*w;
-            timer.absoluteSleep(wakeupTime);
-            led2::high();
-            timer.absoluteWaitTrigger(frameStart);
-            led2::low();
-        }
-        #endif//SYNC_BY_WIRE
-        #endif//COMB
+        for(unsigned long long t=initialDelay;t<nominalPeriod;t+=dataPeriod)
+            senseAndSend(timer,transceiver,clock,t,packet);
     }
 }

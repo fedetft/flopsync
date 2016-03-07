@@ -93,7 +93,7 @@ Cc2520& Cc2520::instance()
     return singleton;
 }
 
-Cc2520::Cc2520() : autoFCS(true), power(P_0), mode(DEEP_SLEEP), timer(Rtc::instance())
+Cc2520::Cc2520() : rssiData(0x8000), autoFCS(true), power(P_0), mode(DEEP_SLEEP), timer(Rtc::instance())
 {
     cc2520GpioInit();
     setMode(DEEP_SLEEP);  //entry state of FSM
@@ -454,10 +454,12 @@ int Cc2520::readFrame(unsigned char& length, unsigned char* pframe) const
     if(autoFCS)
     {
         fcs=cc2520SpiSendRecv();
+        rssiData=fcs<<8;
         #if CC2520_DEBUG >1
             printf("--CC2520_DEBUG-- First byte RSSI: %ddBm\n",((char)fcs)-76);
         #endif //CC2520_DEBUG
         fcs=cc2520SpiSendRecv();
+        rssiData|=fcs;
         #if CC2520_DEBUG >1
             printf("--CC2520_DEBUG-- Second byte CRC+Correlation value: %x\n",fcs);
         #endif //CC2520_DEBUG
@@ -504,10 +506,12 @@ int Cc2520::readFrame(Frame& frame) const
     if(autoFCS)
     {
         fcs=cc2520SpiSendRecv();
+        rssiData=fcs<<8;
         #if CC2520_DEBUG >1
             printf("--CC2520_DEBUG-- First byte RSSI: %ddBm\n",((char)fcs)-76);
         #endif //CC2520_DEBUG
         fcs=cc2520SpiSendRecv();
+        rssiData|=fcs;
         #if CC2520_DEBUG >1
             printf("--CC2520_DEBUG-- Second byte fcs: %x\n",fcs);
         #endif //CC2520_DEBUG
@@ -863,6 +867,10 @@ void Cc2520::initConfigureReg()
     writeReg(CC2520_ADCTEST0,0x10);
     writeReg(CC2520_ADCTEST1,0x0E);
     writeReg(CC2520_ADCTEST2,0x03);
+    
+    #ifdef _BOARD_POLINODE
+    writeReg(CC2520_FREQTUNE,13); //Important!
+    #endif //_BOARD_POLINODE
     
     //Setting gpio5 as input on rising edge send command strobe STXON
     writeReg(CC2520_GPIOCTRL5,0x80|0x08);

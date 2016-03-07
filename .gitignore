@@ -1,5 +1,7 @@
 # Exclude doxygen
 miosix/doc/doxygen/*
+wandstemplot/clocksync/build
+wandstemplot/consumption/build
 
 # Exclude temporary files
 main.elf
