@@ -49,6 +49,8 @@
 
 using namespace std;
 
+#include "currentsensor.h"
+
 int identifyNode()
 {
     if(strstr(experimentName,"node0")) return 0;
@@ -68,6 +70,12 @@ int main()
     lowPowerSetup();
     
     led2::mode(miosix::Mode::OUTPUT);
+    
+    //HIPEAC+EWSN demo stuff -- begin
+//     miosix::currentSense::enable::high();
+//     initAdc();
+    //HIPEAC+EWSN demo stuff -- end
+    
     puts(experimentName);
     Cc2520& transceiver=Cc2520::instance();
     transceiver.setFrequency(2450);
