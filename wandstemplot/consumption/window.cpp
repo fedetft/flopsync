@@ -36,7 +36,7 @@ Window::Window()
     plot=new QwtPlot(this);
     plot->setTitle("Current draw");
     plot->setCanvasBackground(Qt::white);
-    plot->setAxisScale(QwtPlot::yLeft,0.,25.);
+//     plot->setAxisScale(QwtPlot::yLeft,0.,45.);
     plot->setAxisScale(QwtPlot::xBottom,0.,showRange);
 
     grid=new QwtPlotGrid();
