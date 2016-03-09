@@ -150,7 +150,7 @@ inline void lowPowerSetup()
 
 #endif //FLOPSYNC_DEBUG
 
-#elif defined(_BOARD_POLINODE)
+#elif defined(_BOARD_WANDSTEM)
 
 typedef miosix::Gpio<GPIOE_BASE,8>  probe_int_dis;
 typedef miosix::Gpio<GPIOE_BASE,9>  probe_wakeup;

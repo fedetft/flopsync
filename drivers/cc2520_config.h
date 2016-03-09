@@ -105,7 +105,7 @@ static unsigned char cc2520SpiSendRecv(unsigned char data = 0) {
 
 //TBD
 
-#elif defined(_BOARD_POLINODE)
+#elif defined(_BOARD_WANDSTEM)
 /*
  * Connections between CC2520 and stm32vldiscovery
  */

@@ -51,7 +51,7 @@ Window::Window()
     curve->setRenderHint(QwtPlotItem::RenderAntialiased,true);
     curve->attach(plot);
 
-    serial=new QAsyncSerial("/dev/ttyUSB1",115200);
+    serial=new QAsyncSerial("/dev/ttyUSB0",115200);
     connect(serial,SIGNAL(lineReceived(QString)),this,SLOT(update(QString)));
     this->show();
 }

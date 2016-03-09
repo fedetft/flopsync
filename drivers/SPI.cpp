@@ -30,7 +30,7 @@ unsigned char SPI::sendRecv(unsigned char data)
     return SPI1->DR;
 }
 
-#elif defined(_BOARD_POLINODE)
+#elif defined(_BOARD_WANDSTEM)
 
 SPI::SPI()
 {

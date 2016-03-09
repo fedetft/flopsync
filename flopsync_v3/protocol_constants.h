@@ -89,7 +89,7 @@ const unsigned long long hz=16384;
 const unsigned long long hz=24000000;
 #endif //USE_VHT
 
-#elif defined(_BOARD_POLINODE)
+#elif defined(_BOARD_WANDSTEM)
 
 //Channel bandwidth 8 Mbps
 const unsigned long long spibps=8000000;

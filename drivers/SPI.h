@@ -11,7 +11,7 @@ public:
 
     unsigned char sendRecv(unsigned char data = 0);
     
-    #ifdef _BOARD_POLINODE
+    #ifdef _BOARD_WANDSTEM
     void enable();
     void disable();
     #endif

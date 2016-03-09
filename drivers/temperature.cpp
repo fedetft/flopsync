@@ -52,7 +52,7 @@ unsigned short getADCTemperature()
     return result;
 }
 
-#elif defined(_BOARD_POLINODE)
+#elif defined(_BOARD_WANDSTEM)
 
 unsigned short getRawTemperature()
 {

@@ -51,7 +51,7 @@ static volatile bool xoscInterrupt=false;
 //	restoreContext();
 //}
 
-#elif defined(_BOARD_POLINODE)
+#elif defined(_BOARD_WANDSTEM)
 
 void __attribute__((naked)) GPIO_ODD_IRQHandler()
 {
@@ -70,7 +70,7 @@ void __attribute__((used)) xoscIrqhandlerImpl()
      //Disable interrupt, not just pending bit
     #ifdef _BOARD_STM32VLDISCOVERY
     EXTI->PR=EXTI_PR_PR6;
-    #elif defined(_BOARD_POLINODE)
+    #elif defined(_BOARD_WANDSTEM)
     GPIO->IFC = 1<<1;
     #endif
 
@@ -868,9 +868,9 @@ void Cc2520::initConfigureReg()
     writeReg(CC2520_ADCTEST1,0x0E);
     writeReg(CC2520_ADCTEST2,0x03);
     
-    #ifdef _BOARD_POLINODE
+    #ifdef _BOARD_WANDSTEM
     writeReg(CC2520_FREQTUNE,13); //Important!
-    #endif //_BOARD_POLINODE
+    #endif //_BOARD_WANDSTEM
     
     //Setting gpio5 as input on rising edge send command strobe STXON
     writeReg(CC2520_GPIOCTRL5,0x80|0x08);
@@ -889,7 +889,7 @@ void Cc2520::wait()
     EXTI->RTSR |= EXTI_RTSR_TR6;
     EXTI->PR=EXTI_PR_PR6; //Clear eventual pending IRQ
     pinirq saved=IRQreplaceExtiIrq(xoscIrqhandlerImpl);
-    #elif defined(_BOARD_POLINODE)
+    #elif defined(_BOARD_WANDSTEM)
     GPIO->INSENSE |= 1<<0;
     GPIO->EXTIPSELL &= ~(0x7<<4);
     GPIO->EXTIPSELL |= (0x3<<4);
@@ -915,7 +915,7 @@ void Cc2520::wait()
     IRQreplaceExtiIrq(saved);
     EXTI->IMR &= ~EXTI_IMR_MR6;
     EXTI->RTSR &= ~EXTI_RTSR_TR6;
-    #elif defined(_BOARD_POLINODE)
+    #elif defined(_BOARD_WANDSTEM)
     GPIO->IEN &= ~(1<<1);
     #endif
 }

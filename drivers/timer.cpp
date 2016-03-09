@@ -981,7 +981,7 @@ void VHT::enableAutoSyncHelper(unsigned int period)
     while((RTC->CRL & RTC_CRL_RTOFF)==0) ; //Wait
 }
 
-#elif defined(_BOARD_POLINODE)
+#elif defined(_BOARD_WANDSTEM)
 
 #define delay_oc 0 //FIXME: legacy from STM32F100 node
 

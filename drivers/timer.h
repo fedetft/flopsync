@@ -43,7 +43,7 @@
 #define vhtPrescaler 1-1   //vhtFreq = ccoVht/(vhtPrescaler+1) go from 0 to 2^16 
 #define rtcFreq ccoRtc/(rtcPrescaler+1)
 #define vhtFreq ccoVht/(vhtPrescaler+1)
-#elif defined(_BOARD_POLINODE)
+#elif defined(_BOARD_WANDSTEM)
 #define ccoRtc 32768ll
 #define ccoVht 48000000ll
 #define rtcPrescaler 0 //rtcFreq = ccoRtc/(rtcPrescaler+1) go from 0 to 15
