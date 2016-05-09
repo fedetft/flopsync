@@ -27,6 +27,7 @@
  ***************************************************************************/
 #include "controller_flopsync.h"
 #include <algorithm>
+
 using namespace std;
 
 //
@@ -37,19 +38,19 @@ ControllerFlopsync::ControllerFlopsync() { reset(); }
 
 pair<int,int> ControllerFlopsync::computeCorrection(int e)
 {
-    //u(k)=u(k-1)+1.25*e(k)-e(k-1)
-    int u=uo+5*e-4*eo;
+    //u(k)=u(k-1)+1.375*e(k)-e(k-1)
+    int u=uo+11*e-8*eo;
 
     //The controller output needs to be quantized, but instead of simply
-    //doing u/4 which rounds towards the lowest number use a slightly more
+    //doing u/8 which rounds towards the lowest number use a slightly more
     //advanced algorithm to round towards the closest one, as when the error
     //is close to +/-1 timer tick this makes a significant difference.
     int sign=u>=0 ? 1 : -1;
-    int uquant=(u+2*sign)/4;
+    int uquant=(u+4*sign)/8;
 
     //Adaptive state quantization, while the output always needs to be
     //quantized, the state is only quantized if the error is zero
-    uo= e==0 ? 4*uquant : u;
+    uo= e==0 ? 8*uquant : u;
     eo=e;
   
     //Scale numbers if VHT is enabled to prevent overflows
@@ -96,5 +97,5 @@ int ControllerFlopsync::getClockCorrection() const
     //Error measure is unavailable if the packet is lost, the best we can
     //do is to reuse the past correction value
     int sign=uo>=0 ? 1 : -1;
-    return (uo+2*sign)/4;
+    return (uo+4*sign)/8;
 }
