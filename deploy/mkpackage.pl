@@ -118,7 +118,7 @@ sub build
 			    print $outfile "$1'0'$2\n";
 			}
 		} elsif(/^(const unsigned char controller=).*(;)/) {
-			if (!($controller<0 || $controller>3))
+			if (!($controller<0 || $controller>4))
 			{
 			    print $outfile "$1$controller$2\n";
 			}

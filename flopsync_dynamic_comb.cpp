@@ -37,6 +37,7 @@
 #include "flopsync_v3/flooder_sync_node.h"
 #include "flopsync_v3/synchronizer.h"
 #include "flopsync_v3/flopsync2.h"
+#include "flopsync_v3/controller_flopsync.h"
 #include "flopsync_v3/fbs.h"
 #include "flopsync_v3/ftsp.h"
 #include "flopsync_v3/clock.h"
@@ -49,7 +50,7 @@
 
 using namespace std;
 
-#include "currentsensor.h"
+// #include "currentsensor.h"
 
 int identifyNode()
 {
@@ -86,11 +87,11 @@ int main()
     #endif //USE_VHT
     Synchronizer *sync;
     bool monotonic=false;
-    //For comparison between sincnrfhronization schemes
+    //For comparison between sincronization schemes
     switch(controller)
     {
      case 1: 
-         sync=new FLOPSYNC2; 
+         sync=new FLOPSYNC2; //The new FLOPSYNC, FLOPSYNC 2
          monotonic=true; 
          break;
      case 2: 
@@ -99,6 +100,13 @@ int main()
      case 3: 
          sync=new FTSP; 
          break;
+     case 4:
+         sync=new ControllerFlopsync; //The old FLOPSYNC, FLOPSYNC 1
+         monotonic=true; 
+         break;
+     default:
+         printf("Unknown controller");
+         return 0;
     }
     #ifndef MULTI_HOP
     FlooderSyncNode flooder(timer,*sync);
