@@ -1327,7 +1327,9 @@ bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
         FastInterruptDisableLock dLock;
         GPIO->IEN |= 1<<8;
         rtcInt.event=false;
-        while(!rtcInt.event)
+        //The direct check on the pin serves to make the function return
+        //immediately if the pin is already asserted
+        while(rtcInt.event==false && miosix::transceiver::excChB::value()==0)
         {
             rtcWaiting=Thread::IRQgetCurrentThread();
             Thread::IRQwait();
@@ -1350,7 +1352,9 @@ bool Rtc::absoluteWaitTimeoutOrEvent(unsigned long long value)
     rtcInt.event=false;
     if(value > getValue())
     {
-        while(!rtcInt.wait && !rtcInt.event)
+        //The direct check on the pin serves to make the function return
+        //immediately if the pin is already asserted
+        while(rtcInt.wait==false && rtcInt.event==false &&  miosix::transceiver::excChB::value()==0)
         {
             rtcWaiting=Thread::IRQgetCurrentThread();
             Thread::IRQwait();
