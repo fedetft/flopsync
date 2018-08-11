@@ -8,16 +8,16 @@
 #include <QStringList>
 #include <QRegExp>
 
+using namespace std::placeholders;
+
 /**
  * Implementation details of QAsyncSerial class.
  */
 class QAsyncSerialImpl
 {
 public:
-    QAsyncSerialImpl() : hasLast(false) {}
     CallbackAsyncSerial serial;
-    unsigned char last;
-    bool hasLast;
+    QString receivedData;
 };
 
 QAsyncSerial::QAsyncSerial(): pimpl(new QAsyncSerialImpl)
@@ -50,8 +50,7 @@ void QAsyncSerial::close()
     {
         //Errors during port close
     }
-    pimpl->hasLast=false;
-//     pimpl->receivedData.clear();//Clear eventual data remaining in read buffer
+    pimpl->receivedData.clear();//Clear eventual data remaining in read buffer
 }
 
 bool QAsyncSerial::isOpen()
@@ -80,41 +79,21 @@ QAsyncSerial::~QAsyncSerial()
     }
 }
 
-double convert(unsigned char c1, unsigned char c2)
-{
-	static double bb=0.0;
-	unsigned int dd=static_cast<unsigned int>(c1)<<8 | c2;
-	dd=dd*208000/4095;
-	
-#define FILTER
-	
-#ifdef FILTER
-	const double factor=0.95;
-	bb=factor*bb+(1.0-factor)*dd;
-#else //FILTER
-	bb=dd;
-#endif //FILTER
-	
-	return bb/1000;
-}
-
 void QAsyncSerial::readCallback(const char *data, size_t size)
 {
-	if(pimpl->hasLast)
-	{
-		pimpl->hasLast=false;
-		emit(received(convert(pimpl->last,data[0])));
-		data++;
-		size--;
-	}
-	size_t rounded=(size & 1) ? (size-1) : size;
-	for(size_t i=0;i<size/2;i+=2)
-	{
-		emit(received(convert(data[i],data[i+1])));
-	}
-    if(rounded!=size)
-	{
-		pimpl->hasLast=true;
-		pimpl->last=data[size-1];
-	}
+    pimpl->receivedData+=QString::fromLatin1(data,size);
+    if(pimpl->receivedData.contains('\n'))
+    {
+        QStringList lineList=pimpl->receivedData.split(QRegExp("\r\n|\n"));
+        //If line ends with \n lineList will contain a trailing empty string
+        //otherwise it will contain part of a line without the terminating \n
+        //In both cases lineList.at(lineList.size()-1) should not be sent
+        //with emit.
+        int numLines=lineList.size()-1;
+        pimpl->receivedData=lineList.at(lineList.size()-1);
+        for(int i=0;i<numLines;i++)
+        {
+            emit lineReceived(lineList.at(i));
+        }
+    }
 }
